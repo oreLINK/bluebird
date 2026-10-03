@@ -5,7 +5,7 @@ data is different: it barely changes, so it is fetched rarely and kept.
 
 - Sources with ``schedule: reference`` in ``config/sources.yaml`` are refreshed
   with ``bluebird reference`` (manually, or by the ``Refresh reference data``
-  workflow, which opens a pull request to ``dev``).
+  workflow, which opens a pull request to ``main``).
 - The source goes through bronze and silver as usual, then its Transformer
   serialises the silver table into one file per massif:
   ``config/reference/{dataset}/{massif_id}{suffix}``.

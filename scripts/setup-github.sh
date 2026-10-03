@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # One-time (and idempotent) GitHub setup for Bluebird. Run it yourself, from
-# the repository root, after pushing `main` and `dev` to GitHub:
+# the repository root, after pushing `main` to GitHub:
 #
 #   scripts/setup-github.sh
 #
 # Requires the GitHub CLI (`gh auth login`) with admin rights on the repo.
 # It performs these steps, each skipped when already done:
 #
+#   0. Makes `main` the default branch and removes a fully merged `dev`.
 #   1. Creates a write deploy key and stores its private half in the
 #      GH_PAGES_DEPLOY_KEY secret (used by deploy.yml and daily.yml).
 #   2. Creates or updates two branch rulesets:
@@ -15,7 +16,7 @@
 #                            "CI result" check passing.
 #        "Protect gh-pages": nobody may push, merge or delete; only deploy
 #                            keys bypass (i.e. GitHub Actions).
-#   2b. Allows workflows to open pull requests (reference.yml opens one to dev).
+#   2b. Allows workflows to open pull requests (reference.yml opens one to main).
 #   3. Builds the site once if gh-pages does not exist yet (deploy.yml).
 #   4. Configures GitHub Pages to serve the gh-pages branch.
 #   5. Runs the daily data workflow once so the site has data.
@@ -51,13 +52,26 @@ if [ "$VISIBILITY" != "PUBLIC" ]; then
   echo "Warning: rulesets and GitHub Pages on a private repository need a paid plan (GitHub Pro or higher)."
 fi
 
-for branch in main dev; do
+for branch in main; do
   if ! gh api "repos/$REPO/branches/$branch" >/dev/null 2>&1; then
     echo "Branch '$branch' is missing on GitHub. Push it first: git push -u origin $branch" >&2
     exit 1
   fi
 done
 gh api -X PATCH "repos/$REPO" -f default_branch=main >/dev/null
+echo "Default branch: main."
+
+# `main` is the only long-lived branch. Remove a leftover `dev` branch, but
+# only when it has no commit that main lacks.
+if gh api "repos/$REPO/branches/dev" >/dev/null 2>&1; then
+  ahead="$(gh api "repos/$REPO/compare/main...dev" -q .ahead_by)"
+  if [ "$ahead" = "0" ]; then
+    gh api -X DELETE "repos/$REPO/git/refs/heads/dev" >/dev/null
+    echo "Deleted the legacy 'dev' branch (fully merged into main)."
+  else
+    echo "Branch 'dev' has $ahead commit(s) missing from main: left untouched."
+  fi
+fi
 
 # --------------------------------------------------------------- 1. deploy key
 say "1. Deploy key and $SECRET_NAME secret"

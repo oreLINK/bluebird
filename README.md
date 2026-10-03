@@ -248,9 +248,9 @@ Everything lives on GitHub; there is no external storage.
 | Bronze, silver | Runner disk, then a workflow artifact | 7 days |
 | Gold | `gh-pages` branch, `data/gold/` | Unlimited (KPI history) |
 | Diamond | `gh-pages` branch, `data/diamond/`, served by Pages | Unlimited (`latest.json` + dated archive) |
-| Reference (pistes, lifts) | `config/reference/` on `dev` and `main`, via pull request | Until the next refresh; history in git |
+| Reference (pistes, lifts) | `config/reference/` on `main`, via pull request | Until the next refresh; history in git |
 
-`dev` and `main` contain code and configuration, including reference data.
+`main` contains code and configuration, including reference data.
 Nothing under `/data` is ever committed there. The storage interface (`pipeline/src/bluebird_pipeline/storage/`) can
 gain a cloud backend later without touching the layers.
 
@@ -442,18 +442,22 @@ check that every tile type in the config has a component.
 
 ## Git workflow and deployment
 
+`main` is the only long-lived branch and the default branch. Work happens on
+short-lived branches created from `main` and merged back through a pull request.
+
 | Branch | Who writes | How | Protection (rulesets) |
 |---|---|---|---|
-| `dev` | developers | normal push / pull | none |
-| `main` | nobody directly | pull request from `dev`, "CI result" must pass | no push, no force push, no deletion |
+| `main` | nobody directly | pull request, "CI result" must pass | no push, no force push, no deletion |
+| `feat/…`, `fix/…`, `docs/…` | developers and agents | normal push / pull, one branch per change, deleted after merge | none |
+| `reference/refresh-…` | the *Refresh reference data* workflow | one branch per refresh, then a pull request | none |
 | `gh-pages` | GitHub Actions only | built site + daily data | no push, no PR merge, no deletion; only the deploy key bypasses |
 
 | Workflow | Trigger | Job |
 |---|---|---|
-| `ci.yml` | push to `dev`, PR to `main` | Python + web checks, actionlint; `CI result` is the required check |
+| `ci.yml` | PR to `main`, push to `main` (after merge), manual | Python + web checks, actionlint; `CI result` is the required check |
 | `deploy.yml` | push to `main` (= merged PR), manual | build `web/`, publish to `gh-pages`, keep `data/` |
 | `daily.yml` | 04:30 and 06:30 Paris (winter time), Nov–May, manual | run the pipeline from `main`, publish gold + diamond to `gh-pages/data/` |
-| `reference.yml` | manual, once a season | refresh `config/reference/` from reference sources, open a PR to `dev` |
+| `reference.yml` | manual, once a season | refresh `config/reference/` from reference sources, open a PR to `main` |
 | `guard-gh-pages.yml` | PR opened against `gh-pages` | close it with an explanation |
 
 `deploy.yml` and `daily.yml` share a concurrency group, so they never push to
@@ -464,12 +468,14 @@ key; both fail early with a clear message if it is missing.
 
 ```bash
 git remote add origin git@github.com:<you>/bluebird.git
-git push -u origin main dev           # the first deploy run fails: no key yet, that's expected
+git push -u origin main               # the first deploy run fails: no key yet, that's expected
 scripts/setup-github.sh               # needs `gh auth login` with admin rights
 ```
 
-The script is idempotent. It creates the deploy key and secret, creates or
-updates the two rulesets, triggers the first site build, configures Pages to
+The script is idempotent. It makes `main` the default branch (and deletes a
+leftover `dev` branch if it is fully merged), creates the deploy key and
+secret, creates or updates the two rulesets, allows workflows to open pull
+requests, triggers the first site build, configures Pages to
 serve `gh-pages`, and runs the daily workflow once. Options: `--rotate-key`,
 `--no-runs`. Rulesets and Pages are free on public repositories; private
 repositories need GitHub Pro or higher.
@@ -477,11 +483,15 @@ repositories need GitHub Pro or higher.
 ### Day-to-day
 
 ```bash
-git switch dev
+git switch main && git pull
+git switch -c feat/my-change
 # …work, commit…
-git push
-gh pr create --base main --head dev   # CI runs; merge when green
+git push -u origin feat/my-change
+gh pr create --base main              # CI runs; merge when green
+git switch main && git pull && git branch -d feat/my-change
 ```
+
+Merging into `main` deploys the site.
 
 Scheduled workflows only run on the default branch and can start several
 minutes late. GitHub disables schedules in public repositories after 60 days

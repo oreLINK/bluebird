@@ -1,10 +1,11 @@
-# Lint, test and build everything. The "CI result" job is the required status
-# check of the `main` ruleset: a pull request cannot be merged unless it passes.
+# Lint, test and build everything, on every pull request to `main` and after
+# every merge into `main`. The "CI result" job is the required status check of
+# the `main` ruleset: a pull request cannot be merged unless it passes.
 name: CI
 
 on:
   push:
-    branches: [dev]
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:

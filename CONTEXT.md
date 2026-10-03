@@ -83,7 +83,7 @@ with `coordinates`).
 
 Production storage: bronze and silver are temporary (7-day workflow
 artifact); gold and diamond are committed by CI to `gh-pages/data/`;
-reference files are committed to `dev`/`main` through a pull request.
+reference files are committed to `main` through a pull request.
 
 ## 4. Invariants (do not break)
 
@@ -129,10 +129,13 @@ reference files are committed to `dev`/`main` through a pull request.
 
 Summary of AGENTS.md §3, which is authoritative.
 
-- Work on **`dev`** (or a feature branch merged into `dev`). **Never push to
-  `main` or `gh-pages`**; never force-push. Rulesets block it anyway.
-- Changes reach `main` only through a pull request `dev → main` with the
-  `CI result` check green. Merging triggers the deploy.
+- `main` is the **only long-lived branch** (and the default branch). There is
+  no `dev` branch.
+- Work on a **short-lived branch** created from `main` (`feat/<topic>`,
+  `fix/<topic>`, `docs/<topic>`). **Never push to `main` or `gh-pages`**; never
+  force-push. Rulesets block it anyway.
+- Changes reach `main` only through a pull request with the `CI result` check
+  green. Merging triggers the deploy. Delete the branch after merge.
 - `gh-pages` is written exclusively by `deploy.yml` / `daily.yml` through
   `scripts/ci/publish-gh-pages.sh`. Do not open PRs against it.
 - Never commit `/data`, `.venv`, `node_modules`, `web/dist`.
@@ -204,6 +207,10 @@ npm run dev
   site inside a 390 px iframe to check mobile layout.
 - **Generated files** (`config/schemas`, `web/src/lib/generated`) are checked
   in CI; regenerate rather than hand-edit.
+- **GitHub default branch.** GitHub makes the first pushed branch the default.
+  `git push` cannot change it, and GitHub refuses to delete the default branch.
+  Change it in Settings → General or with
+  `gh repo edit <owner>/<repo> --default-branch main` (`setup-github.sh` does it).
 
 ## 9. Definition of done
 

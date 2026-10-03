@@ -1,6 +1,7 @@
 # Refresh slow-changing reference data (pistes, lifts…) once a season.
-# Fetches every `schedule: reference` source, rewrites config/reference/ and
-# opens a pull request to `dev` for review. Nothing is pushed to dev directly.
+# Fetches every `schedule: reference` source, rewrites config/reference/ on a
+# new branch and opens a pull request to `main` for review. Nothing is pushed
+# to main directly.
 name: Refresh reference data
 
 on:
@@ -27,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: dev
+          ref: main
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
@@ -50,7 +51,7 @@ jobs:
           path: ${{ env.BLUEBIRD_DATA_DIR }}/bronze
           retention-days: 7
           if-no-files-found: ignore
-      - name: Open a pull request to dev
+      - name: Open a pull request to main
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -65,6 +66,6 @@ jobs:
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
               commit --quiet -m "Refresh reference data"
           git push origin "$branch"
-          gh pr create --base dev --head "$branch" \
+          gh pr create --base main --head "$branch" \
             --title "Refresh reference data" \
             --body "Automated refresh of \`config/reference/\` by the *Refresh reference data* workflow. Check the per-station \`summary\` at the top of each file: a station dropping to zero pistes usually means a source outage, not a closed resort."

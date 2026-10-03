@@ -50,9 +50,12 @@ before you report the work as done.
 
 ## 3. Git and GitHub
 
-- Work on `dev` (or a branch merged into `dev`). Never push to `main` or
-  `gh-pages`, never force-push, never open a pull request against `gh-pages`.
-- `main` changes only through a pull request from `dev` with CI green.
+- `main` is the only long-lived branch. Work on a short-lived branch created
+  from `main` (`feat/<topic>`, `fix/<topic>`, `docs/<topic>`), deleted after
+  merge. There is no `dev` branch.
+- Never push to `main` or `gh-pages`, never force-push, never open a pull
+  request against `gh-pages`.
+- `main` changes only through a pull request with CI green.
 - Commit, push, open pull requests, change GitHub settings or run
   `scripts/setup-github.sh` **only when the user asks**.
 - Never commit `/data`, virtualenvs, `node_modules`, `web/dist`, secrets or
