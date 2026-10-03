@@ -36,6 +36,18 @@
   {:else if name === 'info'}
     <circle cx="12" cy="12" r="9" />
     <path d="M12 11v5.5M12 7.5v.01" />
+  {:else if name === 'menu'}
+    <path d="M4 7h16M4 12h16M4 17h10" />
+  {:else if name === 'close'}
+    <path d="M6 6l12 12M18 6 6 18" />
+  {:else if name === 'check'}
+    <path d="m5 12.5 4.5 4.5L19 7.5" />
+  {:else if name === 'sparkle'}
+    <path d="M12 3.5c.6 3.9 2.6 5.9 6.5 6.5-3.9.6-5.9 2.6-6.5 6.5-.6-3.9-2.6-5.9-6.5-6.5 3.9-.6 5.9-2.6 6.5-6.5Z" />
+    <path d="M18.5 15.5c.3 1.5 1 2.2 2.5 2.5-1.5.3-2.2 1-2.5 2.5-.3-1.5-1-2.2-2.5-2.5 1.5-.3 2.2-1 2.5-2.5Z" />
+  {:else if name === 'globe'}
+    <circle cx="12" cy="12" r="9" />
+    <path d="M3 12h18M12 3c2.5 2.6 3.7 5.6 3.7 9S14.5 18.4 12 21c-2.5-2.6-3.7-5.6-3.7-9S9.5 5.6 12 3Z" />
   {:else if name === 'refresh'}
     <path d="M20 11a8 8 0 1 0-2.3 5.7" />
     <path d="M20 4v7h-7" />

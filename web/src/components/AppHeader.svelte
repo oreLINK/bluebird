@@ -1,38 +1,47 @@
+<!--
+  Sticky app bar on frosted white: logo and title on the left, menu button on
+  the right, filter bar below.
+-->
 <script lang="ts">
-  import type { Massif } from '../lib/config';
-  import LangToggle from './LangToggle.svelte';
-  import MassifPicker from './MassifPicker.svelte';
+  import type { Filter } from '../lib/config';
+  import { i18n } from '../lib/i18n/i18n.svelte';
+  import FilterBar from './FilterBar.svelte';
+  import Icon from './Icon.svelte';
+  import Logo from './Logo.svelte';
 
   let {
-    massifs,
-    selected,
-    onselect,
-  }: { massifs: Massif[]; selected: string; onselect: (id: string) => void } = $props();
+    filters,
+    selectedFilter,
+    onselectfilter,
+    menuOpen,
+    onmenu,
+  }: {
+    filters: Filter[];
+    selectedFilter: string;
+    onselectfilter: (id: string) => void;
+    menuOpen: boolean;
+    onmenu: () => void;
+  } = $props();
 </script>
 
-<header class="header">
-  <div class="container">
-    <div class="bar glass glass-strong">
-      <div class="top">
-        <h1 class="brand">
-          <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
-            <defs>
-              <linearGradient id="bb-mark" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stop-color="#0a4aa6" />
-                <stop offset="1" stop-color="#5aa8ec" />
-              </linearGradient>
-            </defs>
-            <rect width="32" height="32" rx="9" fill="url(#bb-mark)" />
-            <circle cx="23" cy="9.5" r="3" fill="#ffe28a" />
-            <path d="M3 27 12.5 12l4.6 7 2.6-3.6L29 27Z" fill="#fff" />
-            <path d="m9.7 16.4 2.8 1.6 2.3-1.8" fill="none" stroke="#bcd8f3" stroke-width="1.2" />
-          </svg>
-          <span>Bluebird</span>
-        </h1>
-        <LangToggle />
-      </div>
-      <MassifPicker {massifs} {selected} {onselect} />
+<header class="header glass">
+  <div class="container inner">
+    <div class="top">
+      <h1 class="brand"><Logo /></h1>
+      <button
+        type="button"
+        class="menu-button"
+        aria-label={i18n.t('menu.open')}
+        aria-haspopup="dialog"
+        aria-expanded={menuOpen}
+        onclick={onmenu}
+      >
+        <Icon name="menu" size={24} />
+      </button>
     </div>
+    {#if filters.length > 1}
+      <FilterBar {filters} selected={selectedFilter} onselect={onselectfilter} />
+    {/if}
   </div>
 </header>
 
@@ -41,14 +50,14 @@
     position: sticky;
     top: 0;
     z-index: 10;
-    padding-top: max(10px, env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
   }
 
-  .bar {
+  .inner {
     display: grid;
     gap: 10px;
-    padding: 10px 12px 12px;
-    border-radius: 24px;
+    padding-top: 10px;
+    padding-bottom: 10px;
   }
 
   .top {
@@ -59,17 +68,20 @@
   }
 
   .brand {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 1.25rem;
-    font-weight: 750;
-    letter-spacing: -0.025em;
+    display: flex;
+    min-width: 0;
   }
 
-  .mark {
-    width: 32px;
-    height: 32px;
+  .menu-button {
+    display: grid;
+    place-items: center;
     flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-s);
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--brand);
+    cursor: pointer;
   }
 </style>

@@ -172,6 +172,11 @@
           "title": "Name",
           "type": "string"
         },
+        "short_name": {
+          "description": "Compact name for tiles (falls back to `name`).",
+          "title": "Short Name",
+          "type": "string"
+        },
         "lat": {
           "title": "Lat",
           "type": "number"
@@ -205,6 +210,7 @@
       "required": [
         "id",
         "name",
+        "short_name",
         "lat",
         "lon",
         "elevation",

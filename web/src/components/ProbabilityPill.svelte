@@ -1,6 +1,8 @@
 <!--
-  Betting-style "odds button": the probability as a percentage, coloured on a
-  slate -> glacier-blue scale, optionally with decimal odds (1/p).
+  Compact "odds button" used in ranking rows: the probability as a
+  percentage on a light-blue pill, optionally with decimal odds (1/p). The
+  magnitude is conveyed by the probability bar next to it, so the pill keeps
+  one high-contrast colour pair.
 -->
 <script lang="ts">
   import { formatOdds, formatPercent } from '../lib/format';
@@ -9,7 +11,7 @@
   let { probability, showOdds = false }: { probability: number; showOdds?: boolean } = $props();
 </script>
 
-<span class="pill tabular" style="--p: {probability}">
+<span class="pill tabular">
   <span class="pct">{formatPercent(probability, i18n.locale)}</span>
   {#if showOdds}
     <span class="odds">{i18n.t('tile.odds', { odds: formatOdds(probability, i18n.locale) })}</span>
@@ -25,23 +27,22 @@
     min-width: 4.25rem;
     padding: 0.4rem 0.6rem;
     border-radius: var(--radius-s);
-    color: var(--prob-ink);
-    background: color-mix(in oklch, var(--prob-high) calc(var(--p) * 100%), var(--prob-low));
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.28),
-      0 4px 12px -6px color-mix(in oklch, var(--prob-high) 80%, transparent);
+    border: 1px solid var(--pill-border);
+    background: var(--pill-bg);
+    color: var(--pill-ink);
   }
 
   .pct {
-    font-size: 1.0625rem;
-    font-weight: 700;
-    line-height: 1.1;
-    letter-spacing: -0.01em;
+    font-family: var(--font-display);
+    font-size: 1.1875rem;
+    font-style: italic;
+    font-weight: 800;
+    line-height: 1.05;
   }
 
   .odds {
     font-size: 0.6875rem;
     font-weight: 600;
-    opacity: 0.88;
+    opacity: 0.85;
   }
 </style>

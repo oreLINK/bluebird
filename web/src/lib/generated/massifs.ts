@@ -6,7 +6,7 @@ export type En = string;
 export type Timezone = string;
 export type Enabled = boolean;
 /**
- * Sort order in the massif picker.
+ * Sort order in the site menu.
  */
 export type Order = number;
 /**
@@ -17,7 +17,7 @@ export type Order = number;
  */
 export type Bbox = [number, number, number, number];
 /**
- * Relative ridge heights (0..1), west to east, for the decorative backdrop.
+ * Relative ridge heights (0..1), west to east, for the banner illustrations.
  */
 export type Skyline = number[];
 export type Massifs = Massif[];

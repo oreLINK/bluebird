@@ -6,7 +6,7 @@
 </script>
 
 <footer class="container footer">
-  <div class="card glass">
+  <div class="card-body box">
     <p class="method">{i18n.t('footer.method')}</p>
     <p class="disclaimer">
       {i18n.t('footer.disclaimer')}
@@ -28,24 +28,21 @@
 
 <style>
   .footer {
-    position: relative;
-    z-index: 1;
     padding-top: 8px;
     padding-bottom: max(24px, env(safe-area-inset-bottom));
   }
 
-  .card {
+  .box {
     display: grid;
     gap: 8px;
     padding: 16px 18px;
-    border-radius: var(--radius-l);
     font-size: 0.8125rem;
     color: var(--ink-soft);
   }
 
   .disclaimer a,
   .sources a {
-    color: var(--accent);
+    color: var(--link);
     font-weight: 600;
   }
 

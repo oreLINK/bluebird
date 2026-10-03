@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatDriver,
+  formatMethod,
   formatLongDate,
   formatOdds,
   formatPercent,
@@ -42,5 +43,15 @@ describe('format', () => {
     expect(
       formatWindow('2027-01-14T22:00:00+01:00', '2027-01-15T09:00:00+01:00', 'en', 'Europe/Paris'),
     ).toBe('Thu 22:00 → Fri 09:00');
+  });
+});
+
+describe('formatMethod', () => {
+  it('fills placeholders with locale-formatted params and keeps unknown ones', () => {
+    const params = { threshold_cm: 15.0, thaw_temp_c: 0.5, window_start: '08:00' };
+    expect(formatMethod('{threshold_cm} cm, {thaw_temp_c} °C, {window_start}', params, 'fr')).toBe(
+      '15 cm, 0,5 °C, 08:00',
+    );
+    expect(formatMethod('{missing}', params, 'en')).toBe('{missing}');
   });
 });

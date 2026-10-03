@@ -48,7 +48,7 @@
         },
         "order": {
           "default": 100,
-          "description": "Sort order in the massif picker.",
+          "description": "Sort order in the site menu.",
           "title": "Order",
           "type": "integer"
         },
@@ -63,7 +63,7 @@
           "type": "array"
         },
         "skyline": {
-          "description": "Relative ridge heights (0..1), west to east, for the decorative backdrop.",
+          "description": "Relative ridge heights (0..1), west to east, for the banner illustrations.",
           "items": {
             "maximum": 1,
             "minimum": 0,

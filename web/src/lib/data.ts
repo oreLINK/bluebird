@@ -9,6 +9,7 @@ import type { DiamondMassifDaily } from './generated/diamond-massif-daily';
 
 export type MassifDaily = DiamondMassifDaily;
 export type RankingEntry = DiamondMassifDaily['kpis'][string]['ranking'][number];
+export type StationInfo = DiamondMassifDaily['stations'][string];
 
 export const SUPPORTED_SCHEMA_VERSION = 1;
 
@@ -39,10 +40,4 @@ export async function loadMassif(
 /** Today's date (YYYY-MM-DD) in a given IANA timezone. */
 export function todayIn(timeZone: string, now: Date = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone }).format(now);
-}
-
-/** Best probability of a KPI across stations (0 when absent). */
-export function maxProbability(payload: MassifDaily | null | undefined, kpiId: string): number {
-  const ranking = payload?.kpis[kpiId]?.ranking ?? [];
-  return ranking.reduce((max, entry) => Math.max(max, entry.probability), 0);
 }

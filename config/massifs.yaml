@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=./schemas/massifs.schema.json
 #
-# Mountain ranges ("massifs") shown in the massif picker, sorted by `order`.
+# Mountain ranges ("massifs") listed in the site menu, sorted by `order`.
 #
 # To add a massif:
 #   1. Add an entry below.
@@ -15,5 +15,5 @@ massifs:
     # [min_lon, min_lat, max_lon, max_lat]
     bbox: [-1.0, 42.4, 2.3, 43.1]
     # Relative ridge heights (0..1), west to east. Purely decorative: the
-    # frontend draws the mountain backdrop from these points.
+    # frontend draws the ridgelines of the tile banner illustrations from them.
     skyline: [0.32, 0.46, 0.4, 0.62, 0.52, 0.78, 0.58, 0.7, 0.94, 0.66, 0.6, 0.82, 0.5, 0.56, 0.38]

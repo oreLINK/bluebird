@@ -74,3 +74,30 @@ def test_committed_reference_files_cover_every_station(repo_config: Config) -> N
     assert domains is not None
     stations = {ref.id for ref in repo_config.station_refs()}
     assert set(domains["station_id"]) == stations, "a station has no piste or lift"
+
+
+def test_kpi_filters_must_exist_and_every_filter_must_match_a_kpi(tmp_path: Path) -> None:
+    config_dir = tiny_config_dir(tmp_path)
+    kpis = (config_dir / "kpis.yaml").read_text(encoding="utf-8")
+    (config_dir / "kpis.yaml").write_text(kpis.replace("filters: [snow]", "filters: [snw]"))
+    with pytest.raises(ConfigError) as error:
+        load_config(config_dir)
+    assert "KPI 'snowfall_chance' references unknown filter 'snw'" in str(error.value)
+    assert "filter 'snow' matches no enabled KPI" in str(error.value)
+
+
+def test_method_placeholders_must_be_kpi_params(tmp_path: Path) -> None:
+    config_dir = tiny_config_dir(tmp_path)
+    kpis = (config_dir / "kpis.yaml").read_text(encoding="utf-8")
+    kpis = kpis.replace(
+        "donnent au moins {threshold_cm} cm.", "donnent au moins {threshold} cm.", 1
+    )
+    (config_dir / "kpis.yaml").write_text(kpis, encoding="utf-8")
+    with pytest.raises(ConfigError, match=r"method \(fr\) uses '\{threshold\}'"):
+        load_config(config_dir)
+
+
+def test_short_name_is_published_with_a_fallback(repo_config: Config) -> None:
+    refs = {ref.id: ref.station for ref in repo_config.station_refs()}
+    assert refs["cauterets"].short_name == "Cauterets"
+    assert all(len(s.short_name or s.name) <= 20 or s.short_name is None for s in refs.values())

@@ -1,0 +1,12 @@
+# Credits of the photos in this folder, displayed on the banner.
+# Key: path relative to this folder, without extension.
+# Every photo needs the right to be published on the site (own photo,
+# public domain, or a licence such as CC BY / CC BY-SA, which requires the
+# author to be credited here).
+#
+# Example:
+# pyrenees/cauterets/cauterets_1:
+#   author: Jane Doe
+#   license: CC BY-SA 4.0
+#   url: https://commons.wikimedia.org/wiki/File:Example.jpg
+{}

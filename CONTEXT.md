@@ -18,7 +18,9 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 - First massif: Pyrenees, 18 stations. Three KPIs: `snowfall_chance`,
   `onpiste_powder_chance`, `offpiste_powder_chance`.
 - The UI mimics a sports-betting page: one tile per KPI, stations ranked by
-  descending probability. Style: frosted "Liquid Glass" with a winter theme.
+  descending probability. Style: betting-app look (Betclic-like) in dark
+  blue, light blue and white, sober plain background, no background animation.
+  Header: logo + title left, menu (massif, language) right, filter bar below.
 - UI languages: French (default) and English. **All code, comments, docs and
   commit messages are in English.** User-facing strings are in both languages.
 - Hosting and storage: **GitHub only** (Pages + the `gh-pages` branch). No
@@ -30,6 +32,7 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 |---|---|
 | `AGENTS.md` | Mandatory rules for AI agents, applied on every prompt. |
 | `CLAUDE.md` | Imports `AGENTS.md` and `CONTEXT.md` for Claude Code. |
+| `config/filters.yaml` | Filter bar chips; KPIs opt in with `filters: [id]` in `kpis.yaml`. |
 | `config/*.yaml`, `config/stations/*.yaml` | Single source of truth for massifs, stations, KPIs, tiles, layout, sources. Human-edited. |
 | `config/reference/<dataset>/<massif>.geojson` | **Fetched** reference data (pistes, lifts) written by `bluebird reference`, committed via PR. Never edit by hand. |
 | `config/schemas/*.schema.json` | **Generated** by `uv run bluebird schemas`. Never edit by hand. |
@@ -49,8 +52,19 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 | `web/src/lib/data.ts` | Fetches `./data/diamond/<massif>/latest.json`. |
 | `web/src/lib/i18n/` | `core.ts` (pure), `i18n.svelte.ts` (reactive store), `fr.json`, `en.json`. |
 | `web/src/lib/generated/` | **Generated** TS types (`npm run gen:types`). Never edit by hand. |
-| `web/src/tiles/registry.ts` | Tile type id → Svelte component. |
-| `web/src/styles/` | `tokens.css` (theme tokens, light/dark), `glass.css`, `base.css`. |
+| `web/src/tiles/registry.ts` | Tile type id → Svelte component (`xyz` → `TileXyz.svelte`, tested). |
+| `web/src/tiles/TileBanner.svelte` | Type `banner`: banner (photo or illustration), top stations as odds buttons, "see all". |
+| `web/src/tiles/TileBannerFull.svelte` | Type `banner_full`: photo or illustration fills the card behind title and odds. |
+| `web/src/tiles/bannerModel.ts`, `OddsRow.svelte`, `RankingMore.svelte` | Shared by both banner tile types. |
+| `web/src/tiles/FlipCard.svelte`, `KpiBack.svelte` | Two-sided card of every tile; front = banner, title, odds (no description); back = one section each for description, time window, method, reliability, update, sources. |
+| `web/src/lib/transitions.ts` | `arrive` / `leave` tile transitions and `motion()` (reduced-motion aware). |
+| `web/src/lib/photos.ts`, `web/src/assets/photos/` | Banner photos `<massif>/<station_id>/<station_id>_<n>.*` (`photo: leader` draws one at random per page load; also `none` / `<path>`) and `credits.yaml`. |
+| `web/src/components/AppMenu.svelte`, `FilterBar.svelte`, `Logo.svelte` | Side menu (blur, scroll lock, inert page), filter bar, logo. |
+| `web/src/tiles/TileRanking.svelte` | Type `ranking`: compact list (wrapped in `TileShell`). |
+| `web/src/tiles/StationRow.svelte`, `StationDetails.svelte` | Shared station row and details panel. |
+| `web/src/components/BannerArt.svelte` | Static SVG banner scenes (`snowfall`, `piste`, `offpiste`, `mountain`). |
+| `web/src/lib/ranking.ts` | Pure ranking helpers: `sharedWindow`, `splitTop`, `reliability`. |
+| `web/src/styles/` | `tokens.css` (role colour tokens, light/dark), `base.css` (page, `.card` frame), `glass.css` (header only). |
 | `web/public/data/diamond/` | Demo data for local dev only, produced by `uv run bluebird demo`. |
 | `scripts/ci/publish-gh-pages.sh` | The only way anything is written to `gh-pages` (used by workflows). |
 | `scripts/setup-github.sh` | One-time GitHub setup, run by the human owner. |
@@ -116,14 +130,29 @@ reference files are committed to `main` through a pull request.
     bronze layer; keep it that way.
 11. **Frontend uses relative URLs** (`base: './'`) so it works under any Pages path.
 12. **Accessibility.** Keep `prefers-reduced-motion` / `prefers-reduced-transparency`
-    handling, ≥ 4.5:1 text contrast (see `--prob-*` tokens), real `<button>`s
-    with `aria-*` state.
+    handling, ≥ 4.5:1 text contrast (text uses `--ink*`, `--pill-*`,
+    `--status-*`; `--prob-*` colours are for bars only), real `<button>`s with
+    `aria-*` state.
 13. **Reference data is never fetched by the daily run.** Sources with
     `schedule: reference` are refused by `bluebird run`; they are refreshed by
     `bluebird reference`, which never overwrites a file when the fetch fails or
     a massif has no rows. Their Transformer output must be deterministic so
     refresh diffs stay reviewable. Read them with `ctx.reference()`, never
     `ctx.silver()`.
+14. **Sober design.** Components use role tokens from `tokens.css`, never raw
+    colours. No background animation; the page background stays plain.
+15. **Fonts and photos are self-hosted.** Fonts come from `@fontsource`
+    packages, never a CDN. Every photo needs publication rights and a
+    `credits.yaml` entry; never commit a photo without them.
+16. **Equal tiles, two faces.** Banner tiles keep the same collapsed size
+    (`--tile-*` tokens in `base.css`); new tile types must too. Every tile is a
+    `FlipCard`; interactive content inside a tile must be a real button/link or
+    carry `data-no-flip`, otherwise a tap on it flips the card. The `.card`
+    frame (striped corners) belongs to each face, never to the static wrapper,
+    so it rotates with the card.
+17. **KPI method text** uses only `{param}` placeholders that exist in the
+    KPI `params` (`bluebird validate` checks it), so the explanation on the
+    tile back always matches the maths.
 
 ## 5. Git rules for agents
 
@@ -168,14 +197,16 @@ npm run dev
 
 | Task | Files to touch | Then run |
 |---|---|---|
-| Add a station | `config/stations/<massif>.yaml` | `bluebird reference --massif <massif>`, `bluebird validate` |
+| Add a station | `config/stations/<massif>.yaml` (with `short_name`), folder `web/src/assets/photos/<massif>/<id>/.gitkeep` | `bluebird reference --massif <massif>`, `bluebird validate`, `npm test` |
 | Add a massif | `config/massifs.yaml`, new `config/stations/<id>.yaml`, optional `layout.yaml` override | `bluebird reference --massif <id>`, `bluebird validate`, `bluebird demo` |
 | Add reference data | `bronze/extractor_<x>.py`, `silver/transformer_<x>.py` with `reference_suffix`, `reference_file`, `read_reference`; source with `schedule: reference` | `bluebird reference`, `pytest`, commit `config/reference/` |
 | Add a source | `bronze/extractor_<x>.py`, `silver/transformer_<x>.py`, `config/sources.yaml` (+ attribution), tests | `bluebird validate`, `pytest` |
-| Add a KPI | `gold/aggregator_<x>.py`, `config/kpis.yaml` (name, description, params, drivers), `config/tiles.yaml`, `config/layout.yaml`, tests | `bluebird validate`, `pytest`, `bluebird demo` |
-| Add a tile type | `web/src/tiles/<X>Tile.svelte`, `web/src/tiles/registry.ts`, `config/tiles.yaml` | `npm run check`, `npm test` |
+| Add a KPI | `gold/aggregator_<x>.py`, `config/kpis.yaml` (name, description, `method` with `{param}` placeholders, params, drivers, filters), `config/tiles.yaml`, `config/layout.yaml`, tests | `bluebird validate`, `pytest`, `bluebird demo` |
+| Add a tile type | `web/src/tiles/Tile<Xyz>.svelte`, `web/src/tiles/registry.ts` (id `xyz`), `config/tiles.yaml` | `npm run check`, `npm test`, 390 px screenshots |
 | Change the diamond shape | `diamond/models.py`, displayer, frontend usage | `bluebird schemas`, `npm run gen:types`, `bluebird demo`, all tests |
 | Reorder tiles | `config/layout.yaml` | `bluebird validate`, `npm test` |
+| Add a filter | `config/filters.yaml`, `filters: [id]` on KPIs in `config/kpis.yaml` | `bluebird validate`, `bluebird schemas`, `npm test` |
+| Add a banner photo | `web/src/assets/photos/<path>.webp`, `credits.yaml`, tile `photo` option | `npm run build`, 390 px screenshots |
 | Add a UI string | `web/src/lib/i18n/fr.json` **and** `en.json` | `npm test` |
 
 ## 8. Pitfalls already met
@@ -201,10 +232,19 @@ npm run dev
   Quote such values or use a dash.
 - **SVG and CSS variables.** `var()` does not work in SVG presentation
   attributes (`fill="var(--x)"`); use `style="fill: var(--x)"`.
+- **SVG gradient ids.** Several inline SVGs on one page share the document's id
+  space; a fixed `id="sky"` makes every banner use the first one. Prefix ids
+  with `$props.id()` (see `BannerArt.svelte`).
+- **Variable named `window`** in a component shadows the global object; use
+  another name (`timeWindow`).
 - **TypeScript is pinned to 6.x.** svelte-check does not support TypeScript 7
   alone yet.
 - **Headless Chrome** enforces a ~500 px minimum window width; screenshot the
   site inside a 390 px iframe to check mobile layout.
+- **Headless Chrome virtual time** (`--virtual-time-budget`) never completes
+  Svelte `out:` transitions: leaving elements stay in the DOM and filters look
+  broken. Test transitions in real time by driving Chrome through the DevTools
+  protocol (`--remote-debugging-port`, `Runtime.evaluate` from a Node script).
 - **Generated files** (`config/schemas`, `web/src/lib/generated`) are checked
   in CI; regenerate rather than hand-edit.
 - **GitHub default branch.** GitHub makes the first pushed branch the default.

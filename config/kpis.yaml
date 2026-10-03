@@ -7,13 +7,29 @@
 # `drivers` describes the explanatory values an Aggregator attaches to each
 # result. The frontend shows them, with these labels, when a row is expanded.
 # A driver produced by the Aggregator but not listed here is not displayed.
+#
+# `filters` lists the filter-bar chips (config/filters.yaml) the KPI appears under.
+# `method` explains the computation on the back of the tiles; `{param}`
+# placeholders are filled with the values of `params`, so text and maths agree.
 kpis:
   - id: snowfall_chance
     aggregator: snowfall_chance
+    filters: [snow]
     name: { fr: Chute de neige, en: Snowfall }
     description:
       fr: Probabilité qu'il neige pendant la journée de ski, à mi-altitude.
       en: Probability of snowfall during the ski day, at mid-mountain.
+    method:
+      fr: >-
+        Pour chaque station, Bluebird additionne la neige prévue entre {window_start}
+        et {window_end} à mi-altitude dans chacun des 91 scénarios des prévisions
+        d'ensemble (ECMWF et DWD). La probabilité est la part des scénarios qui
+        donnent au moins {threshold_cm} cm.
+      en: >-
+        For each resort, Bluebird adds up the snow forecast between {window_start}
+        and {window_end} at mid-mountain in each of the 91 ensemble forecast
+        scenarios (ECMWF and DWD). The probability is the share of scenarios
+        giving at least {threshold_cm} cm.
     params:
       band: mid
       window_start: "08:00"
@@ -27,10 +43,24 @@ kpis:
 
   - id: offpiste_powder_chance
     aggregator: offpiste_powder_chance
+    filters: [powder]
     name: { fr: Poudreuse hors-piste, en: Off-piste powder }
     description:
       fr: Probabilité de trouver de la poudreuse fraîche hors-piste à l'ouverture, au sommet.
       en: Probability of fresh off-piste powder at opening time, near the summit.
+    method:
+      fr: >-
+        Pour chaque scénario, au sommet : la neige des {lookback_hours} heures avant
+        l'ouverture doit atteindre {threshold_cm} cm. Le score baisse avec le vent
+        des {wind_lookback_hours} dernières heures (au-delà de {wind_ok_kmh} km/h, la
+        neige est soufflée) et en cas de redoux au-dessus de {thaw_temp_c} °C. La
+        probabilité est le score moyen des scénarios.
+      en: >-
+        For each scenario, near the summit: snow over the {lookback_hours} hours
+        before opening must reach {threshold_cm} cm. The score drops with wind
+        over the last {wind_lookback_hours} hours (above {wind_ok_kmh} km/h, snow
+        is blown away) and with a thaw above {thaw_temp_c} °C. The probability is
+        the average score of the scenarios.
     params:
       band: summit
       lookback_hours: 36
@@ -50,10 +80,22 @@ kpis:
 
   - id: onpiste_powder_chance
     aggregator: onpiste_powder_chance
+    filters: [powder]
     name: { fr: Poudreuse sur piste, en: On-piste powder }
     description:
       fr: Probabilité que la neige tombée après le damage recouvre les pistes à l'ouverture.
       en: Probability that snow fallen after grooming covers the pistes at opening time.
+    method:
+      fr: >-
+        Pour chaque station, Bluebird additionne la neige prévue entre la fin du
+        damage et l'ouverture des remontées, à mi-altitude, dans chacun des 91
+        scénarios. La probabilité est la part des scénarios qui donnent au moins
+        {threshold_cm} cm sur les pistes damées.
+      en: >-
+        For each resort, Bluebird adds up the snow forecast between the end of
+        grooming and lifts opening, at mid-mountain, in each of the 91 scenarios.
+        The probability is the share of scenarios giving at least {threshold_cm}
+        cm on the groomed pistes.
     params:
       band: mid
       threshold_cm: 5.0

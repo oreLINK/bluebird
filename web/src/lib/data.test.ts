@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { DataError, type MassifDaily, latestUrl, loadMassif, maxProbability, todayIn } from './data';
+import { DataError, type MassifDaily, latestUrl, loadMassif, todayIn } from './data';
 
 const demo = JSON.parse(
   readFileSync(new URL('../../public/data/diamond/pyrenees/latest.json', import.meta.url), 'utf8'),
@@ -30,11 +30,6 @@ describe('data', () => {
       const probabilities = kpi.ranking.map((r) => r.probability);
       expect(probabilities).toEqual([...probabilities].sort((a, b) => b - a));
     }
-  });
-
-  it('computes the best probability of a KPI', () => {
-    expect(maxProbability(demo, 'snowfall_chance')).toBeGreaterThan(0);
-    expect(maxProbability(null, 'snowfall_chance')).toBe(0);
   });
 
   it('computes today in a timezone', () => {

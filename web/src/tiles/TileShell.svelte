@@ -1,6 +1,7 @@
 <!--
-  Shared container of every tile: frosted glass card with an icon, a title,
-  an optional subtitle, the tile body and an optional footer.
+  Card container for list-style tiles (TileRanking, TileSkeleton): the shared
+  card frame, an icon chip, a title, an optional subtitle, the body and an
+  optional footer. TileBanner builds its own layout on the same card frame.
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -12,6 +13,7 @@
     subtitle = '',
     icon = null,
     busy = false,
+    framed = true,
     children,
     footer,
   }: {
@@ -20,15 +22,17 @@
     subtitle?: string;
     icon?: string | null;
     busy?: boolean;
+    /** false: render only the content, for use inside FlipCard. */
+    framed?: boolean;
     children: Snippet;
     footer?: Snippet;
   } = $props();
 </script>
 
-<section class="tile glass" aria-labelledby="{id}-title" aria-busy={busy}>
+{#snippet content()}
   <header class="head">
     {#if icon}
-      <span class="icon"><Icon name={icon} size={22} /></span>
+      <span class="icon"><Icon name={icon} size={20} /></span>
     {/if}
     <div class="titles">
       <h2 id="{id}-title">{title}</h2>
@@ -41,41 +45,41 @@
   {#if footer}
     <footer class="foot">{@render footer()}</footer>
   {/if}
-</section>
+{/snippet}
+
+{#if framed}
+  <section class="card" aria-labelledby="{id}-title" aria-busy={busy}>
+    <div class="card-body">{@render content()}</div>
+  </section>
+{:else}
+  {@render content()}
+{/if}
 
 <style>
-  .tile {
-    display: flex;
-    flex-direction: column;
-    border-radius: var(--radius-l);
-    padding: 16px 14px 14px;
-    min-width: 0;
-  }
-
   .head {
     display: flex;
     align-items: flex-start;
     gap: 12px;
-    padding: 0 4px 12px;
+    padding: 14px 56px 10px 14px;
   }
 
   .icon {
     display: grid;
     place-items: center;
     flex: none;
-    width: 40px;
-    height: 40px;
-    border-radius: 14px;
-    color: var(--accent);
-    background: var(--glass-bg-strong);
-    border: 1px solid var(--glass-border);
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    color: var(--pill-ink);
+    background: var(--pill-bg);
   }
 
   h2 {
-    font-size: 1.125rem;
-    font-weight: 700;
-    letter-spacing: -0.015em;
-    line-height: 1.25;
+    font-family: var(--font-display);
+    font-size: 1.375rem;
+    font-style: italic;
+    font-weight: 800;
+    line-height: 1.15;
   }
 
   .titles p {
@@ -86,10 +90,6 @@
   }
 
   .body {
-    flex: 1;
-  }
-
-  .foot {
-    padding: 10px 4px 0;
+    padding: 0 14px 6px;
   }
 </style>

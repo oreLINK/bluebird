@@ -10,6 +10,7 @@ them to validate YAML, and the frontend generates its TypeScript types from them
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from dataclasses import dataclass
 from datetime import time
@@ -42,6 +43,9 @@ Band = Literal["base", "mid", "summit"]
 """Elevation band of a station at which weather is sampled."""
 
 Aspect = Literal["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+
+
+_PLACEHOLDER = re.compile(r"\{(\w+)\}")
 
 
 def parse_local_time(value: str) -> time:
@@ -77,13 +81,13 @@ class Massif(StrictModel):
     name: Localized
     timezone: str = "Europe/Paris"
     enabled: bool = True
-    order: int = Field(default=100, description="Sort order in the massif picker.")
+    order: int = Field(default=100, description="Sort order in the site menu.")
     bbox: list[float] = Field(
         min_length=4, max_length=4, description="[min_lon, min_lat, max_lon, max_lat]"
     )
     skyline: list[Annotated[float, Field(ge=0, le=1)]] = Field(
         default_factory=list,
-        description="Relative ridge heights (0..1), west to east, for the decorative backdrop.",
+        description="Relative ridge heights (0..1), west to east, for the banner illustrations.",
     )
 
     @field_validator("timezone")
@@ -138,6 +142,12 @@ class Station(StrictModel):
 
     id: Slug
     name: str = Field(min_length=1)
+    short_name: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=20,
+        description="Compact name displayed in the tiles; defaults to `name`.",
+    )
     lat: float = Field(ge=-90, le=90)
     lon: float = Field(ge=-180, le=180)
     elevation: Elevation
@@ -195,8 +205,19 @@ class Kpi(StrictModel):
     enabled: bool = True
     name: Localized
     description: Localized
+    method: Localized | None = Field(
+        default=None,
+        description=(
+            "How the KPI is computed, in plain words, shown on the back of its tiles. "
+            "`{param}` placeholders are replaced by the values of `params`."
+        ),
+    )
     params: dict[str, Any] = Field(default_factory=dict)
     drivers: dict[str, DriverSpec] = Field(default_factory=dict)
+    filters: list[Slug] = Field(
+        default_factory=list,
+        description="Ids of the filters (config/filters.yaml) this KPI appears under.",
+    )
 
 
 class KpisFile(StrictModel):
@@ -223,6 +244,21 @@ class TilesFile(StrictModel):
     """Schema of ``config/tiles.yaml``."""
 
     tiles: list[Tile]
+
+
+class Filter(StrictModel):
+    """A chip of the filter bar: shows the tiles of the KPIs tagged with its id."""
+
+    id: Slug
+    name: Localized
+    icon: str | None = None
+    all: bool = Field(default=False, description="Show every tile, whatever its KPIs.")
+
+
+class FiltersFile(StrictModel):
+    """Schema of ``config/filters.yaml``: the filter bar, in display order."""
+
+    filters: list[Filter] = Field(min_length=1)
 
 
 class LayoutFile(StrictModel):
@@ -279,6 +315,7 @@ class Config:
     massifs: list[Massif]
     stations: dict[str, StationsFile]
     kpis: list[Kpi]
+    filters: list[Filter]
     tiles: list[Tile]
     layout: LayoutFile
     sources: list[Source]
@@ -354,12 +391,33 @@ class Config:
         duplicates("station", [s.id for f in self.stations.values() for s in f.stations])
         duplicates("KPI", [k.id for k in self.kpis])
         duplicates("tile", [t.id for t in self.tiles])
+        duplicates("filter", [f.id for f in self.filters])
         duplicates("source", [s.id for s in self.sources])
 
         for massif_id in sorted(massif_ids - self.stations.keys()):
             errors.append(f"massif '{massif_id}' has no config/stations/{massif_id}.yaml")
         for file_id in sorted(self.stations.keys() - massif_ids):
             errors.append(f"config/stations/{file_id}.yaml does not match any massif id")
+
+        for kpi in self.kpis:
+            if kpi.method is None:
+                continue
+            for language, text in kpi.method.model_dump().items():
+                for placeholder in sorted(set(_PLACEHOLDER.findall(text)) - kpi.params.keys()):
+                    errors.append(
+                        f"KPI '{kpi.id}' method ({language}) uses '{{{placeholder}}}', "
+                        "which is not one of its params"
+                    )
+
+        filter_ids = {f.id for f in self.filters}
+        for kpi in self.kpis:
+            for filter_id in kpi.filters:
+                if filter_id not in filter_ids:
+                    errors.append(f"KPI '{kpi.id}' references unknown filter '{filter_id}'")
+        used = {fid for kpi in self.kpis if kpi.enabled for fid in kpi.filters}
+        for flt in self.filters:
+            if not flt.all and flt.id not in used:
+                errors.append(f"filter '{flt.id}' matches no enabled KPI")
 
         for tile in self.tiles:
             for kpi_id in tile.kpis:
@@ -409,6 +467,7 @@ def load_config(config_dir: Path | None = None) -> Config:
             for path in sorted(stations_dir.glob("*.yaml"))
         },
         kpis=_read_model(root / "kpis.yaml", KpisFile).kpis,
+        filters=_read_model(root / "filters.yaml", FiltersFile).filters,
         tiles=_read_model(root / "tiles.yaml", TilesFile).tiles,
         layout=_read_model(root / "layout.yaml", LayoutFile),
         sources=_read_model(root / "sources.yaml", SourcesFile).sources,

@@ -1,37 +1,56 @@
 # yaml-language-server: $schema=./schemas/tiles.schema.json
 #
 # Tiles are the KPI containers displayed on the page.
-#   type:    frontend component, registered in web/src/tiles/registry.ts
+#   type:    frontend component, registered in web/src/tiles/registry.ts:
+#              banner       betting-app card: banner (photo or illustration),
+#                           top stations as odds buttons, "see all" for the rest
+#                           (TileBanner.svelte)
+#              banner_full  same, with the photo or illustration filling the
+#                           whole card behind the title and odds (TileBannerFull)
+#              ranking  compact list of every station (TileRanking.svelte)
 #   kpis:    KPI ids (config/kpis.yaml) the tile reads. A ranking tile uses one.
 #   title:   optional; defaults to the first KPI's name.
 #   icon:    optional; one of the icons in web/src/components/Icon.svelte.
-#   options: free-form, interpreted by the tile component.
+#   options: free-form, interpreted by the tile component:
+#              banner, banner_full:
+#                       top (1-3, default 3), show_odds,
+#                       scene (snowfall | piste | offpiste | mountain; default from icon),
+#                       photo (none | leader | <path in web/src/assets/photos>);
+#                       `leader` shows the photo of the ski area ranked first and
+#                       falls back to the illustration when there is none.
+#              ranking: visible_rows (default 5), show_odds
 #
 # Tile order on the page is defined in config/layout.yaml, not here.
 tiles:
   - id: snowfall_today
-    type: ranking
+    type: banner_full
     kpis: [snowfall_chance]
     title: { fr: Neige aujourd'hui, en: Snow today }
     icon: snowflake
     options:
-      visible_rows: 5
+      top: 3
       show_odds: false
+      photo: leader
+      scene: snowfall
 
   - id: onpiste_powder
-    type: ranking
+    type: banner
     kpis: [onpiste_powder_chance]
     title: { fr: Poudreuse sur piste, en: Powder on piste }
     icon: piste
     options:
-      visible_rows: 5
+      top: 3
       show_odds: false
+      photo: leader
+      scene: piste
 
   - id: offpiste_powder
-    type: ranking
+    type: banner
     kpis: [offpiste_powder_chance]
     title: { fr: Poudreuse hors-piste, en: Off-piste powder }
     icon: mountain
     options:
-      visible_rows: 5
+      top: 3
       show_odds: false
+      photo: leader
+      scene: offpiste

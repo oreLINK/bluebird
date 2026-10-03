@@ -7,6 +7,10 @@ export type GeneratedAt = string;
 export type Timezone = string;
 export type Id = string;
 export type Name = string;
+/**
+ * Compact name for tiles (falls back to `name`).
+ */
+export type ShortName = string;
 export type Lat = number;
 export type Lon = number;
 export type Base = number;
@@ -57,6 +61,7 @@ export interface Stations {
 export interface DiamondStation {
   id: Id;
   name: Name;
+  short_name: ShortName;
   lat: Lat;
   lon: Lon;
   elevation: DiamondElevation;
