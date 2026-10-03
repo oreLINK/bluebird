@@ -28,6 +28,7 @@ class DiamondElevation(DiamondModel):
 class DiamondStation(DiamondModel):
     id: str
     name: str
+    short_name: str = Field(description="Compact name for tiles (falls back to `name`).")
     lat: float
     lon: float
     elevation: DiamondElevation

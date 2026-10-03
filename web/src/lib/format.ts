@@ -1,5 +1,5 @@
 /** Locale-aware formatting helpers (pure, unit-tested). */
-import type { Locale } from './i18n/core';
+import { type Locale, interpolate } from './i18n/core';
 
 const INTL_LOCALE: Record<Locale, string> = { fr: 'fr-FR', en: 'en-GB' };
 
@@ -79,4 +79,21 @@ export function formatWindow(
   if (sameDay) return `${time(start)} → ${time(end)}`;
   const day = new Intl.DateTimeFormat(INTL_LOCALE[locale], { weekday: 'short', timeZone });
   return `${day.format(start)} ${time(start)} → ${day.format(end)} ${time(end)}`;
+}
+
+/**
+ * Fill the `{param}` placeholders of a KPI method text with its params,
+ * numbers formatted for the locale (15.0 → "15", 0.5 → "0,5" in French).
+ */
+export function formatMethod(
+  text: string,
+  params: Record<string, unknown> | undefined,
+  locale: Locale,
+): string {
+  const vars: Record<string, string> = {};
+  for (const [key, value] of Object.entries(params ?? {})) {
+    if (typeof value === 'number') vars[key] = formatNumber(value, locale, 2);
+    else if (typeof value === 'string') vars[key] = value;
+  }
+  return interpolate(text, vars);
 }

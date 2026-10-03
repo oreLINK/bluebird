@@ -1,44 +1,72 @@
-<!-- Forecast date and update time, shown on the sky above the tiles. -->
+<!--
+  Dark-blue strip above the tiles (where betting apps show their promo
+  banner): forecast date, update time and a notice when data is not today's.
+-->
 <script lang="ts">
   import { type MassifDaily, todayIn } from '../lib/data';
   import { formatLongDate, formatTime } from '../lib/format';
   import { i18n } from '../lib/i18n/i18n.svelte';
   import Icon from './Icon.svelte';
 
-  let { data }: { data: MassifDaily } = $props();
+  let { data, massifName = '' }: { data: MassifDaily; massifName?: string } = $props();
 
   const stale = $derived(data.forecast_date !== todayIn(data.timezone));
   const date = $derived(formatLongDate(data.forecast_date, i18n.locale));
 </script>
 
-<div class="status">
-  <p class="date">{i18n.t('status.forecastFor', { date })}</p>
-  <p class="updated tabular">
-    {i18n.t('status.updatedAt', {
-      time: formatTime(data.generated_at, i18n.locale, data.timezone),
-    })}
-  </p>
-  {#if stale}
-    <p class="stale glass" role="status">
-      <Icon name="info" size={18} />
-      <span>{i18n.t('status.stale', { date })}</span>
+<div class="status" role="status">
+  <div class="text">
+    {#if massifName}<p class="massif">{massifName}</p>{/if}
+    <p class="date">{i18n.t('status.forecastFor', { date })}</p>
+    <p class="updated tabular">
+      {i18n.t('status.updatedAt', {
+        time: formatTime(data.generated_at, i18n.locale, data.timezone),
+      })}
     </p>
-  {/if}
+    {#if stale}
+      <p class="stale">
+        <Icon name="info" size={16} />
+        <span>{i18n.t('status.stale', { date })}</span>
+      </p>
+    {/if}
+  </div>
+  <span class="flake" aria-hidden="true"><Icon name="snowflake" size={44} /></span>
 </div>
 
 <style>
   .status {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 14px 0 16px;
+    padding: 14px 16px;
+    overflow: hidden;
+    border-radius: var(--radius-l);
+    background: var(--status-bg);
+    color: var(--status-ink);
+  }
+
+  .text {
     display: grid;
     gap: 2px;
-    padding: 18px 4px 14px;
-    color: var(--ink-on-sky);
+    min-width: 0;
+  }
+
+  .massif {
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--sky);
   }
 
   .date {
-    font-size: 1.375rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    line-height: 1.2;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 800;
+    font-style: italic;
+    line-height: 1.1;
   }
 
   .date::first-letter {
@@ -46,18 +74,23 @@
   }
 
   .updated {
-    font-size: 0.875rem;
-    color: var(--ink-on-sky-soft);
+    font-size: 0.8125rem;
+    color: var(--status-soft);
   }
 
   .stale {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     align-items: flex-start;
-    margin-top: 10px;
-    padding: 10px 12px;
-    border-radius: var(--radius-m);
-    color: var(--ink);
+    margin-top: 6px;
     font-size: 0.8125rem;
+    color: var(--status-soft);
+  }
+
+  .flake {
+    flex: none;
+    margin-left: auto;
+    color: var(--sky);
+    opacity: 0.9;
   }
 </style>

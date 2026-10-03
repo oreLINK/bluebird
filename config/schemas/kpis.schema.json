@@ -61,6 +61,18 @@
         "description": {
           "$ref": "#/$defs/Localized"
         },
+        "method": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Localized"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "How the KPI is computed, in plain words, shown on the back of its tiles. `{param}` placeholders are replaced by the values of `params`."
+        },
         "params": {
           "additionalProperties": true,
           "title": "Params",
@@ -72,6 +84,15 @@
           },
           "title": "Drivers",
           "type": "object"
+        },
+        "filters": {
+          "description": "Ids of the filters (config/filters.yaml) this KPI appears under.",
+          "items": {
+            "pattern": "^[a-z0-9]+(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "title": "Filters",
+          "type": "array"
         }
       },
       "required": [

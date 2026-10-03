@@ -1,116 +1,179 @@
 /*
- * Design tokens. Winter theme:
- *   - light = "bluebird day": deep blue sky after a snowfall, snow-white ridges.
- *   - dark  = alpine night: navy sky, moonlit ridges.
- * The site follows the device setting; `data-theme` on <html> can force one.
+ * Design tokens. Palette: dark blue, light blue and white, on a plain, sober
+ * page background (no gradient, no animation). Light mode follows the
+ * "betting app" look: white cards, light-blue odds buttons, dark-blue brand.
+ * Dark mode keeps the same roles on a navy page.
+ *
+ * Components use ROLE tokens (--brand, --pill-bg…), never raw colours, so a
+ * palette change happens here only. The site follows the device setting;
+ * `data-theme` on <html> can force a mode.
  */
 :root {
   color-scheme: light;
 
-  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
+  /* Self-hosted open fonts (OFL), imported in main.ts. */
+  --font-sans: 'Plus Jakarta Sans Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, sans-serif;
+  --font-display: 'Barlow Semi Condensed', 'Plus Jakarta Sans Variable', sans-serif;
 
-  /* Sky and mountains */
-  --sky-top: #0a4aa6;
-  --sky-mid: #2a7ad3;
-  --sky-bottom: #a8d3f5;
-  --ridge-far: rgba(235, 245, 255, 0.55);
-  --ridge-near: #f6faff;
-  --ridge-shade: #cfe0f2;
-  --flake: rgba(255, 255, 255, 0.92);
-  --star: transparent;
+  /* Logo wordmark (logotype: decorative, not body text) */
+  --logo-a: #0b2a5b;
+  --logo-b: #1f7ae0;
 
-  /* Text */
+  /* Menu backdrop */
+  --scrim: rgba(4, 14, 32, 0.32);
+  --scrim-solid: rgba(4, 14, 32, 0.78);
+
+  /* Page and surfaces */
+  --bg: #edf2f8;
+  --surface: #ffffff;
+  --surface-2: #f4f8fd;
+  --line: #e0e8f2;
+  --shadow: 0 1px 2px rgba(11, 42, 91, 0.06), 0 8px 24px -12px rgba(11, 42, 91, 0.28);
+
+  /* Text (all ≥ 4.5:1 on --surface) */
   --ink: #0b1f3a;
-  --ink-soft: #3a5374;
-  --ink-faint: #5f7594;
-  --ink-on-sky: #ffffff;
-  --ink-on-sky-soft: rgba(255, 255, 255, 0.86);
+  --ink-soft: #3f5373;
+  --ink-faint: #5d7190;
 
-  /* Frosted glass */
-  --glass-bg: rgba(255, 255, 255, 0.6);
-  --glass-bg-strong: rgba(255, 255, 255, 0.78);
-  --glass-solid: #eef5fc;
-  --glass-border: rgba(255, 255, 255, 0.78);
-  --glass-highlight: rgba(255, 255, 255, 0.95);
-  --glass-shadow: 0 12px 40px -14px rgba(6, 38, 88, 0.45);
-  --glass-blur: 22px;
-  --hairline: rgba(11, 31, 58, 0.08);
+  /* Brand: dark blue, with white on top */
+  --brand: #0b2a5b;
+  --on-brand: #ffffff;
+  --on-brand-soft: #c6dcf7;
+  --link: #1565c0;
 
-  /* Accent and probability scale (slate -> glacier blue, no betting red/green).
-     Both ends keep >= 4.5:1 contrast with --prob-ink, so every mix does too. */
-  --accent: #0a6fd0;
-  --accent-ink: #ffffff;
-  --prob-low: #66768c;
-  --prob-high: #0a6fd0;
-  --prob-ink: #ffffff;
-  --track: rgba(11, 31, 58, 0.08);
-  --focus: #ffd34d;
+  /* Light blue */
+  --sky: #5db4ff;
+  --stripe: #5db4ff;
 
-  --radius-l: 28px;
-  --radius-m: 18px;
-  --radius-s: 12px;
+  /* Forecast status banner (dark blue strip, like a promo banner) */
+  --status-bg: #0b2a5b;
+  --status-ink: #ffffff;
+  --status-soft: #c6dcf7;
+
+  /* Odds buttons (≥ 4.5:1 text contrast in both states) */
+  --pill-bg: #dbeeff;
+  --pill-ink: #0b2a5b;
+  --pill-border: #c3e0fb;
+  --pill-active-bg: #0b2a5b;
+  --pill-active-ink: #ffffff;
+
+  /* Probability bars (graphics only, never text) */
+  --prob-low: #a9c3e0;
+  --prob-high: #1f7ae0;
+  --track: #e4ecf5;
+
+  /* Banner illustrations */
+  --banner-sky-top: #0b2a5b;
+  --banner-sky-bottom: #3d93e8;
+  --banner-sun: #e9f5ff;
+  --banner-ridge-far: #8cc6f7;
+  --banner-ridge-near: #ffffff;
+  --banner-ridge-shade: #cfe5fa;
+  --banner-detail: #1f7ae0;
+  --banner-label-bg: rgba(5, 22, 51, 0.62);
+
+  /* Frosted header */
+  --glass-bg: rgba(255, 255, 255, 0.86);
+  --glass-solid: #ffffff;
+  --glass-border: rgba(11, 42, 91, 0.08);
+  --glass-blur: 18px;
+
+  --focus: #1f7ae0;
+  --radius-l: 20px;
+  --radius-m: 14px;
+  --radius-s: 10px;
   --gutter: 16px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
-    --sky-top: #020817;
-    --sky-mid: #0a1a38;
-    --sky-bottom: #1a3a68;
-    --ridge-far: rgba(150, 180, 225, 0.16);
-    --ridge-near: #b9cbe2;
-    --ridge-shade: #7088aa;
-    --flake: rgba(220, 235, 255, 0.7);
-    --star: rgba(255, 255, 255, 0.8);
+    --bg: #061024;
+    --surface: #0e1d38;
+    --surface-2: #132748;
+    --line: #1e355c;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.7);
     --ink: #eaf3ff;
-    --ink-soft: #b6c8e1;
-    --ink-faint: #8ea5c4;
-    --ink-on-sky: #eaf3ff;
-    --ink-on-sky-soft: rgba(234, 243, 255, 0.8);
-    --glass-bg: rgba(14, 30, 60, 0.55);
-    --glass-bg-strong: rgba(20, 40, 76, 0.75);
-    --glass-solid: #12264a;
-    --glass-border: rgba(170, 205, 255, 0.2);
-    --glass-highlight: rgba(200, 225, 255, 0.25);
-    --glass-shadow: 0 12px 40px -14px rgba(0, 0, 0, 0.7);
-    --hairline: rgba(200, 225, 255, 0.1);
-    --accent: #6cc6ff;
-    --accent-ink: #04122a;
-    --prob-low: #8ea3c0;
-    --prob-high: #6cc6ff;
-    --prob-ink: #04122a;
-    --track: rgba(200, 225, 255, 0.1);
+    --ink-soft: #b7c9e2;
+    --ink-faint: #93a9c8;
+    --brand: #5db4ff;
+    --on-brand: #04122a;
+    --on-brand-soft: #0b2a5b;
+    --link: #7cc4ff;
+    --sky: #5db4ff;
+    --stripe: #2f6fb8;
+    --status-bg: #12305f;
+    --status-ink: #eaf3ff;
+    --status-soft: #a9c8ee;
+    --pill-bg: #17315c;
+    --pill-ink: #e6f1ff;
+    --pill-border: #23447a;
+    --pill-active-bg: #5db4ff;
+    --pill-active-ink: #04122a;
+    --prob-low: #3a557d;
+    --prob-high: #5db4ff;
+    --track: #1b3157;
+    --banner-sky-top: #030b1c;
+    --banner-sky-bottom: #17427a;
+    --banner-sun: #cfe3ff;
+    --banner-ridge-far: #2f5f98;
+    --banner-ridge-near: #c9dbf0;
+    --banner-ridge-shade: #7e9bc0;
+    --banner-detail: #5db4ff;
+    --banner-label-bg: rgba(2, 10, 24, 0.7);
+    --glass-bg: rgba(14, 29, 56, 0.86);
+    --glass-solid: #0e1d38;
+    --glass-border: rgba(160, 200, 255, 0.12);
+    --logo-a: #ffffff;
+    --logo-b: #5db4ff;
+    --scrim: rgba(1, 6, 16, 0.5);
+    --scrim-solid: rgba(1, 6, 16, 0.85);
+    --focus: #7cc4ff;
   }
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --sky-top: #020817;
-  --sky-mid: #0a1a38;
-  --sky-bottom: #1a3a68;
-  --ridge-far: rgba(150, 180, 225, 0.16);
-  --ridge-near: #b9cbe2;
-  --ridge-shade: #7088aa;
-  --flake: rgba(220, 235, 255, 0.7);
-  --star: rgba(255, 255, 255, 0.8);
+  --bg: #061024;
+  --surface: #0e1d38;
+  --surface-2: #132748;
+  --line: #1e355c;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.7);
   --ink: #eaf3ff;
-  --ink-soft: #b6c8e1;
-  --ink-faint: #8ea5c4;
-  --ink-on-sky: #eaf3ff;
-  --ink-on-sky-soft: rgba(234, 243, 255, 0.8);
-  --glass-bg: rgba(14, 30, 60, 0.55);
-  --glass-bg-strong: rgba(20, 40, 76, 0.75);
-  --glass-solid: #12264a;
-  --glass-border: rgba(170, 205, 255, 0.2);
-  --glass-highlight: rgba(200, 225, 255, 0.25);
-  --glass-shadow: 0 12px 40px -14px rgba(0, 0, 0, 0.7);
-  --hairline: rgba(200, 225, 255, 0.1);
-  --accent: #6cc6ff;
-  --accent-ink: #04122a;
-  --prob-low: #8ea3c0;
-  --prob-high: #6cc6ff;
-  --prob-ink: #04122a;
-  --track: rgba(200, 225, 255, 0.1);
+  --ink-soft: #b7c9e2;
+  --ink-faint: #93a9c8;
+  --brand: #5db4ff;
+  --on-brand: #04122a;
+  --on-brand-soft: #0b2a5b;
+  --link: #7cc4ff;
+  --sky: #5db4ff;
+  --stripe: #2f6fb8;
+  --status-bg: #12305f;
+  --status-ink: #eaf3ff;
+  --status-soft: #a9c8ee;
+  --pill-bg: #17315c;
+  --pill-ink: #e6f1ff;
+  --pill-border: #23447a;
+  --pill-active-bg: #5db4ff;
+  --pill-active-ink: #04122a;
+  --prob-low: #3a557d;
+  --prob-high: #5db4ff;
+  --track: #1b3157;
+  --banner-sky-top: #030b1c;
+  --banner-sky-bottom: #17427a;
+  --banner-sun: #cfe3ff;
+  --banner-ridge-far: #2f5f98;
+  --banner-ridge-near: #c9dbf0;
+  --banner-ridge-shade: #7e9bc0;
+  --banner-detail: #5db4ff;
+  --banner-label-bg: rgba(2, 10, 24, 0.7);
+  --glass-bg: rgba(14, 29, 56, 0.86);
+  --glass-solid: #0e1d38;
+  --glass-border: rgba(160, 200, 255, 0.12);
+  --logo-a: #ffffff;
+  --logo-b: #5db4ff;
+  --scrim: rgba(1, 6, 16, 0.5);
+  --scrim-solid: rgba(1, 6, 16, 0.85);
+  --focus: #7cc4ff;
 }

@@ -1,43 +1,121 @@
-<!-- Placeholder shown in place of a tile while its data loads. -->
+<!--
+  Static placeholder shown in place of a tile while its data loads. Mirrors
+  the layout of the tile type (banner or list). No animation, on purpose.
+-->
 <script lang="ts">
   import TileShell from './TileShell.svelte';
 
-  let { id, title, icon = null }: { id: string; title: string; icon?: string | null } = $props();
+  let {
+    id,
+    title,
+    icon = null,
+    variant = 'list',
+  }: {
+    id: string;
+    title: string;
+    icon?: string | null;
+    variant?: 'banner' | 'full' | 'list';
+  } = $props();
 </script>
 
-<TileShell {id} {title} {icon} busy>
-  <div class="rows" aria-hidden="true">
-    {#each [0, 1, 2, 3, 4] as i (i)}
-      <span class="row" style="animation-delay: {i * 80}ms"></span>
-    {/each}
-  </div>
-</TileShell>
+{#if variant === 'full'}
+  <section class="card" aria-labelledby="{id}-title" aria-busy="true">
+    <div class="card-body">
+      <div class="full">
+        <h2 id="{id}-title">{title}</h2>
+        <div class="odds" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+      <div class="more" aria-hidden="true"></div>
+    </div>
+  </section>
+{:else if variant === 'banner'}
+  <section class="card" aria-labelledby="{id}-title" aria-busy="true">
+    <div class="card-body">
+      <div class="banner"></div>
+      <div class="content">
+        <h2 id="{id}-title">{title}</h2>
+        <div class="odds" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+      <div class="more" aria-hidden="true"></div>
+    </div>
+  </section>
+{:else}
+  <TileShell {id} {title} {icon} busy>
+    <div class="rows" aria-hidden="true">
+      {#each [0, 1, 2, 3, 4] as i (i)}
+        <span></span>
+      {/each}
+    </div>
+  </TileShell>
+{/if}
 
 <style>
+  .full {
+    display: grid;
+    align-content: end;
+    gap: 14px;
+    height: var(--tile-front-h);
+    padding: 14px;
+    text-align: center;
+    background: var(--track);
+  }
+
+  .banner {
+    height: var(--tile-banner-h);
+    background: var(--track);
+  }
+
+  .content {
+    display: grid;
+    align-content: start;
+    gap: 14px;
+    height: calc(var(--tile-front-h) - var(--tile-banner-h));
+    padding: 14px;
+    text-align: center;
+  }
+
+  .more {
+    height: var(--tile-more-h);
+    border-top: 1px solid var(--line);
+  }
+
+  h2 {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-style: italic;
+    font-weight: 800;
+    color: var(--ink-faint);
+  }
+
+  .full .odds span {
+    background: var(--surface);
+  }
+
+  .odds {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .odds span,
+  .rows span {
+    display: block;
+    height: 4.25rem;
+    border-radius: var(--radius-m);
+    background: var(--track);
+  }
+
   .rows {
     display: grid;
-    gap: 6px;
+    gap: 8px;
+    padding-bottom: 10px;
   }
 
-  .row {
-    height: 3.5rem;
-    border-radius: var(--radius-m);
-    background: linear-gradient(
-      90deg,
-      var(--track) 0%,
-      var(--glass-bg-strong) 50%,
-      var(--track) 100%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 1.4s ease-in-out infinite;
-  }
-
-  @keyframes shimmer {
-    from {
-      background-position: 100% 0;
-    }
-    to {
-      background-position: -100% 0;
-    }
+  .rows span {
+    height: 3rem;
   }
 </style>

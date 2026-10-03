@@ -53,6 +53,21 @@
           "title": "Name",
           "type": "string"
         },
+        "short_name": {
+          "anyOf": [
+            {
+              "maxLength": 20,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Compact name displayed in the tiles; defaults to `name`.",
+          "title": "Short Name"
+        },
         "lat": {
           "maximum": 90,
           "minimum": -90,

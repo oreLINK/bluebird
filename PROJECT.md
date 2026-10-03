@@ -14,9 +14,12 @@ It is built for your phone, in French or English.
 
 ## What you see
 
-At the top, choose a mountain range (the Pyrenees for now) and your language.
-Below, each tile answers one question and ranks the resorts from most to least
-likely, like the odds on a betting site.
+At the top, the menu button (on the right) lets you choose the mountain range
+(the Pyrenees for now) and your language. Below it, filters narrow the page
+to one kind of indicator: **All**, **Snow** or **Powder**. A dark-blue strip
+tells you which mountain range and day the forecast is for, and when it was
+last updated. Each tile then answers one question and presents the resorts
+like the odds of a match on a betting site.
 
 | Tile | Question | How to read a high percentage |
 |---|---|---|
@@ -24,19 +27,31 @@ likely, like the odds on a betting site.
 | **Powder on piste** | Did at least 5 cm fall after the grooming machines finished, before the lifts open? | First runs on the pistes will be in fresh, ungroomed snow. |
 | **Off-piste powder** | Did at least 15 cm fall in the last 36 hours near the summit, without strong wind or a thaw spoiling it? | Good chances of light, untracked powder off-piste. Always check the avalanche bulletin first. |
 
-Each row shows:
+Each tile shows:
 
-- the **rank** and the **resort name** ("Favourite" marks a clear number one);
-- a **bar** and a **percentage** coloured from slate grey (unlikely) to
-  glacier blue (likely);
-- optionally, betting-style **odds** (1 ÷ probability), if enabled for a tile.
+- a **banner**: a photo of the
+  ski area ranked first when one is available, otherwise an illustration (the
+  first tile shows it across the whole card);
+- the **three most likely resorts** as buttons, each with its percentage and
+  a bar below it;
+- optionally, betting-style **odds** (1 ÷ probability), if enabled for a tile;
+- **See all** to list every other resort, from most to least likely.
 
-Tap a row to see why: expected snow (median and high scenario), recent wind
-and temperature, the time window studied, the resort's elevation, and how
-reliable the figure is.
+Tap a resort to see why: expected snow (median and high scenario), recent
+wind and temperature, the time window studied, the resort's elevation, and
+how reliable the figure is.
 
-The header line tells you which day the forecast is for and when it was last
-updated. If today's update is not available yet, a notice says so.
+Tap the **?** in the top-right corner of a tile, or anywhere on the tile
+outside the resort buttons, to turn it over. The back explains the indicator:
+what it measures, the time window studied, how it is computed, how reliable
+it is today, when it was last updated and where the data comes from. Tap the
+**×** (or the back of the card) to turn it again.
+
+Resorts appear under a short name in the tiles (for example "Cauterets" for
+"Cauterets – Cirque du Lys"). All tiles have the same size, so the page stays
+tidy; switching filter brings the matching tiles in with a short animation.
+
+If today's update is not available yet, the dark-blue strip says so.
 
 ## Where the numbers come from
 
@@ -53,7 +68,9 @@ true**. "72 %" means 72 out of 100 scenarios give enough snow.
 
 **Reliability** ("Confidence") reflects how much the scenarios agree: when
 almost all agree (very likely or very unlikely), reliability is high; when
-they split half and half, it is low.
+they split half and half, it is low. The back of each tile also gives a
+**reliability index** for the day: the average reliability of all resorts
+for that indicator (high counts fully, medium half, low not at all).
 
 The high-resolution Météo-France model (AROME) is shown next to it as a
 second opinion.
@@ -74,10 +91,17 @@ once a season. Only the weather is fetched every morning.
 
 - Pyrenees: 18 French resorts, from La Pierre Saint-Martin to Formiguères.
 - Three probabilities: snow today, powder on piste, powder off-piste.
-- Ranking tiles with details on tap, reliability indicator, optional odds.
-- French and English, remembered on your device.
-- Light "bluebird day" theme and dark "alpine night" theme, following your
-  phone's setting.
+- Betting-style tiles: top three resorts as odds buttons, full ranking on
+  demand, details on tap, reliability indicator, optional odds.
+- Two-sided tiles: the back explains the indicator and today's reliability.
+- Filters by kind of indicator (All, Snow, Powder), remembered on your device.
+- Menu with the mountain range and language (French or English), remembered
+  on your device.
+- Clean dark-blue, light-blue and white design with a sporty typeface, in
+  light and dark mode following your phone's setting, without background
+  animation.
+- Banner photos of the ski areas, credited to their authors (photos are
+  added progressively; an illustration is shown until then).
 - Works on any modern phone browser; add it to your home screen for an
   app-like experience.
 - Respects "reduce motion" and "reduce transparency" accessibility settings.

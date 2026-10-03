@@ -4,6 +4,10 @@ export type GroomingEnd = string;
 export type LiftsOpen = string;
 export type Id = string;
 export type Name = string;
+/**
+ * Compact name displayed in the tiles; defaults to `name`.
+ */
+export type ShortName = string | null;
 export type Lat = number;
 export type Lon = number;
 export type Base = number;
@@ -48,6 +52,7 @@ export interface StationDefaults {
 export interface Station {
   id: Id;
   name: Name;
+  short_name?: ShortName;
   lat: Lat;
   lon: Lon;
   elevation: Elevation;

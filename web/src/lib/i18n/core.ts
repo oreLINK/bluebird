@@ -16,6 +16,9 @@ export type Localized = Record<Locale, string>;
 
 export const dictionaries: Record<Locale, Record<MessageKey, string>> = { fr, en };
 
+/** Each language named in itself (endonym), the same in every UI language. */
+export const LOCALE_NAMES: Record<Locale, string> = { fr: 'Français', en: 'English' };
+
 export function isLocale(value: unknown): value is Locale {
   return typeof value === 'string' && (LOCALES as readonly string[]).includes(value);
 }

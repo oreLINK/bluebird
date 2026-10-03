@@ -98,6 +98,7 @@ class DisplayerMassifDaily(Displayer):
                 ref.id: DiamondStation(
                     id=ref.id,
                     name=ref.station.name,
+                    short_name=ref.station.short_name or ref.station.name,
                     lat=ref.station.lat,
                     lon=ref.station.lon,
                     elevation=DiamondElevation(

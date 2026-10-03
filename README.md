@@ -84,6 +84,7 @@ bluebird/
 │   ├── massifs.yaml
 │   ├── stations/<massif>.yaml
 │   ├── kpis.yaml
+│   ├── filters.yaml
 │   ├── tiles.yaml
 │   ├── layout.yaml
 │   ├── sources.yaml
@@ -112,8 +113,9 @@ bluebird/
 │   │   ├── App.svelte  main.ts
 │   │   ├── lib/               # config, data loading, i18n, formatting
 │   │   │   └── generated/     # GENERATED TypeScript types (npm run gen:types)
-│   │   ├── tiles/             # tile registry, TileShell, RankingTile
-│   │   ├── components/        # header, pickers, pills, backdrop, snowfall…
+│   │   ├── tiles/             # registry, TileBanner, TileBannerFull, TileRanking, OddsRow…
+│   │   ├── components/        # Logo, AppHeader, AppMenu, FilterBar, BannerArt, BannerMedia…
+│   │   ├── assets/photos/     # banner photos + credits.yaml (see its README)
 │   │   └── styles/            # tokens.css, glass.css, base.css
 │   └── public/data/diamond/   # demo data for local development only
 ├── scripts/
@@ -261,9 +263,10 @@ Red Hat YAML extension) validates and autocompletes them from `config/schemas/`.
 
 | File | Purpose | Key fields |
 |---|---|---|
-| `massifs.yaml` | Mountain ranges in the picker | `id`, `name {fr,en}`, `timezone`, `enabled`, `order`, `bbox`, `skyline` |
-| `stations/<massif>.yaml` | Resorts of one massif | `defaults {grooming_end, lifts_open}`, `stations[]`: `id`, `name`, `lat`, `lon`, `elevation {base, summit, mid?}`, `aspects`, `grooming_end?`, `lifts_open?`, `website?`, `enabled` |
-| `kpis.yaml` | KPI registry | `id`, `aggregator`, `name`, `description`, `params`, `drivers {key: {label, unit, decimals}}`, `enabled` |
+| `massifs.yaml` | Mountain ranges listed in the menu | `id`, `name {fr,en}`, `timezone`, `enabled`, `order`, `bbox`, `skyline` |
+| `stations/<massif>.yaml` | Resorts of one massif | `defaults {grooming_end, lifts_open}`, `stations[]`: `id`, `name`, `short_name?` (≤ 20 chars, shown in tiles), `lat`, `lon`, `elevation {base, summit, mid?}`, `aspects`, `grooming_end?`, `lifts_open?`, `website?`, `enabled` |
+| `kpis.yaml` | KPI registry | `id`, `aggregator`, `name`, `description`, `method?` (`{param}` placeholders, shown on the tile back), `params`, `drivers {key: {label, unit, decimals}}`, `filters[]`, `enabled` |
+| `filters.yaml` | Filter bar chips, in order | `id`, `name {fr,en}`, `icon?`, `all?` (shows every tile) |
 | `tiles.yaml` | KPI containers | `id`, `type`, `kpis[]`, `title?`, `icon?`, `options` |
 | `layout.yaml` | Tile order | `default[]`, `overrides {massif: [tiles]}` |
 | `sources.yaml` | Data sources | `id`, `extractor`, `transformer`, `schedule (daily/on_demand/reference)`, `params`, `attribution` |
@@ -288,21 +291,24 @@ A test enforces it.
 
 1. Add a block to `config/stations/<massif>.yaml` (coordinates at the middle
    of the ski area: they select the weather model grid cell).
-2. `uv run bluebird reference --massif <massif>` to add its pistes and lifts.
-3. `uv run bluebird validate`.
+2. Give it a `short_name` (≤ 20 characters) for the tiles.
+3. Create its photo folder `web/src/assets/photos/<massif>/<station_id>/`
+   (with a `.gitkeep` until it has a photo; a test checks the folder exists).
+4. `uv run bluebird reference --massif <massif>` to add its pistes and lifts.
+5. `uv run bluebird validate`.
 
 The next daily run includes it; no frontend change is needed.
 
 ### Add a massif
 
 1. Add an entry to `config/massifs.yaml` (`id`, `name`, `timezone`, `bbox`,
-   optional `skyline` for the decorative ridges).
+   optional `skyline` for the ridges of the banner illustrations).
 2. Create `config/stations/<id>.yaml`.
 3. Optionally add a `layout.yaml` override for its tile order.
 4. `uv run bluebird reference --massif <id>` to fetch its pistes and lifts.
 5. `uv run bluebird validate`, then `uv run bluebird demo` if you want demo data.
 
-The massif appears in the picker after the next deploy and gets data after
+The massif appears in the menu after the next deploy and gets data after
 the next daily run.
 
 ### Add a data source (API or scraper)
@@ -357,22 +363,48 @@ the next daily run.
    Return probabilities in [0, 1]. Put explanatory values in `drivers`.
    Bump `version` whenever the computation changes.
 2. **Config**: add the KPI to `config/kpis.yaml` with its `name`,
-   `description`, `params` and the `drivers` you want displayed (labels in
+   `description`, `method` (how it is computed, with `{param}` placeholders),
+   `params` and the `drivers` you want displayed (labels in
    French and English live here, not in the frontend).
 3. **Tile**: add a tile in `config/tiles.yaml` and its id in `config/layout.yaml`.
 4. **Tests**: synthetic silver data with a known answer (see `tests/gold/`).
 
-No frontend change is needed for a KPI shown in a `ranking` tile.
+No frontend change is needed for a KPI shown in a `banner` or `ranking` tile.
 
 ### Add a tile type
 
-1. Create `web/src/tiles/MyTile.svelte`. It receives `TileProps`
-   (`tile`, `kpis`, `data`) and usually wraps its content in `TileShell`.
-   Read options with `numberOption` / `booleanOption` from `tiles/options.ts`.
-2. Register it in `web/src/tiles/registry.ts` under a new id.
-3. Use that id as `type` in `config/tiles.yaml`.
+1. Create `web/src/tiles/TileXyz.svelte` (naming convention: type `xyz` →
+   `TileXyz`, checked by a test). It receives `TileProps` (`tile`, `kpis`,
+   `data`). Wrap it in the shared card frame (`<section class="card"><div
+   class="card-body">…`) or in `TileShell` for a list-style tile, and reuse
+   `StationRow` / `StationDetails` to show stations. Read options with
+   `numberOption` / `booleanOption` / `stringOption` from `tiles/options.ts`.
+2. Register it in `web/src/tiles/registry.ts` under the id `xyz`.
+3. Use `type: xyz` in `config/tiles.yaml`.
 4. If it needs new data, add a `Displayer` in `pipeline/.../diamond/` or extend
    the diamond models, then run `uv run bluebird schemas` and `npm run gen:types`.
+
+### Add a filter (filter bar)
+
+1. Add an entry to `config/filters.yaml` (`id`, `name {fr, en}`, `icon`).
+2. Tag the KPIs it should show with its id: `filters: [<id>]` in `config/kpis.yaml`.
+3. `uv run bluebird validate` (a filter matching no enabled KPI is an error).
+
+The first filter is selected by default; `all: true` makes a filter show
+every tile. Filters matching no tile of the current layout are hidden.
+
+### Add a banner photo
+
+1. Put the photo in `web/src/assets/photos/<massif>/<station_id>/<station_id>_<n>.webp`
+   (one folder per massif, then per station; files named with the station id
+   and a number, e.g. `cauterets_1.jpg`, `cauterets_2.jpg`), or any other path
+   for a fixed tile photo. Landscape, at least
+   1200 × 600 px, ideally < 300 KB.
+2. Add its author and licence to `web/src/assets/photos/credits.yaml`
+   (publication rights are required; the credit is shown on the banner).
+3. Set `photo: leader` (or `photo: <path>` without extension) in the tile
+   options of `config/tiles.yaml`. Without a matching photo, the tile shows
+   its illustration, so `leader` is safe even when only some stations have one.
 
 ### Reorder tiles
 
@@ -405,22 +437,71 @@ Implement `write_bytes`, `read_bytes`, `exists` and `list` of
 
 ## Frontend
 
-- **Stack**: Svelte 5 (runes), TypeScript, Vite. No UI framework, no
-  external fonts, about 25 KB of gzipped JavaScript.
+- **Stack**: Svelte 5 (runes), TypeScript, Vite. No UI framework, about
+  32 KB of gzipped JavaScript.
+- **Fonts**: Plus Jakarta Sans (text) and Barlow Semi Condensed ExtraBold
+  Italic (logo, titles, percentages), both OFL-licensed and self-hosted
+  through `@fontsource` packages: no font CDN, the browser only downloads the
+  subsets it needs. Tokens `--font-sans` and `--font-display`.
 - **Data flow**: `src/lib/config.ts` imports `config/*.yaml` at build time
   through `@rollup/plugin-yaml`. `src/lib/data.ts` fetches
   `./data/diamond/<massif>/latest.json` at runtime (relative URL, so the site
   works under any GitHub Pages path). A 404 shows an "upcoming data" state.
 - **i18n**: UI strings in `src/lib/i18n/{fr,en}.json`; content labels come
   from the YAML `{fr, en}` objects. The language follows the browser, can be
-  switched in the header and is remembered in `localStorage`.
-- **Design**: frosted Liquid Glass surfaces (`styles/glass.css`) on a winter
-  theme (`styles/tokens.css`): bluebird-day sky in light mode, alpine night in
-  dark mode, decorative ridges drawn from the massif `skyline`, light falling
-  snow whose density follows the day's best snowfall probability.
-  Reduced motion, reduced transparency and missing `backdrop-filter` are
-  handled. The probability scale goes from slate to glacier blue, with ≥ 4.5:1
-  text contrast at both ends.
+  switched in the menu and is remembered in `localStorage`.
+- **Header and menu**: logo and title on the left, a menu button on the
+  right. The menu (`components/AppMenu.svelte`) slides in over a blurred
+  backdrop, locks page scrolling (`lib/scrollLock.ts`), makes the page inert,
+  closes with Escape, and holds the massif and language choices.
+- **Filter bar**: under the header (`components/FilterBar.svelte`), from
+  `config/filters.yaml`. A filter shows the tiles whose KPIs carry its id;
+  the choice is remembered in `localStorage`.
+- **Design**: betting-app layout (inspired by Betclic) in dark blue, light
+  blue and white, on a plain, sober page background with no background
+  animation. Colours are role tokens in `styles/tokens.css` (light and dark
+  mode); only the sticky header uses a frosted "Liquid Glass" surface
+  (`styles/glass.css`). Cards share a frame with light-blue diagonal stripes
+  at the top corners (`.card` in `styles/base.css`).
+- **Tile types** (`config/tiles.yaml`, component `Tile` + PascalCase of the type):
+  - `banner` (`TileBanner.svelte`): a banner (photo, or a static SVG
+    illustration from `components/BannerArt.svelte` with scenes `snowfall`,
+    `piste`, `offpiste`, `mountain` and ridges from the massif `skyline`)
+    with the "?" button, the KPI title, the best stations as light-blue "odds
+    buttons" with a probability bar below each (`OddsRow.svelte`), and "see
+    all" for the rest (`RankingMore.svelte`). Tapping a station shows its details.
+  - `banner_full` (`TileBannerFull.svelte`): same content, with the photo or
+    illustration filling the whole card behind the title and odds, like the
+    "live match" cards of betting apps. Used by the snowfall tile today.
+  - `ranking` (`TileRanking.svelte`): a compact list of every station.
+- **Photos**: `lib/photos.ts` bundles `src/assets/photos/**` at build time.
+  Tile option `photo`: `none` (default), `leader` (a random photo of the ski
+  area ranked first, among `<massif>/<station_id>/<station_id>_<n>.*`, drawn
+  once per station and page load), or a fixed path. Missing photos fall
+  back to the illustration; credits come from `credits.yaml`.
+- **Tile back**: every tile is a `FlipCard`. The "?" button in its top-right
+  corner (or a tap anywhere outside the odds buttons, station rows, "see all"
+  and station details) turns it over to `KpiBack`, one section per topic: what the KPI
+  measures (its description, which is not repeated on the front), the time
+  window studied, how it is computed (`method` from `kpis.yaml` with its params
+  filled in), today's reliability (index, level, station breakdown, scenarios),
+  the last update and the data sources. The
+  "×" button, or a tap on the back, turns it back. The hidden side is inert.
+  Each face has its own card frame, so the striped top corners turn with the
+  card and stay on its edges during and after the flip.
+- **Equal sizes**: every banner tile has the same collapsed size, set by
+  `--tile-banner-h`, `--tile-front-h` and `--tile-more-h` in `styles/base.css`;
+  titles, descriptions, names and odds buttons are clamped to fixed heights.
+  Stations show their `short_name`; full names stay in accessible labels.
+- **Filter transitions**: changing filter makes tiles arrive "from the back"
+  (scale, fade and rise, staggered), leaving tiles fade out and the others
+  glide into place (`lib/transitions.ts`, `animate:flip`). Durations drop to 0
+  with "reduce motion". The filter row scrolls horizontally (swipe, trackpad,
+  or mouse wheel on desktop) with fading edges when chips are hidden.
+- **Accessibility**: text keeps ≥ 4.5:1 contrast (odds buttons use one fixed
+  colour pair; magnitude is shown by the bars). Reduced transparency and
+  missing `backdrop-filter` fall back to an opaque header. Buttons expose
+  their state with `aria-pressed` / `aria-expanded`.
 - **Mobile first**: one column, two from 768 px, three from 1100 px.
 
 ## Testing and quality

@@ -15,7 +15,15 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from .config import KpisFile, LayoutFile, MassifsFile, SourcesFile, StationsFile, TilesFile
+from .config import (
+    FiltersFile,
+    KpisFile,
+    LayoutFile,
+    MassifsFile,
+    SourcesFile,
+    StationsFile,
+    TilesFile,
+)
 from .diamond.models import DiamondManifest, DiamondMassifDaily
 
 Mode = Literal["validation", "serialization"]
@@ -26,6 +34,7 @@ SCHEMAS: dict[str, tuple[type[BaseModel], Mode]] = {
     "massifs": (MassifsFile, "validation"),
     "stations": (StationsFile, "validation"),
     "kpis": (KpisFile, "validation"),
+    "filters": (FiltersFile, "validation"),
     "tiles": (TilesFile, "validation"),
     "layout": (LayoutFile, "validation"),
     "sources": (SourcesFile, "validation"),

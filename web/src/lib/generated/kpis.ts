@@ -10,6 +10,10 @@ export type Fr = string;
 export type En = string;
 export type Unit = string | null;
 export type Decimals = number;
+/**
+ * Ids of the filters (config/filters.yaml) this KPI appears under.
+ */
+export type Filters = string[];
 export type Kpis = Kpi[];
 
 /**
@@ -27,8 +31,13 @@ export interface Kpi {
   enabled?: Enabled;
   name: Localized;
   description: Localized;
+  /**
+   * How the KPI is computed, in plain words, shown on the back of its tiles. `{param}` placeholders are replaced by the values of `params`.
+   */
+  method?: Localized | null;
   params?: Params;
   drivers?: Drivers;
+  filters?: Filters;
 }
 /**
  * A user-facing string in every supported UI language.

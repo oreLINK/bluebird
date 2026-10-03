@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=./schemas/filters.schema.json
+#
+# Filter bar under the header, in display order. A filter shows the tiles
+# whose KPIs list its id under `filters:` in config/kpis.yaml. A filter with
+# `all: true` shows every tile. The first filter is selected by default.
+#
+# To add a filter: add an entry here, then tag the KPIs it should show with
+# its id in config/kpis.yaml. A filter that matches no enabled KPI is an error.
+filters:
+  - id: all
+    name: { fr: Tout, en: All }
+    icon: sparkle
+    all: true
+
+  - id: snow
+    name: { fr: Neige, en: Snow }
+    icon: snowflake
+
+  - id: powder
+    name: { fr: Poudreuse, en: Powder }
+    icon: mountain

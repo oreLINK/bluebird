@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { enabledMassifs, kpis, layout, massifs, resolveLayout, tiles } from './config';
+import {
+  enabledMassifs,
+  filterTiles,
+  filters,
+  kpis,
+  layout,
+  massifs,
+  resolveLayout,
+  tiles,
+  usableFilters,
+} from './config';
 import type { Kpi } from './generated/kpis';
 import type { Massif } from './generated/massifs';
 import type { Tile } from './generated/tiles';
@@ -53,5 +63,32 @@ describe('repository configuration', () => {
     expect(massifs.length).toBeGreaterThan(0);
     const resolved = resolveLayout(massifs[0]!.id, layout, tiles, kpis);
     expect(resolved.length).toBe(layout.default.length);
+  });
+});
+
+describe('filters', () => {
+  const name = { fr: 'x', en: 'x' };
+  const snowKpi: Kpi = { id: 'k1', aggregator: 'a', name, description: name, filters: ['snow'] };
+  const powderKpi: Kpi = { id: 'k2', aggregator: 'a', name, description: name, filters: ['powder'] };
+  const resolved = [
+    { tile: { id: 't1', type: 'banner', kpis: ['k1'] }, kpis: [snowKpi] },
+    { tile: { id: 't2', type: 'banner', kpis: ['k2'] }, kpis: [powderKpi] },
+  ];
+  const all = { id: 'all', name, all: true };
+  const snow = { id: 'snow', name };
+  const wind = { id: 'wind', name };
+
+  it('keeps every tile for an all filter and tagged tiles otherwise', () => {
+    expect(filterTiles(resolved, all).map((r) => r.tile.id)).toEqual(['t1', 't2']);
+    expect(filterTiles(resolved, snow).map((r) => r.tile.id)).toEqual(['t1']);
+    expect(filterTiles(resolved, undefined)).toHaveLength(2);
+  });
+
+  it('hides filters that match no tile of the current layout', () => {
+    expect(usableFilters([all, snow, wind], resolved).map((f) => f.id)).toEqual(['all', 'snow']);
+  });
+
+  it('bundles the repository filters with at least one usable filter', () => {
+    expect(usableFilters(filters, resolveLayout(massifs[0]!.id, layout, tiles, kpis)).length).toBeGreaterThan(1);
   });
 });
