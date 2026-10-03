@@ -1,0 +1,66 @@
+# Run the data pipeline every morning with the code of `main`, then publish
+# gold (KPI history) and diamond (site JSON) to gh-pages/data/. Bronze and
+# silver are kept 7 days as a workflow artifact for debugging.
+name: Daily data
+
+on:
+  schedule:
+    # 03:30 and 05:30 UTC = 04:30 and 06:30 in Paris in winter time (CET).
+    # November to May only. GitHub can delay scheduled runs by several minutes.
+    - cron: '30 3,5 * 11,12,1,2,3,4,5 *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Shared with deploy.yml: never push to gh-pages from two runs at once.
+concurrency:
+  group: gh-pages-publish
+  cancel-in-progress: false
+
+jobs:
+  pipeline:
+    name: Bronze → diamond
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Deploy key is configured
+        env:
+          HAS_KEY: ${{ secrets.GH_PAGES_DEPLOY_KEY != '' }}
+        run: |
+          if [ "$HAS_KEY" != "true" ]; then
+            echo "::error::Secret GH_PAGES_DEPLOY_KEY is missing. Run scripts/setup-github.sh (see README)."
+            exit 1
+          fi
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          ssh-key: ${{ secrets.GH_PAGES_DEPLOY_KEY }}
+      - name: Use a storage folder outside the checkout
+        run: echo "BLUEBIRD_DATA_DIR=$RUNNER_TEMP/bluebird-data" >> "$GITHUB_ENV"
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install pipeline
+        working-directory: pipeline
+        run: uv sync --locked --no-dev
+      - name: Run all layers for today
+        working-directory: pipeline
+        run: uv run bluebird run
+      - name: Keep bronze and silver for 7 days
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bronze-silver-${{ github.run_id }}
+          path: |
+            ${{ env.BLUEBIRD_DATA_DIR }}/bronze
+            ${{ env.BLUEBIRD_DATA_DIR }}/silver
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Stage gold and diamond
+        run: |
+          mkdir -p "$RUNNER_TEMP/publish"
+          cp -R "$BLUEBIRD_DATA_DIR/gold" "$BLUEBIRD_DATA_DIR/diamond" "$RUNNER_TEMP/publish/"
+      - name: Publish to gh-pages/data
+        run: |
+          scripts/ci/publish-gh-pages.sh data "$RUNNER_TEMP/publish" "data: run $(date -u +%Y-%m-%dT%H:%MZ)"

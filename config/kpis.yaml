@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=./schemas/kpis.schema.json
+#
+# KPI registry. Each KPI is computed in the gold layer by the Aggregator class
+# registered under `aggregator` (see pipeline/src/bluebird_pipeline/gold/).
+# `params` are validated by that Aggregator's `Params` model.
+#
+# `drivers` describes the explanatory values an Aggregator attaches to each
+# result. The frontend shows them, with these labels, when a row is expanded.
+# A driver produced by the Aggregator but not listed here is not displayed.
+kpis:
+  - id: snowfall_chance
+    aggregator: snowfall_chance
+    name: { fr: Chute de neige, en: Snowfall }
+    description:
+      fr: Probabilité qu'il neige pendant la journée de ski, à mi-altitude.
+      en: Probability of snowfall during the ski day, at mid-mountain.
+    params:
+      band: mid
+      window_start: "08:00"
+      window_end: "17:00"
+      threshold_cm: 1.0
+    drivers:
+      snow_cm_p50: { label: { fr: Neige attendue (médiane), en: Expected snow (median) }, unit: cm, decimals: 1 }
+      snow_cm_p90: { label: { fr: Neige – scénario haut, en: Snow – high scenario }, unit: cm, decimals: 1 }
+      deterministic_snow_cm: { label: { fr: Neige selon Météo-France, en: Snow per Météo-France }, unit: cm, decimals: 1 }
+      members: { label: { fr: Scénarios analysés, en: Scenarios analysed } }
+
+  - id: offpiste_powder_chance
+    aggregator: offpiste_powder_chance
+    name: { fr: Poudreuse hors-piste, en: Off-piste powder }
+    description:
+      fr: Probabilité de trouver de la poudreuse fraîche hors-piste à l'ouverture, au sommet.
+      en: Probability of fresh off-piste powder at opening time, near the summit.
+    params:
+      band: summit
+      lookback_hours: 36
+      threshold_cm: 15.0
+      wind_lookback_hours: 12
+      wind_ok_kmh: 25.0
+      wind_bad_kmh: 60.0
+      wind_floor: 0.3
+      thaw_lookback_hours: 12
+      thaw_temp_c: 0.5
+      thaw_factor: 0.3
+    drivers:
+      new_snow_cm_p50: { label: { fr: Neige fraîche (médiane), en: Fresh snow (median) }, unit: cm, decimals: 0 }
+      max_wind_kmh_p50: { label: { fr: Vent max récent, en: Recent max wind }, unit: km/h, decimals: 0 }
+      max_temp_c_p50: { label: { fr: Température max récente, en: Recent max temperature }, unit: °C, decimals: 1 }
+      members: { label: { fr: Scénarios analysés, en: Scenarios analysed } }
+
+  - id: onpiste_powder_chance
+    aggregator: onpiste_powder_chance
+    name: { fr: Poudreuse sur piste, en: On-piste powder }
+    description:
+      fr: Probabilité que la neige tombée après le damage recouvre les pistes à l'ouverture.
+      en: Probability that snow fallen after grooming covers the pistes at opening time.
+    params:
+      band: mid
+      threshold_cm: 5.0
+    drivers:
+      snow_after_grooming_cm_p50: { label: { fr: Neige depuis le damage (médiane), en: Snow since grooming (median) }, unit: cm, decimals: 1 }
+      snow_after_grooming_cm_p90: { label: { fr: Neige depuis le damage – scénario haut, en: Snow since grooming – high scenario }, unit: cm, decimals: 1 }
+      window_hours: { label: { fr: Durée depuis le damage, en: Hours since grooming }, unit: h }
+      members: { label: { fr: Scénarios analysés, en: Scenarios analysed } }

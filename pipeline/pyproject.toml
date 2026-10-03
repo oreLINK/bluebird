@@ -1,0 +1,40 @@
+[project]
+name = "bluebird-pipeline"
+version = "0.1.0"
+description = "Bluebird data pipeline: weather sources -> bronze -> silver -> gold -> diamond."
+requires-python = ">=3.12"
+dependencies = [
+  "httpx>=0.28",
+  "polars>=1.30",
+  "pydantic>=2.12",
+  "pyyaml>=6.0.2",
+]
+
+[project.scripts]
+bluebird = "bluebird_pipeline.cli:main"
+
+[dependency-groups]
+dev = [
+  "pytest>=8.4",
+  "ruff>=0.14",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bluebird_pipeline"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003"]  # allow typographic characters in French strings
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["tests"]
+addopts = "-q --import-mode=importlib"

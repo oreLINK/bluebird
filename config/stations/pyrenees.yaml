@@ -1,0 +1,146 @@
+# yaml-language-server: $schema=../schemas/stations.schema.json
+#
+# Ski resorts of the French Pyrenees. The file name (without extension) must
+# match a massif id from config/massifs.yaml.
+#
+# Coordinates point at the middle of the ski area, because they select the
+# weather model grid cell. Elevations are in metres. `mid` defaults to the
+# average of `base` and `summit` rounded to 10 m.
+#
+# NOTE: coordinates and elevations are approximate public figures. Check them
+# against official resort data before relying on them.
+#
+# Times are local (massif timezone), formatted HH:MM.
+#   grooming_end: when piste grooming usually finishes. If it is later than
+#                 lifts_open (e.g. 22:00), it refers to the previous evening.
+#   lifts_open:   when the first lifts open.
+defaults:
+  grooming_end: "02:00"
+  lifts_open: "09:00"
+
+stations:
+  - id: font-romeu
+    name: Font-Romeu Pyrénées 2000
+    lat: 42.515
+    lon: 2.010
+    elevation: { base: 1750, summit: 2213 }
+    aspects: [N, NE, E]
+
+  - id: les-angles
+    name: Les Angles
+    lat: 42.570
+    lon: 2.050
+    elevation: { base: 1600, summit: 2400 }
+    aspects: [N, NE, E]
+
+  - id: formigueres
+    name: Formiguères
+    lat: 42.620
+    lon: 2.055
+    elevation: { base: 1700, summit: 2350 }
+    aspects: [NE, E]
+
+  - id: porte-puymorens
+    name: Porté-Puymorens
+    lat: 42.553
+    lon: 1.815
+    elevation: { base: 1600, summit: 2500 }
+    aspects: [N, NW, W]
+
+  - id: ax-3-domaines
+    name: Ax 3 Domaines
+    lat: 42.685
+    lon: 1.795
+    elevation: { base: 1400, summit: 2400 }
+    aspects: [N, NE]
+
+  - id: ascou-pailheres
+    name: Ascou-Pailhères
+    lat: 42.740
+    lon: 1.900
+    elevation: { base: 1500, summit: 2030 }
+    aspects: [N]
+
+  - id: guzet
+    name: Guzet
+    lat: 42.788
+    lon: 1.300
+    elevation: { base: 1100, summit: 2100 }
+    aspects: [N, NW]
+
+  - id: le-mourtis
+    name: Le Mourtis
+    lat: 42.877
+    lon: 0.770
+    elevation: { base: 1380, summit: 1860 }
+    aspects: [N, NE]
+
+  - id: peyragudes
+    name: Peyragudes
+    lat: 42.795
+    lon: 0.455
+    elevation: { base: 1600, summit: 2400 }
+    aspects: [N, E, W]
+
+  - id: saint-lary
+    name: Saint-Lary
+    lat: 42.800
+    lon: 0.322
+    elevation: { base: 1700, summit: 2515 }
+    aspects: [N, NE, E]
+
+  - id: piau-engaly
+    name: Piau-Engaly
+    lat: 42.788
+    lon: 0.158
+    elevation: { base: 1420, summit: 2600 }
+    aspects: [N, NE]
+
+  - id: val-louron
+    name: Val Louron
+    lat: 42.807
+    lon: 0.413
+    elevation: { base: 1450, summit: 2150 }
+    aspects: [N, E]
+
+  - id: grand-tourmalet
+    name: Grand Tourmalet
+    lat: 42.910
+    lon: 0.180
+    elevation: { base: 1400, summit: 2500 }
+    aspects: [N, E, S]
+
+  - id: luz-ardiden
+    name: Luz Ardiden
+    lat: 42.876
+    lon: -0.070
+    elevation: { base: 1680, summit: 2500 }
+    aspects: [N, E]
+
+  - id: cauterets
+    name: Cauterets – Cirque du Lys
+    lat: 42.866
+    lon: -0.145
+    elevation: { base: 1850, summit: 2415 }
+    aspects: [N, NE]
+
+  - id: gourette
+    name: Gourette
+    lat: 42.957
+    lon: -0.333
+    elevation: { base: 1400, summit: 2400 }
+    aspects: [N, E, W]
+
+  - id: la-pierre-saint-martin
+    name: La Pierre Saint-Martin
+    lat: 42.978
+    lon: -0.757
+    elevation: { base: 1450, summit: 2200 }
+    aspects: [N, NE]
+
+  - id: superbagneres
+    name: Luchon-Superbagnères
+    lat: 42.757
+    lon: 0.580
+    elevation: { base: 1440, summit: 2260 }
+    aspects: [N, E, W]

@@ -1,0 +1,51 @@
+# Build the site from `main` and publish it to `gh-pages`, keeping the data/
+# folder written by the daily workflow. `main` only changes through merged pull
+# requests (see the ruleset), so this runs once per merged pull request.
+name: Deploy site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Shared with daily.yml: never push to gh-pages from two runs at once.
+concurrency:
+  group: gh-pages-publish
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Deploy key is configured
+        env:
+          HAS_KEY: ${{ secrets.GH_PAGES_DEPLOY_KEY != '' }}
+        run: |
+          if [ "$HAS_KEY" != "true" ]; then
+            echo "::error::Secret GH_PAGES_DEPLOY_KEY is missing. Run scripts/setup-github.sh (see README)."
+            exit 1
+          fi
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          ssh-key: ${{ secrets.GH_PAGES_DEPLOY_KEY }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Build
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+      - name: Drop demo data from the build
+        run: rm -rf web/dist/data
+      - name: Publish to gh-pages (data/ is preserved)
+        run: |
+          scripts/ci/publish-gh-pages.sh site web/dist "deploy: site from ${GITHUB_SHA::7}"

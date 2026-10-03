@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=./schemas/layout.schema.json
+#
+# Order of the tiles on the page (top to bottom on mobile).
+# `default` applies to every massif; `overrides` replaces it for one massif.
+default:
+  - snowfall_today
+  - onpiste_powder
+  - offpiste_powder
+
+overrides: {}
+# Example:
+# overrides:
+#   alpes-du-nord: [offpiste_powder, snowfall_today, onpiste_powder]

@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=./schemas/tiles.schema.json
+#
+# Tiles are the KPI containers displayed on the page.
+#   type:    frontend component, registered in web/src/tiles/registry.ts
+#   kpis:    KPI ids (config/kpis.yaml) the tile reads. A ranking tile uses one.
+#   title:   optional; defaults to the first KPI's name.
+#   icon:    optional; one of the icons in web/src/components/Icon.svelte.
+#   options: free-form, interpreted by the tile component.
+#
+# Tile order on the page is defined in config/layout.yaml, not here.
+tiles:
+  - id: snowfall_today
+    type: ranking
+    kpis: [snowfall_chance]
+    title: { fr: Neige aujourd'hui, en: Snow today }
+    icon: snowflake
+    options:
+      visible_rows: 5
+      show_odds: false
+
+  - id: onpiste_powder
+    type: ranking
+    kpis: [onpiste_powder_chance]
+    title: { fr: Poudreuse sur piste, en: Powder on piste }
+    icon: piste
+    options:
+      visible_rows: 5
+      show_odds: false
+
+  - id: offpiste_powder
+    type: ranking
+    kpis: [offpiste_powder_chance]
+    title: { fr: Poudreuse hors-piste, en: Off-piste powder }
+    icon: mountain
+    options:
+      visible_rows: 5
+      show_odds: false

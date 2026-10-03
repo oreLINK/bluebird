@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node
+node_modules/
+web/dist/
+
+# Local pipeline output. In production, gold and diamond are published by
+# GitHub Actions to the gh-pages branch; nothing under /data is ever committed.
+/data/
+
+# Worktree used by scripts/ci/publish-gh-pages.sh
+/.gh-pages/
+
+# OS and editors
+.DS_Store
+.idea/
+*.swp

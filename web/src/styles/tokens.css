@@ -1,0 +1,116 @@
+/*
+ * Design tokens. Winter theme:
+ *   - light = "bluebird day": deep blue sky after a snowfall, snow-white ridges.
+ *   - dark  = alpine night: navy sky, moonlit ridges.
+ * The site follows the device setting; `data-theme` on <html> can force one.
+ */
+:root {
+  color-scheme: light;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+
+  /* Sky and mountains */
+  --sky-top: #0a4aa6;
+  --sky-mid: #2a7ad3;
+  --sky-bottom: #a8d3f5;
+  --ridge-far: rgba(235, 245, 255, 0.55);
+  --ridge-near: #f6faff;
+  --ridge-shade: #cfe0f2;
+  --flake: rgba(255, 255, 255, 0.92);
+  --star: transparent;
+
+  /* Text */
+  --ink: #0b1f3a;
+  --ink-soft: #3a5374;
+  --ink-faint: #5f7594;
+  --ink-on-sky: #ffffff;
+  --ink-on-sky-soft: rgba(255, 255, 255, 0.86);
+
+  /* Frosted glass */
+  --glass-bg: rgba(255, 255, 255, 0.6);
+  --glass-bg-strong: rgba(255, 255, 255, 0.78);
+  --glass-solid: #eef5fc;
+  --glass-border: rgba(255, 255, 255, 0.78);
+  --glass-highlight: rgba(255, 255, 255, 0.95);
+  --glass-shadow: 0 12px 40px -14px rgba(6, 38, 88, 0.45);
+  --glass-blur: 22px;
+  --hairline: rgba(11, 31, 58, 0.08);
+
+  /* Accent and probability scale (slate -> glacier blue, no betting red/green).
+     Both ends keep >= 4.5:1 contrast with --prob-ink, so every mix does too. */
+  --accent: #0a6fd0;
+  --accent-ink: #ffffff;
+  --prob-low: #66768c;
+  --prob-high: #0a6fd0;
+  --prob-ink: #ffffff;
+  --track: rgba(11, 31, 58, 0.08);
+  --focus: #ffd34d;
+
+  --radius-l: 28px;
+  --radius-m: 18px;
+  --radius-s: 12px;
+  --gutter: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --sky-top: #020817;
+    --sky-mid: #0a1a38;
+    --sky-bottom: #1a3a68;
+    --ridge-far: rgba(150, 180, 225, 0.16);
+    --ridge-near: #b9cbe2;
+    --ridge-shade: #7088aa;
+    --flake: rgba(220, 235, 255, 0.7);
+    --star: rgba(255, 255, 255, 0.8);
+    --ink: #eaf3ff;
+    --ink-soft: #b6c8e1;
+    --ink-faint: #8ea5c4;
+    --ink-on-sky: #eaf3ff;
+    --ink-on-sky-soft: rgba(234, 243, 255, 0.8);
+    --glass-bg: rgba(14, 30, 60, 0.55);
+    --glass-bg-strong: rgba(20, 40, 76, 0.75);
+    --glass-solid: #12264a;
+    --glass-border: rgba(170, 205, 255, 0.2);
+    --glass-highlight: rgba(200, 225, 255, 0.25);
+    --glass-shadow: 0 12px 40px -14px rgba(0, 0, 0, 0.7);
+    --hairline: rgba(200, 225, 255, 0.1);
+    --accent: #6cc6ff;
+    --accent-ink: #04122a;
+    --prob-low: #8ea3c0;
+    --prob-high: #6cc6ff;
+    --prob-ink: #04122a;
+    --track: rgba(200, 225, 255, 0.1);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --sky-top: #020817;
+  --sky-mid: #0a1a38;
+  --sky-bottom: #1a3a68;
+  --ridge-far: rgba(150, 180, 225, 0.16);
+  --ridge-near: #b9cbe2;
+  --ridge-shade: #7088aa;
+  --flake: rgba(220, 235, 255, 0.7);
+  --star: rgba(255, 255, 255, 0.8);
+  --ink: #eaf3ff;
+  --ink-soft: #b6c8e1;
+  --ink-faint: #8ea5c4;
+  --ink-on-sky: #eaf3ff;
+  --ink-on-sky-soft: rgba(234, 243, 255, 0.8);
+  --glass-bg: rgba(14, 30, 60, 0.55);
+  --glass-bg-strong: rgba(20, 40, 76, 0.75);
+  --glass-solid: #12264a;
+  --glass-border: rgba(170, 205, 255, 0.2);
+  --glass-highlight: rgba(200, 225, 255, 0.25);
+  --glass-shadow: 0 12px 40px -14px rgba(0, 0, 0, 0.7);
+  --hairline: rgba(200, 225, 255, 0.1);
+  --accent: #6cc6ff;
+  --accent-ink: #04122a;
+  --prob-low: #8ea3c0;
+  --prob-high: #6cc6ff;
+  --prob-ink: #04122a;
+  --track: rgba(200, 225, 255, 0.1);
+}

@@ -1,0 +1,53 @@
+/*
+ * Frosted "Liquid Glass" surfaces: translucent, blurred, with a 1px frost rim
+ * and a soft top highlight. Falls back to an opaque surface when the browser
+ * lacks backdrop-filter or the user asks for reduced transparency.
+ */
+.glass {
+  position: relative;
+  isolation: isolate;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    var(--glass-shadow);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+}
+
+/* Specular sheen across the top of the surface. */
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    var(--glass-highlight) 0%,
+    transparent 38%
+  );
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.glass-strong {
+  background: var(--glass-bg-strong);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass {
+    background: var(--glass-solid);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background: var(--glass-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .glass::before {
+    display: none;
+  }
+}

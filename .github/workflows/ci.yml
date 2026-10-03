@@ -1,0 +1,91 @@
+# Lint, test and build everything. The "CI result" job is the required status
+# check of the `main` ruleset: a pull request cannot be merged unless it passes.
+name: CI
+
+on:
+  push:
+    branches: [dev]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pipeline:
+    name: Pipeline (Python)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install
+        run: uv sync --locked
+      - name: Format
+        run: uv run ruff format --check .
+      - name: Lint
+        run: uv run ruff check .
+      - name: Validate configuration
+        run: uv run bluebird validate
+      - name: JSON Schemas are up to date
+        run: uv run bluebird schemas --check
+      - name: Tests
+        run: uv run pytest
+
+  web:
+    name: Web (Svelte)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Generated types are up to date
+        run: npm run gen:types && git diff --exit-code -- src/lib/generated
+      - name: Type check
+        run: npm run check
+      - name: Tests
+        run: npm test
+      - name: Build
+        run: npm run build
+
+  workflows:
+    name: Workflow lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: actionlint
+        run: |
+          bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint -color
+
+  result:
+    name: CI result
+    if: always()
+    needs: [pipeline, web, workflows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every job succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          case " $RESULTS " in
+            *failure* | *cancelled* | *skipped*) exit 1 ;;
+          esac
