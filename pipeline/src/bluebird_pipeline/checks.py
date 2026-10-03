@@ -26,10 +26,17 @@ def plugin_errors(config: Config) -> list[str]:
             errors.append(f"source '{source.id}' params: {exc}")
         try:
             transformer = TRANSFORMERS.get(source.transformer)
-            if source.enabled:
-                datasets.add(transformer.dataset)
         except RegistryError as exc:
             errors.append(f"source '{source.id}': {exc}")
+            continue
+        if source.schedule == "reference" and transformer.reference_suffix is None:
+            errors.append(
+                f"source '{source.id}' has schedule 'reference' but transformer "
+                f"'{source.transformer}' does not produce reference files"
+            )
+        if source.enabled and source.schedule == "daily":
+            # KPIs read silver datasets of the day: only daily sources count.
+            datasets.add(transformer.dataset)
 
     for kpi in config.kpis:
         try:
@@ -46,6 +53,6 @@ def plugin_errors(config: Config) -> list[str]:
                 if dataset not in datasets:
                     errors.append(
                         f"KPI '{kpi.id}' needs silver dataset '{dataset}', "
-                        "which no enabled source produces"
+                        "which no enabled daily source produces"
                     )
     return errors

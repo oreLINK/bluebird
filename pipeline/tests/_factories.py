@@ -7,6 +7,7 @@ without network access.
 
 from __future__ import annotations
 
+import re
 import shutil
 from collections.abc import Callable
 from datetime import UTC, date, datetime, timedelta
@@ -171,3 +172,57 @@ def ensemble_frame(
                         }
                     )
     return pl.DataFrame(rows)
+
+
+# ------------------------------------------------------------------ Overpass
+
+_STATION_ORIGINS = {"alpha": (42.8, 0.1), "beta": (42.9, 0.2)}
+
+
+def overpass_payload(station_id: str) -> dict[str, Any]:
+    """Overpass `out tags geom` response: one piste, one lift, plus ignored elements."""
+    lat, lon = _STATION_ORIGINS[station_id]
+    offset = 0 if station_id == "alpha" else 100
+
+    def line(d_lat: float) -> list[dict[str, float]]:
+        return [{"lat": round(lat + d_lat * i / 2, 6), "lon": lon} for i in range(3)]
+
+    return {
+        "elements": [
+            {
+                "type": "way",
+                "id": 1000 + offset,
+                "tags": {"piste:type": "downhill", "piste:difficulty": "easy", "name": "Blue"},
+                "geometry": line(0.002),
+            },
+            {
+                "type": "way",
+                "id": 2000 + offset,
+                "tags": {"aerialway": "chair_lift", "name": "Chair"},
+                "geometry": line(0.003),
+            },
+            {
+                "type": "way",
+                "id": 3000 + offset,
+                "tags": {"aerialway": "station"},
+                "geometry": line(0.0),
+            },
+            {"type": "node", "id": 4000 + offset, "lat": lat, "lon": lon},
+        ]
+    }
+
+
+def overpass_transport(calls: list[str] | None = None) -> httpx.MockTransport:
+    """Mock Overpass: answers each `around:` query with the matching station payload."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        query = parse_qs(request.content.decode())["data"][0]
+        match = re.search(r"around:\d+,([-\d.]+),([-\d.]+)", query)
+        assert match, query
+        lat = float(match.group(1))
+        station_id = min(_STATION_ORIGINS, key=lambda s: abs(_STATION_ORIGINS[s][0] - lat))
+        if calls is not None:
+            calls.append(station_id)
+        return httpx.Response(200, json=overpass_payload(station_id))
+
+    return httpx.MockTransport(handler)

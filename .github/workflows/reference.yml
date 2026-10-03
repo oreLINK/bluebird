@@ -1,0 +1,70 @@
+# Refresh slow-changing reference data (pistes, lifts…) once a season.
+# Fetches every `schedule: reference` source, rewrites config/reference/ and
+# opens a pull request to `dev` for review. Nothing is pushed to dev directly.
+name: Refresh reference data
+
+on:
+  workflow_dispatch:
+    inputs:
+      massif:
+        description: 'Massif id to refresh (empty = all)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: reference-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    name: Fetch and open a pull request
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: dev
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Use a storage folder outside the checkout
+        run: echo "BLUEBIRD_DATA_DIR=$RUNNER_TEMP/bluebird-data" >> "$GITHUB_ENV"
+      - name: Refresh reference files
+        working-directory: pipeline
+        env:
+          MASSIF: ${{ inputs.massif }}
+        run: |
+          uv sync --locked --no-dev
+          args=()
+          if [ -n "$MASSIF" ]; then args+=(--massif "$MASSIF"); fi
+          uv run bluebird reference "${args[@]}"
+      - name: Keep the raw responses for 7 days
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reference-bronze-${{ github.run_id }}
+          path: ${{ env.BLUEBIRD_DATA_DIR }}/bronze
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Open a pull request to dev
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git add config/reference
+          if git diff --cached --quiet; then
+            echo "Reference data unchanged."
+            exit 0
+          fi
+          branch="reference/refresh-$(date -u +%Y%m%d-%H%M%S)"
+          git switch -c "$branch"
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit --quiet -m "Refresh reference data"
+          git push origin "$branch"
+          gh pr create --base dev --head "$branch" \
+            --title "Refresh reference data" \
+            --body "Automated refresh of \`config/reference/\` by the *Refresh reference data* workflow. Check the per-station \`summary\` at the top of each file: a station dropping to zero pistes usually means a source outage, not a closed resort."

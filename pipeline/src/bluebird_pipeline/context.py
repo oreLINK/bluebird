@@ -32,6 +32,7 @@ class RunContext:
     generated_at: datetime
     massif_ids: list[str] | None = None
     _silver_cache: dict[str, pl.DataFrame | None] = field(default_factory=dict, repr=False)
+    _reference_cache: dict[str, pl.DataFrame | None] = field(default_factory=dict, repr=False)
 
     @classmethod
     def create(
@@ -92,3 +93,18 @@ class RunContext:
 
     def invalidate_silver(self) -> None:
         self._silver_cache.clear()
+
+    # -- reference access ---------------------------------------------------------
+
+    def reference(self, dataset: str) -> pl.DataFrame | None:
+        """Committed reference table of ``dataset`` (e.g. ``domain_features``).
+
+        Unlike :meth:`silver`, this does not depend on ``run_date``: reference
+        files live in ``config/reference/`` and are refreshed once a season.
+        Rows are limited to the stations of this run. ``None`` if never built.
+        """
+        if dataset not in self._reference_cache:
+            from .reference import load_reference
+
+            self._reference_cache[dataset] = load_reference(self.config, dataset, self.massif_ids)
+        return self._reference_cache[dataset]

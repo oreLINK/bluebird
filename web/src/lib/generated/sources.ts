@@ -4,7 +4,10 @@ export type Id = string;
 export type Extractor = string;
 export type Transformer = string;
 export type Enabled = boolean;
-export type Schedule = 'daily' | 'on_demand';
+/**
+ * daily: fetched every morning; on_demand: only with `bluebird run --source`; reference: slow-changing data refreshed with `bluebird reference` and committed under config/reference/.
+ */
+export type Schedule = 'daily' | 'on_demand' | 'reference';
 export type Name = string;
 export type Url = string;
 export type License = string | null;

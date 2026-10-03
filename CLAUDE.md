@@ -1,6 +1,11 @@
 # Claude Code instructions
 
-The full project briefing for AI assistants is in CONTEXT.md. Read it before
-making changes; it is imported below.
+Two files are imported below and apply to every prompt:
 
+- AGENTS.md: the mandatory project rules (documentation updates, languages,
+  Git, architecture, quality bar, end-of-task checklist).
+- CONTEXT.md: the project briefing (architecture, file map, invariants,
+  recipes, pitfalls, definition of done).
+
+@AGENTS.md
 @CONTEXT.md

@@ -58,6 +58,10 @@ they split half and half, it is low.
 The high-resolution Météo-France model (AROME) is shown next to it as a
 second opinion.
 
+Fixed facts about each resort (position, elevations, grooming and opening
+times, pistes and lifts) are stored with the project and refreshed at most
+once a season. Only the weather is fetched every morning.
+
 ### Update schedule
 
 - Twice each morning, around **04:30 and 06:30** (Paris time), from November
@@ -84,7 +88,8 @@ second opinion.
 - Resort opening status (open lifts and pistes).
 - Slope orientation and steepness to refine the powder estimate
   (north-facing slopes keep powder longer).
-- A 7-day trend tile and a map of the ski areas.
+- A 7-day trend tile and a map of the ski areas (piste and lift data from
+  OpenStreetMap is already collected and refreshed once a season).
 - More mountain ranges: Northern and Southern Alps, Massif Central, Vosges, Jura.
 - Checking past forecasts against observed snow to make the percentages more accurate.
 

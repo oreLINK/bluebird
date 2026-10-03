@@ -5,7 +5,8 @@ Commands:
 - ``validate``  check configuration files, cross-references and plugins.
 - ``schemas``   regenerate (or ``--check``) the JSON Schemas in ``config/schemas``.
 - ``plugins``   list registered extractors, transformers, aggregators, displayers.
-- ``run``       execute pipeline layers.
+- ``run``       execute pipeline layers on daily data.
+- ``reference`` refresh reference files (pistes, lifts…) in ``config/reference``.
 - ``demo``      write synthetic demo data to ``web/public/data`` (frontend dev).
 """
 
@@ -38,6 +39,10 @@ def _cmd_validate(args: argparse.Namespace) -> int:
         f"OK: {len(config.massifs)} massif(s), {len(stations)} station(s), "
         f"{len(config.kpis)} KPI(s), {len(config.tiles)} tile(s), {len(config.sources)} source(s)"
     )
+    from .reference import missing_references
+
+    for key in missing_references(config):
+        print(f"warning: config/{key} is missing; run `uv run bluebird reference`")
     return 0
 
 
@@ -82,6 +87,13 @@ def _cmd_run(args: argparse.Namespace) -> int:
     config = load_config(args.config_dir)
     layers = list(LAYERS) if args.layer == "all" else [args.layer]
     sources = config.enabled_sources(schedule="daily", only=args.source or None)
+    reference = [s.id for s in sources if s.schedule == "reference"]
+    if reference:
+        print(
+            f"{', '.join(reference)}: reference source(s); use `bluebird reference` instead.",
+            file=sys.stderr,
+        )
+        return 2
     storage = LocalStorage(args.data_dir or default_data_dir())
     ctx = RunContext.create(config, storage, run_date=args.date, massif_ids=args.massif or None)
     today = RunContext.create(config, storage, massif_ids=args.massif or None).run_date
@@ -103,6 +115,31 @@ def _cmd_run(args: argparse.Namespace) -> int:
         return 1
     # Without --strict, succeed as long as the last requested layer produced output.
     return 0 if report.wrote_layer(layers[-1]) else 1
+
+
+def _cmd_reference(args: argparse.Namespace) -> int:
+    from .reference import refresh_references
+
+    config = load_config(args.config_dir)
+    sources = config.enabled_sources(schedule="reference", only=args.source or None)
+    not_reference = [s.id for s in sources if s.schedule != "reference"]
+    if not_reference:
+        print(f"{', '.join(not_reference)}: not reference source(s).", file=sys.stderr)
+        return 2
+    if not sources:
+        print("No enabled reference source.", file=sys.stderr)
+        return 2
+    storage = LocalStorage(args.data_dir or default_data_dir())
+    ctx = RunContext.create(config, storage, massif_ids=args.massif or None)
+    report = refresh_references(ctx, sources, fetch=not args.no_fetch)
+
+    written = [key for key in report.written if key.startswith("reference/")]
+    print(f"\nReference refresh {ctx.run_id}: {len(written)} file(s) written in {config.root}")
+    for key in written:
+        print(f"  {key}")
+    for message in report.errors:
+        print(f"  error: {message}", file=sys.stderr)
+    return 1 if report.errors else 0
 
 
 def _cmd_demo(args: argparse.Namespace) -> int:
@@ -148,6 +185,17 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--data-dir", type=Path, help="storage root (default: <repo>/data)")
     run.add_argument("--strict", action="store_true", help="fail on any error")
     run.set_defaults(func=_cmd_run)
+
+    ref = sub.add_parser("reference", help="refresh reference files in config/reference")
+    ref.add_argument("--source", action="append", help="reference source id (repeatable)")
+    ref.add_argument("--massif", action="append", help="restrict to a massif (repeatable)")
+    ref.add_argument("--data-dir", type=Path, help="storage root (default: <repo>/data)")
+    ref.add_argument(
+        "--no-fetch",
+        action="store_true",
+        help="rebuild from the latest stored bronze batch instead of calling the source",
+    )
+    ref.set_defaults(func=_cmd_reference)
 
     demo = sub.add_parser("demo", help="write synthetic demo data for the frontend")
     demo.add_argument("--out", type=Path, help="default: <repo>/web/public/data")

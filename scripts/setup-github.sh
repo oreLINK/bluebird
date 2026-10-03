@@ -15,6 +15,7 @@
 #                            "CI result" check passing.
 #        "Protect gh-pages": nobody may push, merge or delete; only deploy
 #                            keys bypass (i.e. GitHub Actions).
+#   2b. Allows workflows to open pull requests (reference.yml opens one to dev).
 #   3. Builds the site once if gh-pages does not exist yet (deploy.yml).
 #   4. Configures GitHub Pages to serve the gh-pages branch.
 #   5. Runs the daily data workflow once so the site has data.
@@ -127,6 +128,11 @@ upsert_ruleset "Protect gh-pages" '{
     { "type": "non_fast_forward" }
   ]
 }'
+
+say "2b. Workflow permissions"
+gh api -X PUT "repos/$REPO/actions/permissions/workflow" \
+  -f default_workflow_permissions=read -F can_approve_pull_request_reviews=true >/dev/null
+echo "Workflows may open pull requests (default token stays read-only)."
 
 # ------------------------------------------------------- 3. first site build
 latest_run_id() {

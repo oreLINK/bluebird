@@ -250,7 +250,14 @@ class Source(StrictModel):
     extractor: Slug
     transformer: Slug
     enabled: bool = True
-    schedule: Literal["daily", "on_demand"] = "daily"
+    schedule: Literal["daily", "on_demand", "reference"] = Field(
+        default="daily",
+        description=(
+            "daily: fetched every morning; on_demand: only with `bluebird run --source`; "
+            "reference: slow-changing data refreshed with `bluebird reference` and "
+            "committed under config/reference/."
+        ),
+    )
     params: dict[str, Any] = Field(default_factory=dict)
     attribution: Attribution
 

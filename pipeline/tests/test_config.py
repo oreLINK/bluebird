@@ -64,3 +64,13 @@ def test_unknown_aggregator_and_bad_params_are_reported(tmp_path: Path) -> None:
     errors = plugin_errors(load_config(config_dir))
     assert any("unknown aggregator 'does_not_exist'" in e for e in errors)
     assert any("snowfall_chance' params" in e for e in errors)
+
+
+def test_committed_reference_files_cover_every_station(repo_config: Config) -> None:
+    from bluebird_pipeline.reference import load_reference, missing_references
+
+    assert missing_references(repo_config) == [], "run `uv run bluebird reference`"
+    domains = load_reference(repo_config, "domain_features")
+    assert domains is not None
+    stations = {ref.id for ref in repo_config.station_refs()}
+    assert set(domains["station_id"]) == stations, "a station has no piste or lift"

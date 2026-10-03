@@ -8,6 +8,11 @@ column names and units, whatever the source:
 
 Each Transformer declares the ``dataset`` it produces and its column ``schema``;
 :meth:`Transformer.conform` enforces it so gold code can rely on it.
+
+Reference datasets (sources with ``schedule: reference``, e.g. pistes and lifts)
+are also serialised to committed files under ``config/reference/``: such a
+Transformer sets ``reference_suffix`` and implements :meth:`reference_file`
+and :meth:`read_reference`. See :mod:`bluebird_pipeline.reference`.
 """
 
 from __future__ import annotations
@@ -18,7 +23,7 @@ from typing import Any, ClassVar
 import polars as pl
 
 from ..bronze.base import BronzeBatch
-from ..config import Source
+from ..config import Massif, Source
 from ..context import RunContext
 from ..registry import Registry
 
@@ -34,12 +39,29 @@ class Transformer(ABC):
     dataset: ClassVar[str]
     schema: ClassVar[dict[str, Any]]
 
+    #: Extension of the committed reference file (e.g. ".geojson") when this
+    #: dataset is reference data; ``None`` for daily data.
+    reference_suffix: ClassVar[str | None] = None
+
     def __init__(self, source: Source) -> None:
         self.source = source
 
     @abstractmethod
     def transform(self, batch: BronzeBatch, ctx: RunContext) -> pl.DataFrame:
         """Return the silver table for ``batch``; call :meth:`conform` before returning."""
+
+    def reference_file(self, frame: pl.DataFrame, massif: Massif, ctx: RunContext) -> bytes | None:
+        """Serialise the rows of ``massif`` as a reference file, or ``None`` if it has no rows.
+
+        The output must be deterministic (sorted, stable formatting) so that a
+        refresh produces a readable diff in the pull request.
+        """
+        raise NotImplementedError(f"{type(self).__name__} does not produce reference data")
+
+    @classmethod
+    def read_reference(cls, content: bytes) -> pl.DataFrame:
+        """Parse one reference file back into a table with :attr:`schema`."""
+        raise NotImplementedError(f"{cls.__name__} does not produce reference data")
 
     def conform(self, frame: pl.DataFrame) -> pl.DataFrame:
         """Add missing columns as nulls, cast every column, and order them as ``schema``."""
