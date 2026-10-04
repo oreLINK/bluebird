@@ -1,19 +1,42 @@
 <!--
-  Filter bar under the header (config/filters.yaml): one chip per filter in a
-  horizontally scrollable row (touch swipe, trackpad, or mouse wheel on
-  desktop). Edges fade when more chips are hidden on that side, and the
-  selected chip is scrolled into view.
+  A horizontally scrollable row of choices in the header (touch swipe,
+  trackpad, or mouse wheel on desktop). Edges fade when more choices are
+  hidden on that side, and the selected one is scrolled into view.
+  Used twice by AppHeader, with the same chip style in two sizes:
+    size `large`  the massif bar (config/massifs.yaml); one massif is always
+                  selected, there is no "all" choice.
+    size `small`  the filter bar (config/filters.yaml).
 -->
-<script lang="ts">
+<script lang="ts" module>
   import type { Filter } from '../lib/config';
+
+  /** A choice of the bar: a filter, or a massif (no icon). */
+  export interface BarOption {
+    id: string;
+    name: Filter['name'];
+    icon?: string | null;
+    /** `rewind`: Christmas-red chip (config/filters.yaml `theme`). */
+    theme?: Filter['theme'];
+  }
+</script>
+
+<script lang="ts">
   import { i18n } from '../lib/i18n/i18n.svelte';
   import Icon from './Icon.svelte';
 
   let {
-    filters,
+    options,
     selected,
     onselect,
-  }: { filters: Filter[]; selected: string; onselect: (id: string) => void } = $props();
+    label,
+    size = 'small',
+  }: {
+    options: BarOption[];
+    selected: string;
+    onselect: (id: string) => void;
+    label: string;
+    size?: 'large' | 'small';
+  } = $props();
 
   let bar = $state<HTMLElement>();
   let fadeStart = $state(false);
@@ -39,7 +62,7 @@
   }
 
   $effect(() => {
-    void filters.length;
+    void options.length;
     updateFades();
   });
 </script>
@@ -48,22 +71,23 @@
 
 <nav
   bind:this={bar}
-  class="bar"
+  class="bar {size}"
   class:fade-start={fadeStart}
   class:fade-end={fadeEnd}
-  aria-label={i18n.t('filters.label')}
+  aria-label={label}
   onscroll={updateFades}
   {onwheel}
 >
-  {#each filters as filter (filter.id)}
+  {#each options as option (option.id)}
     <button
       type="button"
       class="chip"
-      aria-pressed={filter.id === selected}
-      onclick={(event) => choose(filter.id, event.currentTarget)}
+      class:rewind={option.theme === 'rewind'}
+      aria-pressed={option.id === selected}
+      onclick={(event) => choose(option.id, event.currentTarget)}
     >
-      {#if filter.icon}<Icon name={filter.icon} size={18} />{/if}
-      <span>{i18n.pick(filter.name)}</span>
+      {#if option.icon}<Icon name={option.icon} size={size === 'small' ? 16 : 18} />{/if}
+      <span>{i18n.pick(option.name)}</span>
     </button>
   {/each}
 </nav>
@@ -144,5 +168,43 @@
 
   .chip[aria-pressed='true'] :global(svg) {
     color: inherit;
+  }
+
+  /* Rewind filter: red outline and text, filled red when selected. */
+  .chip.rewind {
+    border-color: var(--rewind-red);
+    color: var(--rewind-ink);
+  }
+
+  .chip.rewind :global(svg) {
+    color: var(--rewind-ink);
+  }
+
+  .chip.rewind[aria-pressed='true'] {
+    background: var(--rewind-red);
+    color: var(--on-rewind);
+  }
+
+  .chip.rewind[aria-pressed='true'] :global(svg) {
+    color: inherit;
+  }
+
+  /* Massif bar: larger chips, the main choice of the page. */
+  .large .chip {
+    min-height: 2.75rem;
+    padding: 0 20px;
+    font-size: 1.0625rem;
+  }
+
+  /* Filter bar: smaller chips, secondary to the massif. */
+  .small {
+    gap: 6px;
+  }
+
+  .small .chip {
+    gap: 5px;
+    min-height: 2.125rem;
+    padding: 0 12px 0 10px;
+    font-size: 0.8125rem;
   }
 </style>

@@ -20,11 +20,13 @@ from .config import (
     KpisFile,
     LayoutFile,
     MassifsFile,
+    PagesFile,
+    RewindsFile,
     SourcesFile,
     StationsFile,
     TilesFile,
 )
-from .diamond.models import DiamondManifest, DiamondMassifDaily
+from .diamond.models import DiamondManifest, DiamondMassifDaily, DiamondRewind
 
 Mode = Literal["validation", "serialization"]
 
@@ -38,8 +40,11 @@ SCHEMAS: dict[str, tuple[type[BaseModel], Mode]] = {
     "tiles": (TilesFile, "validation"),
     "layout": (LayoutFile, "validation"),
     "sources": (SourcesFile, "validation"),
+    "pages": (PagesFile, "validation"),
+    "rewinds": (RewindsFile, "validation"),
     "diamond-massif-daily": (DiamondMassifDaily, "serialization"),
     "diamond-manifest": (DiamondManifest, "serialization"),
+    "diamond-rewind": (DiamondRewind, "serialization"),
 }
 
 

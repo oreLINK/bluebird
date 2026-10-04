@@ -16,9 +16,7 @@ so neighbouring resorts closer than twice the radius share some features.
 from __future__ import annotations
 
 import json
-import math
 from collections import defaultdict
-from itertools import pairwise
 from typing import Any, ClassVar
 
 import polars as pl
@@ -26,24 +24,12 @@ import polars as pl
 from ..bronze.base import BronzeBatch
 from ..config import Massif
 from ..context import RunContext
+from ..geo import path_length_m
 from .base import Transformer, register_transformer
 
-_EARTH_RADIUS_M = 6_371_000.0
 _NON_LINE_AERIALWAYS = {"station", "pylon", "goods"}
 _COORD_DECIMALS = 5  # ~1 m
 _DIFFICULTIES = ("novice", "easy", "intermediate", "advanced", "expert", "freeride")
-
-
-def path_length_m(points: list[list[float]]) -> float:
-    """Length of a polyline of ``[lon, lat]`` points (haversine)."""
-    total = 0.0
-    for (lon1, lat1), (lon2, lat2) in pairwise(points):
-        phi1, phi2 = math.radians(lat1), math.radians(lat2)
-        dphi = phi2 - phi1
-        dlambda = math.radians(lon2 - lon1)
-        h = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
-        total += 2 * _EARTH_RADIUS_M * math.asin(math.sqrt(h))
-    return total
 
 
 def _station_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:

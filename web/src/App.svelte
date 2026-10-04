@@ -4,14 +4,27 @@
   import AppMenu from './components/AppMenu.svelte';
   import ForecastStatus from './components/ForecastStatus.svelte';
   import Icon from './components/Icon.svelte';
+  import InfoPage from './components/InfoPage.svelte';
   import MessageCard from './components/MessageCard.svelte';
-  import { filterTiles, filters, massifs, tilesForMassif, usableFilters } from './lib/config';
+  import {
+    filterTiles,
+    filters,
+    massifs,
+    pages,
+    rewindOfFilter,
+    rewindPayload,
+    rewinds,
+    tilesForMassif,
+    usableFilters,
+  } from './lib/config';
   import { type MassifDaily, loadMassif } from './lib/data';
   import { i18n } from './lib/i18n/i18n.svelte';
   import { readPref, writePref } from './lib/prefs';
+  import { sheets } from './lib/sheets.svelte';
   import { arrive, leave, motion } from './lib/transitions';
   import { flip } from 'svelte/animate';
-  import { tileComponent } from './tiles/registry';
+  import { viewFor } from './lib/kpiView';
+  import { skeletonVariant, tileComponent } from './tiles/registry';
   import TileShell from './tiles/TileShell.svelte';
   import TileSkeleton from './tiles/TileSkeleton.svelte';
 
@@ -27,11 +40,15 @@
   let payload = $state<MassifDaily | null>(null);
   let attempt = $state(0);
 
-  const massif = $derived(massifs.find((m) => m.id === massifId));
   const resolvedTiles = $derived(tilesForMassif(massifId));
+  /** A full-window page is open (`#<page id>` in the URL): the page behind is inert. */
+  const sheetOpen = $derived(pages.some((p) => p.id === sheets.current));
   const barFilters = $derived(usableFilters(filters, resolvedTiles));
   const activeFilter = $derived(barFilters.find((f) => f.id === filterId) ?? barFilters[0]);
-  const visibleTiles = $derived(filterTiles(resolvedTiles, activeFilter));
+  const visibleTiles = $derived(filterTiles(resolvedTiles, activeFilter, barFilters));
+  /** The Rewind of the active filter: its tiles do not depend on the live forecasts. */
+  const activeRewind = $derived(rewindOfFilter(activeFilter?.id));
+  const showsLive = $derived(visibleTiles.some(({ kpis }) => (kpis[0]?.kind ?? 'live') === 'live'));
 
   $effect(() => {
     const id = massifId;
@@ -62,7 +79,6 @@
   function selectMassif(id: string) {
     massifId = id;
     writePref('massif', id);
-    menuOpen = false;
   }
 
   function selectFilter(id: string) {
@@ -70,14 +86,13 @@
     writePref('filter', id);
   }
 
-  function skeletonVariant(type: string): 'banner' | 'full' | 'list' {
-    if (type === 'banner_full') return 'full';
-    return type === 'banner' ? 'banner' : 'list';
-  }
 </script>
 
-<div class="page" inert={menuOpen}>
+<div class="page" inert={menuOpen || sheetOpen}>
   <AppHeader
+    {massifs}
+    selectedMassif={massifId}
+    onselectmassif={selectMassif}
     filters={barFilters}
     selectedFilter={activeFilter?.id ?? ''}
     onselectfilter={selectFilter}
@@ -86,15 +101,17 @@
   />
 
   <main class="container main">
-    {#if status === 'ready' && payload}
-      <ForecastStatus data={payload} massifName={i18n.pick(massif?.name)} />
+    {#if activeRewind}
+      <ForecastStatus rewind={activeRewind} />
+    {:else if status === 'ready' && payload}
+      <ForecastStatus data={payload} />
     {:else}
       <p class="tagline">{i18n.t('app.tagline')}</p>
     {/if}
 
-    {#if status === 'empty'}
+    {#if showsLive && status === 'empty'}
       <MessageCard icon="snowflake" message={i18n.t('status.noData')} />
-    {:else if status === 'error'}
+    {:else if showsLive && status === 'error'}
       <MessageCard message={i18n.t('status.error')}>
         {#snippet action()}
           <button type="button" class="retry" onclick={() => attempt++}>
@@ -107,19 +124,20 @@
       <MessageCard icon="info" message={i18n.t('filter.empty')} />
     {:else}
       <p class="visually-hidden" role="status">
-        {status === 'loading' ? i18n.t('status.loading') : ''}
+        {showsLive && status === 'loading' ? i18n.t('status.loading') : ''}
       </p>
       <div class="tiles">
         {#each visibleTiles as { tile, kpis }, index (tile.id)}
           {@const title = i18n.pick(tile.title ?? kpis[0]?.name)}
           {@const TileComponent = tileComponent(tile.type)}
+          {@const view = viewFor(kpis[0], massifId, payload, rewinds, rewindPayload)}
           <div
             class="slot"
             animate:flip={{ duration: motion(260) }}
             in:arrive={{ delay: index * 45 }}
             out:leave
           >
-            {#if status === 'loading' || !payload}
+            {#if !view}
               <TileSkeleton
                 id={tile.id}
                 {title}
@@ -127,7 +145,7 @@
                 variant={skeletonVariant(tile.type)}
               />
             {:else if TileComponent}
-              <TileComponent {tile} {kpis} data={payload} />
+              <TileComponent {tile} {kpis} {view} />
             {:else if import.meta.env.DEV}
               <TileShell id={tile.id} {title} icon={tile.icon}>
                 <p>{i18n.t('tile.unsupported', { type: tile.type })}</p>
@@ -139,16 +157,14 @@
     {/if}
   </main>
 
-  <AppFooter data={payload} />
+  <AppFooter />
 </div>
 
-<AppMenu
-  open={menuOpen}
-  onclose={() => (menuOpen = false)}
-  {massifs}
-  selectedMassif={massifId}
-  onselectmassif={selectMassif}
-/>
+<AppMenu open={menuOpen} onclose={() => (menuOpen = false)} />
+
+{#each pages as page (page.id)}
+  <InfoPage {page} />
+{/each}
 
 <style>
   .main {

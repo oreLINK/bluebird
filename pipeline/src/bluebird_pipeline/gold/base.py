@@ -1,8 +1,13 @@
 """Gold layer contract: ``Aggregator`` classes compute one KPI from silver tables.
 
-Every KPI result is a probability in [0, 1] for one station and one forecast
-date, plus a confidence level and explanatory ``drivers``. All results of a
-run are stored together in ``gold/kpis/date=<date>/kpis.parquet``.
+Live KPIs (``Aggregator``): a probability in [0, 1] for one station and one
+forecast date, plus a confidence level and explanatory ``drivers``. All results
+of a run are stored together in ``gold/kpis/date=<date>/kpis.parquet``.
+
+Historical KPIs (``SeasonAggregator``, kind ``historical``): one value (cm,
+hours…) per station over a closed season, computed by ``bluebird rewind`` from
+the season's hourly table and stored in ``gold/rewind/{rewind_id}/kpis.parquet``.
+Both kinds share the aggregator registry and the ``aggregator_*.py`` naming.
 """
 
 from __future__ import annotations
@@ -15,7 +20,7 @@ from typing import Any, ClassVar, Literal
 import polars as pl
 from pydantic import BaseModel, ConfigDict, Field
 
-from ..config import Kpi, StationRef
+from ..config import Kpi, KpiKind, Rewind, StationRef
 from ..context import RunContext
 from ..registry import Registry
 
@@ -72,6 +77,7 @@ class Aggregator(ABC):
     """
 
     id: ClassVar[str]
+    kind: ClassVar[KpiKind] = "live"
     version: ClassVar[str] = "1"
     Params: ClassVar[type[AggregatorParams]] = AggregatorParams
     required_datasets: ClassVar[tuple[str, ...]] = ()
@@ -162,5 +168,107 @@ def frame_to_results(frame: pl.DataFrame) -> list[KpiResult]:
     ]
 
 
-AGGREGATORS: Registry[Aggregator] = Registry("aggregator")
+# ------------------------------------------------------------- historical KPIs
+
+SEASON_DATASET = "season_hourly"
+
+
+class SeasonKpiResult(BaseModel):
+    """One historical KPI value for one station over one Rewind season."""
+
+    kpi_id: str
+    station_id: str
+    massif_id: str
+    rewind_id: str
+    value: float
+    unit: str
+    drivers: dict[str, DriverValue] = Field(default_factory=dict)
+    aggregator: str
+    aggregator_version: str
+
+
+class SeasonAggregator(ABC):
+    """Compute one historical KPI for every station from a season's hourly table.
+
+    ``aggregate`` receives the ``season_hourly`` rows of the run's stations,
+    already limited to the season window ``(start, end]``. Subclasses register
+    with ``@register_aggregator("id")`` like live aggregators.
+    """
+
+    id: ClassVar[str]
+    kind: ClassVar[KpiKind] = "historical"
+    version: ClassVar[str] = "1"
+    Params: ClassVar[type[AggregatorParams]] = AggregatorParams
+    required_datasets: ClassVar[tuple[str, ...]] = (SEASON_DATASET,)
+
+    def __init__(self, kpi: Kpi) -> None:
+        self.kpi = kpi
+        self.params = self.Params.model_validate(kpi.params)
+
+    @abstractmethod
+    def aggregate(
+        self, ctx: RunContext, rewind: Rewind, hourly: pl.DataFrame
+    ) -> list[SeasonKpiResult]:
+        """Return one :class:`SeasonKpiResult` per station with data."""
+
+    def result(
+        self,
+        rewind: Rewind,
+        ref: StationRef,
+        *,
+        value: float,
+        drivers: dict[str, DriverValue],
+    ) -> SeasonKpiResult:
+        """``value`` is in the aggregator's unit; it is published in ``kpi.value.unit``."""
+        spec = self.kpi.value
+        decimals = spec.decimals if spec else 1
+        scale = spec.scale if spec else 1.0
+        return SeasonKpiResult(
+            kpi_id=self.kpi.id,
+            station_id=ref.station.id,
+            massif_id=ref.massif.id,
+            rewind_id=rewind.id,
+            value=round(float(value) * scale, decimals + 1),
+            unit=spec.unit if spec else "",
+            drivers=drivers,
+            aggregator=self.id,
+            aggregator_version=self.version,
+        )
+
+
+SEASON_GOLD_SCHEMA: dict[str, Any] = {
+    "kpi_id": pl.Utf8,
+    "station_id": pl.Utf8,
+    "massif_id": pl.Utf8,
+    "rewind_id": pl.Utf8,
+    "value": pl.Float64,
+    "unit": pl.Utf8,
+    "drivers_json": pl.Utf8,
+    "aggregator": pl.Utf8,
+    "aggregator_version": pl.Utf8,
+}
+
+
+def season_results_to_frame(results: list[SeasonKpiResult]) -> pl.DataFrame:
+    rows = [
+        {
+            **result.model_dump(exclude={"drivers"}),
+            "drivers_json": json.dumps(result.drivers, sort_keys=True),
+        }
+        for result in results
+    ]
+    return pl.DataFrame(rows, schema=SEASON_GOLD_SCHEMA)
+
+
+def frame_to_season_results(frame: pl.DataFrame) -> list[SeasonKpiResult]:
+    return [
+        SeasonKpiResult(
+            **{k: v for k, v in row.items() if k != "drivers_json"},
+            drivers=json.loads(row["drivers_json"]),
+        )
+        for row in frame.iter_rows(named=True)
+    ]
+
+
+AGGREGATORS: Registry[Aggregator | SeasonAggregator] = Registry("aggregator")
 register_aggregator = AGGREGATORS.register

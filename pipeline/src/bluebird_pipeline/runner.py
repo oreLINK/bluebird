@@ -82,7 +82,7 @@ def run_silver(ctx: RunContext, sources: list[Source], report: RunReport) -> Non
 
 def run_gold(ctx: RunContext, report: RunReport) -> None:
     results: list[KpiResult] = []
-    for kpi in ctx.config.enabled_kpis():
+    for kpi in ctx.config.enabled_kpis(kind="live"):
         try:
             aggregator = AGGREGATORS.get(kpi.aggregator)(kpi)
             kpi_results = aggregator.aggregate(ctx)
@@ -100,6 +100,8 @@ def run_gold(ctx: RunContext, report: RunReport) -> None:
 
 def run_diamond(ctx: RunContext, report: RunReport) -> None:
     for displayer_id, displayer_cls in DISPLAYERS.items():
+        if displayer_cls.schedule != "daily":
+            continue
         try:
             for artifact in displayer_cls().display(ctx):
                 ctx.storage.write_json(artifact.key, artifact.payload.model_dump(mode="json"))

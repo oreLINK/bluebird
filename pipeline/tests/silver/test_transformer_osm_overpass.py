@@ -8,8 +8,8 @@ from _factories import RUN_DATE, overpass_payload
 
 from bluebird_pipeline.bronze import BronzeBatch, BronzeRecord
 from bluebird_pipeline.context import RunContext
+from bluebird_pipeline.geo import path_length_m
 from bluebird_pipeline.silver import TRANSFORMERS
-from bluebird_pipeline.silver.transformer_osm_overpass import path_length_m
 
 
 def _batch() -> BronzeBatch:

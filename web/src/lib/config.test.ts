@@ -3,10 +3,20 @@ import {
   enabledMassifs,
   filterTiles,
   filters,
+  footer,
+  footerLinks,
+  footerPages,
+  enabledRewinds,
+  indexRewinds,
   kpis,
   layout,
   massifs,
+  pages,
   resolveLayout,
+  rewindOfFilter,
+  rewinds,
+  sourceAttributions,
+  stationNames,
   tiles,
   usableFilters,
 } from './config';
@@ -84,11 +94,84 @@ describe('filters', () => {
     expect(filterTiles(resolved, undefined)).toHaveLength(2);
   });
 
+  it('keeps the tiles of exclusive filters out of the all filter', () => {
+    const rewindKpi: Kpi = { id: 'k3', aggregator: 'a', name, description: name, filters: ['rewind'] };
+    const withRewind = [...resolved, { tile: { id: 't3', type: 'rewind', kpis: ['k3'] }, kpis: [rewindKpi] }];
+    const rewind = { id: 'rewind', name, exclusive: true };
+    const bar = [all, rewind, snow];
+    expect(filterTiles(withRewind, all, bar).map((r) => r.tile.id)).toEqual(['t1', 't2']);
+    expect(filterTiles(withRewind, rewind, bar).map((r) => r.tile.id)).toEqual(['t3']);
+    expect(usableFilters(bar, withRewind).map((f) => f.id)).toEqual(['all', 'rewind', 'snow']);
+  });
+
   it('hides filters that match no tile of the current layout', () => {
     expect(usableFilters([all, snow, wind], resolved).map((f) => f.id)).toEqual(['all', 'snow']);
   });
 
   it('bundles the repository filters with at least one usable filter', () => {
     expect(usableFilters(filters, resolveLayout(massifs[0]!.id, layout, tiles, kpis)).length).toBeGreaterThan(1);
+  });
+});
+
+describe('pages and footer', () => {
+  const title = { fr: 'x', en: 'x' };
+  const page = (id: string) => ({ id, title, sections: [{ id: 's', title, paragraphs: [title] }] });
+
+  it('lists footer pages in footer order and skips unknown ids', () => {
+    const file = {
+      footer: { repository: 'https://example.org', pages: ['b', 'missing', 'a'] },
+      pages: [page('a'), page('b')],
+    };
+    expect(footerPages(file as never).map((p) => p.id)).toEqual(['b', 'a']);
+  });
+
+  it('lists the attribution of enabled sources once', () => {
+    const attribution = { name: 'Open-Meteo', url: 'https://open-meteo.com/', license: 'CC BY 4.0' };
+    const source = (id: string, enabled = true) => ({ id, extractor: id, transformer: id, enabled, attribution });
+    const other = { ...source('c'), attribution: { name: 'OSM', url: 'https://osm.org' } };
+    expect(sourceAttributions([source('a'), source('b'), source('x', false), other])).toEqual([
+      attribution,
+      other.attribution,
+    ]);
+  });
+
+  it('bundles a footer with a repository link and existing pages', () => {
+    expect(footer.repository).toMatch(/^https:\/\/github\.com\//);
+    expect(footerLinks.length).toBe(footer.pages.length);
+    expect(pages.map((p) => p.id)).toEqual(expect.arrayContaining(['legal', 'privacy']));
+  });
+
+  it('knows station names by massif and id', () => {
+    expect(stationNames.get('pyrenees/cauterets')).toMatch(/Cauterets/);
+  });
+});
+
+describe('rewinds', () => {
+  it('indexes Rewind payloads by rewind and massif from their file paths', () => {
+    const payload = { rewind_id: '2025-26', massif_id: 'pyrenees' } as never;
+    const index = indexRewinds({ '/config/rewind/2025-26/pyrenees.json': payload });
+    expect(index.get('2025-26/pyrenees')).toBe(payload);
+  });
+
+  it('turns YAML dates (parsed as Date objects) back into YYYY-MM-DD strings', () => {
+    const rewind = { id: 'x', name, start: new Date('2025-12-01') as never, end: '2026-05-01', massifs: ['m'] as [string], kpis: ['k'] as [string], filter: 'f' };
+    expect(enabledRewinds({ rewinds: [rewind, { ...rewind, id: 'off', enabled: false }] })).toEqual([
+      { ...rewind, start: '2025-12-01' },
+    ]);
+  });
+
+  it('bundles the Rewind 25/26 with string dates', () => {
+    const rewind = rewinds.find((r) => r.id === '2025-26');
+    expect(rewind?.start).toBe('2025-12-01');
+    expect(rewind?.end).toBe('2026-05-01');
+  });
+
+  it('bundles the Rewind 25/26 behind an exclusive filter placed right after "All"', () => {
+    const rewind = rewinds.find((r) => r.id === '2025-26');
+    expect(rewind).toBeDefined();
+    expect(rewindOfFilter(rewind!.filter)).toBe(rewind);
+    const index = filters.findIndex((f) => f.id === rewind!.filter);
+    expect(filters[index - 1]?.all).toBe(true);
+    expect(filters[index]?.exclusive).toBe(true);
   });
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { kpis, tiles } from '../lib/config';
-import { TILE_COMPONENTS } from './registry';
+import { TILE_COMPONENTS, skeletonVariant } from './registry';
 import { bannerScene, booleanOption, numberOption } from './options';
 
 describe('tile registry', () => {
@@ -24,6 +24,14 @@ describe('tile registry', () => {
     expect(bannerScene({ options: { scene: 'nope' }, icon: 'snowflake' })).toBe('snowfall');
     expect(bannerScene({ icon: 'mountain' })).toBe('offpiste');
     expect(bannerScene({})).toBe('mountain');
+  });
+
+  it('shows a placeholder shaped like each tile type', () => {
+    expect(skeletonVariant('banner')).toBe('banner');
+    expect(skeletonVariant('banner_full')).toBe('full');
+    expect(skeletonVariant('simple')).toBe('simple');
+    expect(skeletonVariant('ranking')).toBe('list');
+    expect(skeletonVariant('unknown')).toBe('list');
   });
 
   it('follows the Tile + PascalCase(type) naming convention', () => {

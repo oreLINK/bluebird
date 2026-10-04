@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  formatDate,
   formatDriver,
+  formatSeason,
   formatMethod,
   formatLongDate,
   formatOdds,
@@ -34,6 +36,13 @@ describe('format', () => {
     expect(formatLongDate('2027-01-15', 'fr')).toBe('vendredi 15 janvier');
     expect(formatLongDate('2027-01-15', 'en')).toBe('Friday 15 January');
     expect(formatTime('2027-01-15T04:32:00Z', 'fr', 'Europe/Paris')).toBe('05:32');
+    expect(formatDate('2025-12-01', 'fr')).toBe('1 déc. 2025');
+    expect(formatDate('2026-05-01', 'en')).toBe('1 May 2026');
+    expect(formatSeason('2025-12-01', '2026-05-01')).toBe('2025/2026');
+    expect(formatSeason('2026-01-01', '2026-04-30')).toBe('2026');
+    const tomorrow = ['2027-01-16T09:00:00+01:00', '2027-01-16T17:00:00+01:00'] as const;
+    expect(formatWindow(...tomorrow, 'fr', 'Europe/Paris', '2027-01-15')).toBe('sam. 09:00 → 17:00');
+    expect(formatWindow(...tomorrow, 'fr', 'Europe/Paris', '2027-01-16')).toBe('09:00 → 17:00');
   });
 
   it('shows the day only when a window spans midnight', () => {
