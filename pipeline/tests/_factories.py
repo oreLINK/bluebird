@@ -36,6 +36,9 @@ UNITS = {
     "wind_gusts_10m": "km/h",
     "freezing_level_height": "undefined",
     "cloud_cover": "%",
+    "cloud_cover_low": "%",
+    "relative_humidity_2m": "%",
+    "shortwave_radiation": "W/m²",
 }
 
 # value(variable, model, member, time_utc, elevation) -> value

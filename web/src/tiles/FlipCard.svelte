@@ -8,6 +8,10 @@
   The back has the height of the front and scrolls when its content is longer.
   Each face carries its own card frame (with the striped top corners), so the
   frame turns with the card and its corners always match the card edges.
+  `plain`: the front has no image behind the "?" button (TileSimple), which
+  then takes the plain style of the back's "×" button.
+  `theme`: colour theme of the card (token overrides `[data-tile-theme]` in
+  styles/base.css), e.g. `rewind` for the Rewind tiles.
 -->
 <script lang="ts">
   import { tick, type Snippet } from 'svelte';
@@ -18,7 +22,15 @@
     labelledby,
     front,
     back,
-  }: { labelledby: string; front: Snippet; back: Snippet } = $props();
+    plain = false,
+    theme = 'default',
+  }: {
+    labelledby: string;
+    front: Snippet;
+    back: Snippet;
+    plain?: boolean;
+    theme?: string;
+  } = $props();
 
   let flipped = $state(false);
   let backScroll = $state<HTMLElement>();
@@ -52,11 +64,15 @@
   }
 </script>
 
-<section class="flip-card" aria-labelledby={labelledby}>
+<section
+  class="flip-card"
+  aria-labelledby={labelledby}
+  data-tile-theme={theme === 'default' ? undefined : theme}
+>
   <div class="flipper" class:flipped>
     <!-- Pointer convenience only: the "?" and "×" buttons are the keyboard path. -->
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-    <div class="face front card" inert={flipped} onclick={onFaceClick}>
+    <div class="face front card" class:plain inert={flipped} onclick={onFaceClick}>
       <div class="card-body">
         {@render front()}
         <button
@@ -167,7 +183,8 @@
     backdrop-filter: blur(6px);
   }
 
-  .back .flip-button {
+  .back .flip-button,
+  .plain .flip-button {
     border-color: var(--line);
     background: var(--surface-2);
     color: var(--ink);

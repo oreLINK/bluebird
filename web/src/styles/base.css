@@ -66,13 +66,37 @@ a {
  *   <section class="card"><div class="card-body">…</div></section>
  */
 /*
- * Shared tile dimensions: every banner tile has the same collapsed size, and
- * the "see all" bar has the same height everywhere.
+ * Shared tile dimensions: every banner tile has the same collapsed size, every
+ * simple tile a shorter one, and the "see all" bar the same height everywhere.
  */
 :root {
   --tile-banner-h: 9.5rem; /* illustrated banner of a `banner` tile */
-  --tile-front-h: 19rem; /* banner + title + odds (whole hero of `banner_full`) */
+  --tile-front-h: 19.5rem; /* banner + title + odds (whole hero of `banner_full`) */
+  --tile-simple-h: 10.5rem; /* title + odds of a `simple` tile (no banner) */
   --tile-more-h: 2.875rem; /* "see all" bar */
+  --odds-button-h: 5.25rem; /* odds button: name, percentage, reliability dots */
+}
+
+/*
+ * Tile themes: token overrides scoped to one card (FlipCard `theme`, set by
+ * tiles/tileModel.ts). Components keep using role tokens, so a theme is one
+ * block here. `rewind`: Christmas red and white for the Rewind tiles.
+ */
+[data-tile-theme='rewind'] {
+  --stripe: var(--rewind-red);
+  --tile-title: var(--rewind-ink);
+  --tile-badge-bg: var(--rewind-red);
+  --tile-badge-ink: var(--on-rewind);
+  --pill-bg: var(--rewind-red);
+  --pill-border: var(--rewind-red);
+  --pill-ink: var(--on-rewind);
+  --pill-active-bg: var(--on-rewind);
+  --pill-active-ink: var(--rewind-red);
+  --prob-high: var(--rewind-red);
+  --prob-low: var(--rewind-line);
+  --track: var(--rewind-soft);
+  --link: var(--rewind-ink);
+  --sky: var(--on-rewind); /* bars over photos */
 }
 
 .card {

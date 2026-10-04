@@ -1,0 +1,1348 @@
+{
+  "schema_version": 1,
+  "rewind_id": "2025-26",
+  "massif_id": "pyrenees",
+  "start": "2025-12-01",
+  "end": "2026-05-01",
+  "generated_at": "2026-10-04T11:50:13Z",
+  "timezone": "Europe/Paris",
+  "stations": {
+    "font-romeu": {
+      "id": "font-romeu",
+      "name": "Font-Romeu Pyrénées 2000",
+      "short_name": "Font-Romeu",
+      "lat": 42.515,
+      "lon": 2.01,
+      "elevation": {
+        "base": 1750,
+        "mid": 1980,
+        "summit": 2213
+      },
+      "aspects": [
+        "N",
+        "NE",
+        "E"
+      ],
+      "website": null
+    },
+    "les-angles": {
+      "id": "les-angles",
+      "name": "Les Angles",
+      "short_name": "Les Angles",
+      "lat": 42.57,
+      "lon": 2.05,
+      "elevation": {
+        "base": 1600,
+        "mid": 2000,
+        "summit": 2400
+      },
+      "aspects": [
+        "N",
+        "NE",
+        "E"
+      ],
+      "website": null
+    },
+    "formigueres": {
+      "id": "formigueres",
+      "name": "Formiguères",
+      "short_name": "Formiguères",
+      "lat": 42.62,
+      "lon": 2.055,
+      "elevation": {
+        "base": 1700,
+        "mid": 2020,
+        "summit": 2350
+      },
+      "aspects": [
+        "NE",
+        "E"
+      ],
+      "website": null
+    },
+    "porte-puymorens": {
+      "id": "porte-puymorens",
+      "name": "Porté-Puymorens",
+      "short_name": "Porté",
+      "lat": 42.553,
+      "lon": 1.815,
+      "elevation": {
+        "base": 1600,
+        "mid": 2050,
+        "summit": 2500
+      },
+      "aspects": [
+        "N",
+        "NW",
+        "W"
+      ],
+      "website": null
+    },
+    "ax-3-domaines": {
+      "id": "ax-3-domaines",
+      "name": "Ax 3 Domaines",
+      "short_name": "Ax 3 Domaines",
+      "lat": 42.685,
+      "lon": 1.795,
+      "elevation": {
+        "base": 1400,
+        "mid": 1900,
+        "summit": 2400
+      },
+      "aspects": [
+        "N",
+        "NE"
+      ],
+      "website": null
+    },
+    "ascou-pailheres": {
+      "id": "ascou-pailheres",
+      "name": "Ascou-Pailhères",
+      "short_name": "Ascou",
+      "lat": 42.74,
+      "lon": 1.9,
+      "elevation": {
+        "base": 1500,
+        "mid": 1760,
+        "summit": 2030
+      },
+      "aspects": [
+        "N"
+      ],
+      "website": null
+    },
+    "guzet": {
+      "id": "guzet",
+      "name": "Guzet",
+      "short_name": "Guzet",
+      "lat": 42.788,
+      "lon": 1.3,
+      "elevation": {
+        "base": 1100,
+        "mid": 1600,
+        "summit": 2100
+      },
+      "aspects": [
+        "N",
+        "NW"
+      ],
+      "website": null
+    },
+    "le-mourtis": {
+      "id": "le-mourtis",
+      "name": "Le Mourtis",
+      "short_name": "Le Mourtis",
+      "lat": 42.877,
+      "lon": 0.77,
+      "elevation": {
+        "base": 1380,
+        "mid": 1620,
+        "summit": 1860
+      },
+      "aspects": [
+        "N",
+        "NE"
+      ],
+      "website": null
+    },
+    "peyragudes": {
+      "id": "peyragudes",
+      "name": "Peyragudes",
+      "short_name": "Peyragudes",
+      "lat": 42.795,
+      "lon": 0.455,
+      "elevation": {
+        "base": 1600,
+        "mid": 2000,
+        "summit": 2400
+      },
+      "aspects": [
+        "N",
+        "E",
+        "W"
+      ],
+      "website": null
+    },
+    "saint-lary": {
+      "id": "saint-lary",
+      "name": "Saint-Lary",
+      "short_name": "Saint-Lary",
+      "lat": 42.8,
+      "lon": 0.322,
+      "elevation": {
+        "base": 1700,
+        "mid": 2110,
+        "summit": 2515
+      },
+      "aspects": [
+        "N",
+        "NE",
+        "E"
+      ],
+      "website": null
+    },
+    "piau-engaly": {
+      "id": "piau-engaly",
+      "name": "Piau-Engaly",
+      "short_name": "Piau",
+      "lat": 42.788,
+      "lon": 0.158,
+      "elevation": {
+        "base": 1420,
+        "mid": 2010,
+        "summit": 2600
+      },
+      "aspects": [
+        "N",
+        "NE"
+      ],
+      "website": null
+    },
+    "val-louron": {
+      "id": "val-louron",
+      "name": "Val Louron",
+      "short_name": "Val Louron",
+      "lat": 42.807,
+      "lon": 0.413,
+      "elevation": {
+        "base": 1450,
+        "mid": 1800,
+        "summit": 2150
+      },
+      "aspects": [
+        "N",
+        "E"
+      ],
+      "website": null
+    },
+    "grand-tourmalet": {
+      "id": "grand-tourmalet",
+      "name": "Grand Tourmalet",
+      "short_name": "Tourmalet",
+      "lat": 42.91,
+      "lon": 0.18,
+      "elevation": {
+        "base": 1400,
+        "mid": 1950,
+        "summit": 2500
+      },
+      "aspects": [
+        "N",
+        "E",
+        "S"
+      ],
+      "website": null
+    },
+    "luz-ardiden": {
+      "id": "luz-ardiden",
+      "name": "Luz Ardiden",
+      "short_name": "Luz Ardiden",
+      "lat": 42.876,
+      "lon": -0.07,
+      "elevation": {
+        "base": 1680,
+        "mid": 2090,
+        "summit": 2500
+      },
+      "aspects": [
+        "N",
+        "E"
+      ],
+      "website": null
+    },
+    "cauterets": {
+      "id": "cauterets",
+      "name": "Cauterets – Cirque du Lys",
+      "short_name": "Cauterets",
+      "lat": 42.866,
+      "lon": -0.145,
+      "elevation": {
+        "base": 1850,
+        "mid": 2130,
+        "summit": 2415
+      },
+      "aspects": [
+        "N",
+        "NE"
+      ],
+      "website": null
+    },
+    "gourette": {
+      "id": "gourette",
+      "name": "Gourette",
+      "short_name": "Gourette",
+      "lat": 42.957,
+      "lon": -0.333,
+      "elevation": {
+        "base": 1400,
+        "mid": 1900,
+        "summit": 2400
+      },
+      "aspects": [
+        "N",
+        "E",
+        "W"
+      ],
+      "website": null
+    },
+    "la-pierre-saint-martin": {
+      "id": "la-pierre-saint-martin",
+      "name": "La Pierre Saint-Martin",
+      "short_name": "La Pierre St-Martin",
+      "lat": 42.978,
+      "lon": -0.757,
+      "elevation": {
+        "base": 1450,
+        "mid": 1820,
+        "summit": 2200
+      },
+      "aspects": [
+        "N",
+        "NE"
+      ],
+      "website": null
+    },
+    "superbagneres": {
+      "id": "superbagneres",
+      "name": "Luchon-Superbagnères",
+      "short_name": "Superbagnères",
+      "lat": 42.757,
+      "lon": 0.58,
+      "elevation": {
+        "base": 1440,
+        "mid": 1850,
+        "summit": 2260
+      },
+      "aspects": [
+        "N",
+        "E",
+        "W"
+      ],
+      "website": null
+    }
+  },
+  "kpis": {
+    "season_total_snowfall": {
+      "kpi_id": "season_total_snowfall",
+      "aggregator_version": "1",
+      "unit": "m",
+      "ranking": [
+        {
+          "station_id": "la-pierre-saint-martin",
+          "value": 4.434,
+          "drivers": {
+            "best_day": "2026-02-14",
+            "best_day_cm": 33.9,
+            "snow_days": 52
+          }
+        },
+        {
+          "station_id": "grand-tourmalet",
+          "value": 2.586,
+          "drivers": {
+            "best_day": "2026-02-14",
+            "best_day_cm": 23.7,
+            "snow_days": 39
+          }
+        },
+        {
+          "station_id": "formigueres",
+          "value": 2.449,
+          "drivers": {
+            "best_day": "2026-02-14",
+            "best_day_cm": 22.3,
+            "snow_days": 43
+          }
+        },
+        {
+          "station_id": "gourette",
+          "value": 2.34,
+          "drivers": {
+            "best_day": "2026-02-14",
+            "best_day_cm": 16.8,
+            "snow_days": 35
+          }
+        },
+        {
+          "station_id": "ascou-pailheres",
+          "value": 2.293,
+          "drivers": {
+            "best_day": "2026-01-10",
+            "best_day_cm": 16.7,
+            "snow_days": 37
+          }
+        },
+        {
+          "station_id": "porte-puymorens",
+          "value": 2.227,
+          "drivers": {
+            "best_day": "2026-02-14",
+            "best_day_cm": 21.6,
+            "snow_days": 38
+          }
+        },
+        {
+          "station_id": "cauterets",
+          "value": 1.966,
+          "drivers": {
+            "best_day": "2026-02-14",
+            "best_day_cm": 24.5,
+            "snow_days": 34
+          }
+        },
+        {
+          "station_id": "ax-3-domaines",
+          "value": 1.926,
+          "drivers": {
+            "best_day": "2026-02-14",
+            "best_day_cm": 19.9,
+            "snow_days": 32
+          }
+        },
+        {
+          "station_id": "les-angles",
+          "value": 1.725,
+          "drivers": {
+            "best_day": "2026-01-10",
+            "best_day_cm": 12.9,
+            "snow_days": 34
+          }
+        },
+        {
+          "station_id": "luz-ardiden",
+          "value": 1.719,
+          "drivers": {
+            "best_day": "2026-02-14",
+            "best_day_cm": 14.1,
+            "snow_days": 32
+          }
+        },
+        {
+          "station_id": "piau-engaly",
+          "value": 1.557,
+          "drivers": {
+            "best_day": "2026-01-17",
+            "best_day_cm": 14.2,
+            "snow_days": 37
+          }
+        },
+        {
+          "station_id": "peyragudes",
+          "value": 1.471,
+          "drivers": {
+            "best_day": "2026-02-14",
+            "best_day_cm": 19.5,
+            "snow_days": 29
+          }
+        },
+        {
+          "station_id": "guzet",
+          "value": 1.316,
+          "drivers": {
+            "best_day": "2026-01-24",
+            "best_day_cm": 14.0,
+            "snow_days": 28
+          }
+        },
+        {
+          "station_id": "le-mourtis",
+          "value": 1.162,
+          "drivers": {
+            "best_day": "2026-02-14",
+            "best_day_cm": 17.1,
+            "snow_days": 26
+          }
+        },
+        {
+          "station_id": "font-romeu",
+          "value": 0.912,
+          "drivers": {
+            "best_day": "2026-01-10",
+            "best_day_cm": 9.1,
+            "snow_days": 21
+          }
+        },
+        {
+          "station_id": "saint-lary",
+          "value": 0.647,
+          "drivers": {
+            "best_day": "2026-02-14",
+            "best_day_cm": 7.4,
+            "snow_days": 18
+          }
+        },
+        {
+          "station_id": "superbagneres",
+          "value": 0.645,
+          "drivers": {
+            "best_day": "2026-01-24",
+            "best_day_cm": 6.7,
+            "snow_days": 20
+          }
+        },
+        {
+          "station_id": "val-louron",
+          "value": 0.384,
+          "drivers": {
+            "best_day": "2026-02-14",
+            "best_day_cm": 7.1,
+            "snow_days": 13
+          }
+        }
+      ]
+    },
+    "season_longest_snowfall": {
+      "kpi_id": "season_longest_snowfall",
+      "aggregator_version": "1",
+      "unit": "h",
+      "ranking": [
+        {
+          "station_id": "la-pierre-saint-martin",
+          "value": 46.0,
+          "drivers": {
+            "end": "2026-02-15T03:00:00+01:00",
+            "snow_cm": 50.7,
+            "start": "2026-02-13T05:00:00+01:00"
+          }
+        },
+        {
+          "station_id": "ascou-pailheres",
+          "value": 41.0,
+          "drivers": {
+            "end": "2026-01-10T22:00:00+01:00",
+            "snow_cm": 29.7,
+            "start": "2026-01-09T05:00:00+01:00"
+          }
+        },
+        {
+          "station_id": "grand-tourmalet",
+          "value": 41.0,
+          "drivers": {
+            "end": "2026-01-10T21:00:00+01:00",
+            "snow_cm": 33.6,
+            "start": "2026-01-09T04:00:00+01:00"
+          }
+        },
+        {
+          "station_id": "formigueres",
+          "value": 40.0,
+          "drivers": {
+            "end": "2026-01-10T22:00:00+01:00",
+            "snow_cm": 34.6,
+            "start": "2026-01-09T06:00:00+01:00"
+          }
+        },
+        {
+          "station_id": "gourette",
+          "value": 36.0,
+          "drivers": {
+            "end": "2026-01-10T21:00:00+01:00",
+            "snow_cm": 29.3,
+            "start": "2026-01-09T09:00:00+01:00"
+          }
+        },
+        {
+          "station_id": "cauterets",
+          "value": 35.0,
+          "drivers": {
+            "end": "2026-01-10T21:00:00+01:00",
+            "snow_cm": 20.4,
+            "start": "2026-01-09T10:00:00+01:00"
+          }
+        },
+        {
+          "station_id": "luz-ardiden",
+          "value": 34.0,
+          "drivers": {
+            "end": "2026-01-10T20:00:00+01:00",
+            "snow_cm": 20.4,
+            "start": "2026-01-09T10:00:00+01:00"
+          }
+        },
+        {
+          "station_id": "porte-puymorens",
+          "value": 34.0,
+          "drivers": {
+            "end": "2026-02-14T23:00:00+01:00",
+            "snow_cm": 28.1,
+            "start": "2026-02-13T13:00:00+01:00"
+          }
+        },
+        {
+          "station_id": "le-mourtis",
+          "value": 33.0,
+          "drivers": {
+            "end": "2026-01-10T18:00:00+01:00",
+            "snow_cm": 18.2,
+            "start": "2026-01-09T09:00:00+01:00"
+          }
+        },
+        {
+          "station_id": "les-angles",
+          "value": 32.0,
+          "drivers": {
+            "end": "2026-01-20T15:00:00+01:00",
+            "snow_cm": 19.1,
+            "start": "2026-01-19T07:00:00+01:00"
+          }
+        },
+        {
+          "station_id": "piau-engaly",
+          "value": 31.0,
+          "drivers": {
+            "end": "2026-01-10T17:00:00+01:00",
+            "snow_cm": 16.2,
+            "start": "2026-01-09T10:00:00+01:00"
+          }
+        },
+        {
+          "station_id": "guzet",
+          "value": 30.0,
+          "drivers": {
+            "end": "2026-01-10T19:00:00+01:00",
+            "snow_cm": 16.5,
+            "start": "2026-01-09T13:00:00+01:00"
+          }
+        },
+        {
+          "station_id": "peyragudes",
+          "value": 30.0,
+          "drivers": {
+            "end": "2026-01-10T16:00:00+01:00",
+            "snow_cm": 15.5,
+            "start": "2026-01-09T10:00:00+01:00"
+          }
+        },
+        {
+          "station_id": "ax-3-domaines",
+          "value": 29.0,
+          "drivers": {
+            "end": "2026-02-14T22:00:00+01:00",
+            "snow_cm": 24.8,
+            "start": "2026-02-13T17:00:00+01:00"
+          }
+        },
+        {
+          "station_id": "val-louron",
+          "value": 22.0,
+          "drivers": {
+            "end": "2026-02-14T21:00:00+01:00",
+            "snow_cm": 7.3,
+            "start": "2026-02-13T23:00:00+01:00"
+          }
+        },
+        {
+          "station_id": "saint-lary",
+          "value": 20.0,
+          "drivers": {
+            "end": "2026-01-10T15:00:00+01:00",
+            "snow_cm": 8.7,
+            "start": "2026-01-09T19:00:00+01:00"
+          }
+        },
+        {
+          "station_id": "superbagneres",
+          "value": 19.0,
+          "drivers": {
+            "end": "2026-01-10T09:00:00+01:00",
+            "snow_cm": 7.3,
+            "start": "2026-01-09T14:00:00+01:00"
+          }
+        },
+        {
+          "station_id": "font-romeu",
+          "value": 18.0,
+          "drivers": {
+            "end": "2026-01-20T14:00:00+01:00",
+            "snow_cm": 8.2,
+            "start": "2026-01-19T20:00:00+01:00"
+          }
+        }
+      ]
+    },
+    "season_domain_snowfall": {
+      "kpi_id": "season_domain_snowfall",
+      "aggregator_version": "1",
+      "unit": "m",
+      "ranking": [
+        {
+          "station_id": "la-pierre-saint-martin",
+          "value": 4.42,
+          "drivers": {
+            "max_cm": 585.8,
+            "min_cm": 331.2,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "gourette",
+          "value": 3.364,
+          "drivers": {
+            "max_cm": 387.7,
+            "min_cm": 280.2,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "grand-tourmalet",
+          "value": 2.693,
+          "drivers": {
+            "max_cm": 328.6,
+            "min_cm": 211.4,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "formigueres",
+          "value": 2.53,
+          "drivers": {
+            "max_cm": 375.9,
+            "min_cm": 166.9,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "cauterets",
+          "value": 2.242,
+          "drivers": {
+            "max_cm": 285.2,
+            "min_cm": 180.0,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "ax-3-domaines",
+          "value": 2.175,
+          "drivers": {
+            "max_cm": 275.2,
+            "min_cm": 132.9,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "ascou-pailheres",
+          "value": 2.076,
+          "drivers": {
+            "max_cm": 214.5,
+            "min_cm": 173.4,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "les-angles",
+          "value": 1.994,
+          "drivers": {
+            "max_cm": 282.4,
+            "min_cm": 128.0,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "porte-puymorens",
+          "value": 1.957,
+          "drivers": {
+            "max_cm": 233.6,
+            "min_cm": 129.2,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "luz-ardiden",
+          "value": 1.719,
+          "drivers": {
+            "max_cm": 192.6,
+            "min_cm": 152.5,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "peyragudes",
+          "value": 1.488,
+          "drivers": {
+            "max_cm": 212.0,
+            "min_cm": 88.4,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "guzet",
+          "value": 1.435,
+          "drivers": {
+            "max_cm": 268.0,
+            "min_cm": 52.1,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "le-mourtis",
+          "value": 1.405,
+          "drivers": {
+            "max_cm": 154.9,
+            "min_cm": 131.8,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "piau-engaly",
+          "value": 1.387,
+          "drivers": {
+            "max_cm": 187.5,
+            "min_cm": 75.3,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "font-romeu",
+          "value": 1.368,
+          "drivers": {
+            "max_cm": 167.6,
+            "min_cm": 112.5,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "val-louron",
+          "value": 0.978,
+          "drivers": {
+            "max_cm": 121.3,
+            "min_cm": 63.3,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "superbagneres",
+          "value": 0.965,
+          "drivers": {
+            "max_cm": 132.5,
+            "min_cm": 64.5,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "saint-lary",
+          "value": 0.504,
+          "drivers": {
+            "max_cm": 60.9,
+            "min_cm": 44.0,
+            "points": 8
+          }
+        }
+      ]
+    },
+    "season_offpiste_snowfall": {
+      "kpi_id": "season_offpiste_snowfall",
+      "aggregator_version": "1",
+      "unit": "m",
+      "ranking": [
+        {
+          "station_id": "la-pierre-saint-martin",
+          "value": 3.793,
+          "drivers": {
+            "max_cm": 625.2,
+            "min_cm": 178.3,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "gourette",
+          "value": 2.957,
+          "drivers": {
+            "max_cm": 434.1,
+            "min_cm": 61.2,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "formigueres",
+          "value": 2.732,
+          "drivers": {
+            "max_cm": 527.8,
+            "min_cm": 104.4,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "grand-tourmalet",
+          "value": 2.5,
+          "drivers": {
+            "max_cm": 370.4,
+            "min_cm": 143.6,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "piau-engaly",
+          "value": 2.04,
+          "drivers": {
+            "max_cm": 306.3,
+            "min_cm": 47.8,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "ascou-pailheres",
+          "value": 2.029,
+          "drivers": {
+            "max_cm": 244.2,
+            "min_cm": 158.6,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "guzet",
+          "value": 1.875,
+          "drivers": {
+            "max_cm": 414.1,
+            "min_cm": 46.0,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "porte-puymorens",
+          "value": 1.873,
+          "drivers": {
+            "max_cm": 232.7,
+            "min_cm": 126.3,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "les-angles",
+          "value": 1.825,
+          "drivers": {
+            "max_cm": 346.8,
+            "min_cm": 94.5,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "ax-3-domaines",
+          "value": 1.82,
+          "drivers": {
+            "max_cm": 314.3,
+            "min_cm": 72.9,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "cauterets",
+          "value": 1.813,
+          "drivers": {
+            "max_cm": 389.8,
+            "min_cm": 57.2,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "luz-ardiden",
+          "value": 1.311,
+          "drivers": {
+            "max_cm": 261.2,
+            "min_cm": 59.7,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "peyragudes",
+          "value": 1.288,
+          "drivers": {
+            "max_cm": 294.0,
+            "min_cm": 60.3,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "val-louron",
+          "value": 1.231,
+          "drivers": {
+            "max_cm": 233.0,
+            "min_cm": 15.2,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "font-romeu",
+          "value": 1.223,
+          "drivers": {
+            "max_cm": 190.4,
+            "min_cm": 49.7,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "le-mourtis",
+          "value": 0.939,
+          "drivers": {
+            "max_cm": 137.8,
+            "min_cm": 35.4,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "superbagneres",
+          "value": 0.676,
+          "drivers": {
+            "max_cm": 146.2,
+            "min_cm": 17.5,
+            "points": 8
+          }
+        },
+        {
+          "station_id": "saint-lary",
+          "value": 0.577,
+          "drivers": {
+            "max_cm": 116.0,
+            "min_cm": 22.3,
+            "points": 8
+          }
+        }
+      ]
+    },
+    "season_deep_snow_days": {
+      "kpi_id": "season_deep_snow_days",
+      "aggregator_version": "1",
+      "unit": "%",
+      "ranking": [
+        {
+          "station_id": "gourette",
+          "value": 50.7,
+          "drivers": {
+            "days": 152,
+            "deep_days": 77,
+            "max_depth_cm": 150.0
+          }
+        },
+        {
+          "station_id": "la-pierre-saint-martin",
+          "value": 50.0,
+          "drivers": {
+            "days": 152,
+            "deep_days": 76,
+            "max_depth_cm": 153.0
+          }
+        },
+        {
+          "station_id": "cauterets",
+          "value": 49.3,
+          "drivers": {
+            "days": 152,
+            "deep_days": 75,
+            "max_depth_cm": 149.0
+          }
+        },
+        {
+          "station_id": "val-louron",
+          "value": 49.3,
+          "drivers": {
+            "days": 152,
+            "deep_days": 75,
+            "max_depth_cm": 148.0
+          }
+        },
+        {
+          "station_id": "luz-ardiden",
+          "value": 43.4,
+          "drivers": {
+            "days": 152,
+            "deep_days": 66,
+            "max_depth_cm": 144.0
+          }
+        },
+        {
+          "station_id": "grand-tourmalet",
+          "value": 41.4,
+          "drivers": {
+            "days": 152,
+            "deep_days": 63,
+            "max_depth_cm": 144.0
+          }
+        },
+        {
+          "station_id": "piau-engaly",
+          "value": 40.8,
+          "drivers": {
+            "days": 152,
+            "deep_days": 62,
+            "max_depth_cm": 142.0
+          }
+        },
+        {
+          "station_id": "superbagneres",
+          "value": 39.5,
+          "drivers": {
+            "days": 152,
+            "deep_days": 60,
+            "max_depth_cm": 130.0
+          }
+        },
+        {
+          "station_id": "saint-lary",
+          "value": 38.8,
+          "drivers": {
+            "days": 152,
+            "deep_days": 59,
+            "max_depth_cm": 139.0
+          }
+        },
+        {
+          "station_id": "peyragudes",
+          "value": 38.2,
+          "drivers": {
+            "days": 152,
+            "deep_days": 58,
+            "max_depth_cm": 137.0
+          }
+        },
+        {
+          "station_id": "le-mourtis",
+          "value": 20.4,
+          "drivers": {
+            "days": 152,
+            "deep_days": 31,
+            "max_depth_cm": 112.0
+          }
+        },
+        {
+          "station_id": "porte-puymorens",
+          "value": 2.0,
+          "drivers": {
+            "days": 152,
+            "deep_days": 3,
+            "max_depth_cm": 76.0
+          }
+        },
+        {
+          "station_id": "ascou-pailheres",
+          "value": 0.0,
+          "drivers": {
+            "days": 152,
+            "deep_days": 0,
+            "max_depth_cm": 60.0
+          }
+        },
+        {
+          "station_id": "ax-3-domaines",
+          "value": 0.0,
+          "drivers": {
+            "days": 152,
+            "deep_days": 0,
+            "max_depth_cm": 64.0
+          }
+        },
+        {
+          "station_id": "font-romeu",
+          "value": 0.0,
+          "drivers": {
+            "days": 152,
+            "deep_days": 0,
+            "max_depth_cm": 59.0
+          }
+        },
+        {
+          "station_id": "formigueres",
+          "value": 0.0,
+          "drivers": {
+            "days": 152,
+            "deep_days": 0,
+            "max_depth_cm": 59.0
+          }
+        },
+        {
+          "station_id": "guzet",
+          "value": 0.0,
+          "drivers": {
+            "days": 152,
+            "deep_days": 0,
+            "max_depth_cm": 60.0
+          }
+        },
+        {
+          "station_id": "les-angles",
+          "value": 0.0,
+          "drivers": {
+            "days": 152,
+            "deep_days": 0,
+            "max_depth_cm": 63.0
+          }
+        }
+      ]
+    },
+    "season_white_days": {
+      "kpi_id": "season_white_days",
+      "aggregator_version": "1",
+      "unit": "d",
+      "ranking": [
+        {
+          "station_id": "saint-lary",
+          "value": 1.0,
+          "drivers": {
+            "days": 152,
+            "white_share_pct": 1
+          }
+        },
+        {
+          "station_id": "piau-engaly",
+          "value": 2.0,
+          "drivers": {
+            "days": 152,
+            "white_share_pct": 1
+          }
+        },
+        {
+          "station_id": "porte-puymorens",
+          "value": 7.0,
+          "drivers": {
+            "days": 152,
+            "white_share_pct": 5
+          }
+        },
+        {
+          "station_id": "val-louron",
+          "value": 7.0,
+          "drivers": {
+            "days": 152,
+            "white_share_pct": 5
+          }
+        },
+        {
+          "station_id": "formigueres",
+          "value": 8.0,
+          "drivers": {
+            "days": 152,
+            "white_share_pct": 5
+          }
+        },
+        {
+          "station_id": "grand-tourmalet",
+          "value": 8.0,
+          "drivers": {
+            "days": 152,
+            "white_share_pct": 5
+          }
+        },
+        {
+          "station_id": "guzet",
+          "value": 8.0,
+          "drivers": {
+            "days": 152,
+            "white_share_pct": 5
+          }
+        },
+        {
+          "station_id": "superbagneres",
+          "value": 8.0,
+          "drivers": {
+            "days": 152,
+            "white_share_pct": 5
+          }
+        },
+        {
+          "station_id": "ax-3-domaines",
+          "value": 9.0,
+          "drivers": {
+            "days": 152,
+            "white_share_pct": 6
+          }
+        },
+        {
+          "station_id": "le-mourtis",
+          "value": 10.0,
+          "drivers": {
+            "days": 152,
+            "white_share_pct": 7
+          }
+        },
+        {
+          "station_id": "les-angles",
+          "value": 10.0,
+          "drivers": {
+            "days": 152,
+            "white_share_pct": 7
+          }
+        },
+        {
+          "station_id": "ascou-pailheres",
+          "value": 11.0,
+          "drivers": {
+            "days": 152,
+            "white_share_pct": 7
+          }
+        },
+        {
+          "station_id": "cauterets",
+          "value": 11.0,
+          "drivers": {
+            "days": 152,
+            "white_share_pct": 7
+          }
+        },
+        {
+          "station_id": "luz-ardiden",
+          "value": 11.0,
+          "drivers": {
+            "days": 152,
+            "white_share_pct": 7
+          }
+        },
+        {
+          "station_id": "peyragudes",
+          "value": 11.0,
+          "drivers": {
+            "days": 152,
+            "white_share_pct": 7
+          }
+        },
+        {
+          "station_id": "font-romeu",
+          "value": 12.0,
+          "drivers": {
+            "days": 152,
+            "white_share_pct": 8
+          }
+        },
+        {
+          "station_id": "gourette",
+          "value": 16.0,
+          "drivers": {
+            "days": 152,
+            "white_share_pct": 11
+          }
+        },
+        {
+          "station_id": "la-pierre-saint-martin",
+          "value": 26.0,
+          "drivers": {
+            "days": 152,
+            "white_share_pct": 17
+          }
+        }
+      ]
+    }
+  },
+  "sources": [
+    {
+      "id": "open_meteo_historical",
+      "name": "Open-Meteo Historical Forecast (Météo-France AROME)",
+      "url": "https://open-meteo.com/",
+      "license": "CC BY 4.0"
+    },
+    {
+      "id": "open_meteo_historical_snowpack",
+      "name": "Open-Meteo Historical Forecast (DWD ICON)",
+      "url": "https://open-meteo.com/",
+      "license": "CC BY 4.0"
+    },
+    {
+      "id": "open_meteo_historical_light",
+      "name": "Open-Meteo Historical Forecast (Météo-France AROME)",
+      "url": "https://open-meteo.com/",
+      "license": "CC BY 4.0"
+    },
+    {
+      "id": "osm_overpass",
+      "name": "OpenStreetMap contributors",
+      "url": "https://www.openstreetmap.org/copyright",
+      "license": "ODbL"
+    }
+  ]
+}

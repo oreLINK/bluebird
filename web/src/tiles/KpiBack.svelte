@@ -1,13 +1,18 @@
 <!--
-  Back of a tile: what the KPI is, how it is computed (config/kpis.yaml
-  `method`, with its params filled in) and how reliable it is today, from the
-  confidence of every station in the current data.
+  Back of a tile, for both KPI kinds (lib/kpiView.ts): what the KPI is, how it
+  is computed (config/kpis.yaml `method`, with its params filled in), then
+    live:        the time window studied, today's reliability (from the
+                 confidence of every station) and the last update;
+    historical:  the season (Rewind dates) and when it was computed;
+  and finally the data sources and the banner photo credit.
 -->
 <script lang="ts">
+  import ConfidenceDots from '../components/ConfidenceDots.svelte';
   import Icon from '../components/Icon.svelte';
-  import type { Kpi, Tile } from '../lib/config';
-  import type { MassifDaily } from '../lib/data';
+  import type { Tile } from '../lib/config';
+  import { todayIn } from '../lib/data';
   import {
+    formatDate,
     formatLongDate,
     formatMethod,
     formatPercent,
@@ -15,40 +20,62 @@
     formatWindow,
   } from '../lib/format';
   import { i18n } from '../lib/i18n/i18n.svelte';
+  import type { KpiView } from '../lib/kpiView';
+  import type { Photo } from '../lib/photos';
   import { reliability, sharedWindow } from '../lib/ranking';
 
-  let { tile, kpi, data }: { tile: Tile; kpi: Kpi | undefined; data: MassifDaily } = $props();
+  let { tile, view, photo }: { tile: Tile; view: KpiView; photo?: Photo } = $props();
 
-  const ranking = $derived(kpi ? (data.kpis[kpi.id]?.ranking ?? []) : []);
+  const kpi = $derived(view.kpi);
+  const ranking = $derived(view.kind === 'live' ? view.ranking : []);
   const today = $derived(reliability(ranking));
   const timeWindow = $derived(sharedWindow(ranking));
   const method = $derived(
-    kpi?.method ? formatMethod(i18n.pick(kpi.method), kpi.params, i18n.locale) : '',
+    kpi.method ? formatMethod(i18n.pick(kpi.method), kpi.params, i18n.locale) : '',
   );
 </script>
 
 <div class="back-content">
   <header>
     <p class="eyebrow">
-      {#if tile.icon}<Icon name={tile.icon} size={14} />{/if}
-      {i18n.t('back.eyebrow')}
+      {#if view.kind === 'historical'}
+        <Icon name="rewind" size={14} />
+        {i18n.pick(view.rewind.name)}
+      {:else}
+        {#if tile.icon}<Icon name={tile.icon} size={14} />{/if}
+        {i18n.t('back.eyebrow')}
+      {/if}
     </p>
-    <h3>{i18n.pick(kpi?.name)}</h3>
+    <h3>{i18n.pick(kpi.name)}</h3>
   </header>
 
-  {#if kpi}
-    <section>
-      <h4>{i18n.t('back.what')}</h4>
-      <p class="strong">{i18n.pick(kpi.description)}</p>
-    </section>
-  {/if}
+  <section>
+    <h4>{i18n.t('back.what')}</h4>
+    <p class="strong">{i18n.pick(kpi.description)}</p>
+  </section>
 
-  {#if ranking.length}
+  {#if view.kind === 'historical'}
+    <section>
+      <h4>{i18n.t('back.season')}</h4>
+      <p class="strong tabular">
+        {i18n.t('rewind.period', {
+          start: formatDate(view.rewind.start, i18n.locale),
+          end: formatDate(view.rewind.end, i18n.locale),
+        })}
+      </p>
+    </section>
+  {:else if ranking.length}
     <section>
       <h4>{i18n.t('tile.window')}</h4>
       <p class="strong tabular">
         {timeWindow
-          ? formatWindow(timeWindow.start, timeWindow.end, i18n.locale, data.timezone)
+          ? formatWindow(
+              timeWindow.start,
+              timeWindow.end,
+              i18n.locale,
+              view.timezone,
+              view.kind === 'live' ? view.forecastDate : undefined,
+            )
           : i18n.t('back.windowVaries')}
       </p>
     </section>
@@ -62,8 +89,8 @@
   {#if today}
     <section>
       <h4>{i18n.t('back.reliability')}</h4>
-      <div class="meter" data-level={today.level}>
-        <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <div class="meter">
+        <ConfidenceDots level={today.level} size={10} />
         <strong>{i18n.t(`confidence.${today.level}`)}</strong>
         <span class="index tabular">
           {i18n.t('back.index', { score: formatPercent(today.score, i18n.locale) })}
@@ -75,29 +102,51 @@
         <li>{i18n.t('back.scenarios', { members: today.members })}</li>
       </ul>
     </section>
+  {/if}
 
+  {#if view.generatedAt}
     <section>
       <h4>{i18n.t('back.updateTitle')}</h4>
       <p>
-        {i18n.t('back.updated', {
-          date: formatLongDate(data.forecast_date, i18n.locale),
-          time: formatTime(data.generated_at, i18n.locale, data.timezone),
-        })}
+        {#if view.kind === 'historical'}
+          {i18n.t('rewind.computed', { date: formatDate(view.generatedAt.slice(0, 10), i18n.locale) })}
+        {:else}
+          {i18n.t('back.updated', {
+            date: formatLongDate(todayIn(view.timezone, new Date(view.generatedAt)), i18n.locale),
+            time: formatTime(view.generatedAt, i18n.locale, view.timezone),
+          })}
+        {/if}
       </p>
     </section>
   {/if}
 
-  {#if data.sources.length}
+  {#if view.sources.length}
     <section>
       <h4>{i18n.t('footer.sources')}</h4>
       <ul class="sources">
-        {#each data.sources as source (source.id)}
+        {#each view.sources as source (source.id)}
           <li>
             <a href={source.url} target="_blank" rel="noopener noreferrer">{source.name}</a>
             {#if source.license}<span>({source.license})</span>{/if}
           </li>
         {/each}
       </ul>
+    </section>
+  {/if}
+
+  {#if photo?.credit}
+    <section>
+      <h4>{i18n.t('back.photo')}</h4>
+      <p>
+        {#if photo.credit.url}
+          <a class="credit" href={photo.credit.url} target="_blank" rel="noopener noreferrer"
+            >{photo.credit.author}</a
+          >
+        {:else}
+          {photo.credit.author}
+        {/if}
+        {#if photo.credit.license}<span class="license">({photo.credit.license})</span>{/if}
+      </p>
     </section>
   {/if}
 </div>
@@ -143,6 +192,12 @@
     font-weight: 600;
   }
 
+  .credit {
+    color: var(--link);
+    font-weight: 600;
+  }
+
+  .license,
   .sources span {
     color: var(--ink-faint);
   }
@@ -195,24 +250,6 @@
     background: var(--pill-bg);
     color: var(--pill-ink);
     font-weight: 700;
-  }
-
-  .dots {
-    display: inline-flex;
-    gap: 4px;
-  }
-
-  .dots i {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--track);
-  }
-
-  [data-level='low'] .dots i:nth-child(-n + 1),
-  [data-level='medium'] .dots i:nth-child(-n + 2),
-  [data-level='high'] .dots i {
-    background: var(--prob-high);
   }
 
   .help {

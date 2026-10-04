@@ -24,6 +24,9 @@ photos/
   number (no gaps required). A test checks that every station has its folder
   and that every photo in it is named `<station_id>_<n>`.
 - Every photo needs publication rights and an entry in `credits.yaml`
-  (key: path without extension, e.g. `pyrenees/cauterets/cauterets_1`).
+  (key: path without extension, e.g. `pyrenees/cauterets/cauterets_1`). The
+  credit is shown on the tile back and on the legal notice page, not on the
+  banner. A credit line does not give the right to publish: photos from
+  resort, tourism or review sites are usually all rights reserved.
 - A missing photo is not an error: the tile shows its illustration instead.
 - When you add a station, create its folder (with a `.gitkeep` until it has a photo).

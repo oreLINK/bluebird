@@ -9,6 +9,13 @@
 # A driver produced by the Aggregator but not listed here is not displayed.
 #
 # `filters` lists the filter-bar chips (config/filters.yaml) the KPI appears under.
+#
+# `kind`: live (default) KPIs are probabilities for today, computed every
+# morning. historical KPIs are values over a closed season (cm, hours…),
+# computed once by `bluebird rewind` for the Rewinds of config/rewinds.yaml;
+# they need `value: {unit, decimals}` (plus `scale` to convert the aggregator's
+# unit, e.g. 0.01 for cm -> m, and `max` for the value of a full bar, e.g. 100
+# for a percentage; default: the best value) and are never computed daily.
 # `method` explains the computation on the back of the tiles; `{param}`
 # placeholders are filled with the values of `params`, so text and maths agree.
 kpis:
@@ -104,3 +111,275 @@ kpis:
       snow_after_grooming_cm_p90: { label: { fr: Neige depuis le damage – scénario haut, en: Snow since grooming – high scenario }, unit: cm, decimals: 1 }
       window_hours: { label: { fr: Durée depuis le damage, en: Hours since grooming }, unit: h }
       members: { label: { fr: Scénarios analysés, en: Scenarios analysed } }
+
+  - id: whiteout_chance_today
+    aggregator: whiteout_chance
+    filters: [visibility]
+    name: { fr: Jour blanc aujourd'hui, en: White day today }
+    description:
+      fr: Probabilité d'un jour blanc (sans relief visible) pendant la journée de ski, à mi-altitude.
+      en: Probability of a white day (no visible relief) during the ski day, at mid-mountain.
+    method:
+      fr: >-
+        Pour chacun des 91 scénarios, Bluebird regarde chaque heure skiable
+        ({ski_start}–{ski_end}) à mi-altitude. Une heure est blanche si la station est
+        dans le nuage (humidité ≥ {rh_min_pct} % et nuages bas ≥ {low_cloud_min_pct} %),
+        s'il neige au moins {snowfall_min_cm_h} cm/h, ou si la lumière est plate
+        (rayonnement solaire sous {clear_sky_index_max} fois celui d'un ciel clair).
+        Le jour est blanc dès {min_white_hours} heures blanches ; la probabilité est
+        la part des scénarios qui le donnent blanc.
+      en: >-
+        For each of the 91 scenarios, Bluebird checks every ski hour
+        ({ski_start}–{ski_end}) at mid-mountain. An hour is white when the resort is
+        in the cloud (humidity ≥ {rh_min_pct} % and low cloud ≥ {low_cloud_min_pct} %),
+        when at least {snowfall_min_cm_h} cm/h of snow falls, or in flat light
+        (sunlight below {clear_sky_index_max} times a clear sky's). The day is
+        white from {min_white_hours} white hours; the probability is the share of
+        scenarios giving a white day.
+    params:
+      band: mid
+      day_offset: 0
+      ski_start: "09:00"
+      ski_end: "17:00"
+      rh_min_pct: 98
+      low_cloud_min_pct: 90
+      snowfall_min_cm_h: 0.5
+      clear_sky_index_max: 0.3
+      min_white_hours: 6
+    drivers:
+      white_hours_p50: { label: { fr: Heures blanches (médiane), en: White hours (median) }, unit: h }
+      members: { label: { fr: Scénarios analysés, en: Scenarios analysed } }
+
+  - id: whiteout_chance_tomorrow
+    aggregator: whiteout_chance
+    filters: [visibility]
+    name: { fr: Jour blanc demain, en: White day tomorrow }
+    description:
+      fr: Probabilité d'un jour blanc (sans relief visible) demain pendant la journée de ski, à mi-altitude.
+      en: Probability of a white day (no visible relief) tomorrow during the ski day, at mid-mountain.
+    method:
+      fr: >-
+        Pour chacun des 91 scénarios, Bluebird regarde chaque heure skiable
+        ({ski_start}–{ski_end}) à mi-altitude. Une heure est blanche si la station est
+        dans le nuage (humidité ≥ {rh_min_pct} % et nuages bas ≥ {low_cloud_min_pct} %),
+        s'il neige au moins {snowfall_min_cm_h} cm/h, ou si la lumière est plate
+        (rayonnement solaire sous {clear_sky_index_max} fois celui d'un ciel clair).
+        Le jour est blanc dès {min_white_hours} heures blanches ; la probabilité est
+        la part des scénarios qui le donnent blanc.
+      en: >-
+        For each of the 91 scenarios, Bluebird checks every ski hour
+        ({ski_start}–{ski_end}) at mid-mountain. An hour is white when the resort is
+        in the cloud (humidity ≥ {rh_min_pct} % and low cloud ≥ {low_cloud_min_pct} %),
+        when at least {snowfall_min_cm_h} cm/h of snow falls, or in flat light
+        (sunlight below {clear_sky_index_max} times a clear sky's). The day is
+        white from {min_white_hours} white hours; the probability is the share of
+        scenarios giving a white day.
+    params:
+      band: mid
+      day_offset: 1
+      ski_start: "09:00"
+      ski_end: "17:00"
+      rh_min_pct: 98
+      low_cloud_min_pct: 90
+      snowfall_min_cm_h: 0.5
+      clear_sky_index_max: 0.3
+      min_white_hours: 6
+    drivers:
+      white_hours_p50: { label: { fr: Heures blanches (médiane), en: White hours (median) }, unit: h }
+      members: { label: { fr: Scénarios analysés, en: Scenarios analysed } }
+
+  # ------------------------------------------------------------ historical KPIs
+  # Rewind 25/26 (config/rewinds.yaml). Season: from December 1 to May 1.
+  - id: season_total_snowfall
+    aggregator: season_total_snowfall
+    kind: historical
+    value: { unit: m, decimals: 2, scale: 0.01 }  # computed in cm, shown in metres
+    filters: [rewind-2025-26]
+    name: { fr: Cumul de neige de la saison, en: Season snowfall }
+    description:
+      fr: Neige tombée sur toute la saison à la station, à mi-altitude.
+      en: Snow fallen over the whole season at the resort, at mid-mountain.
+    method:
+      fr: >-
+        Bluebird additionne, heure par heure, la neige tombée à mi-altitude au
+        point de la station sur toute la saison, d'après les prévisions archivées
+        du modèle AROME de Météo-France (maille de 1,5 km). Un jour de neige
+        compte au moins {snow_day_cm} cm.
+      en: >-
+        Bluebird adds up, hour by hour, the snow fallen at mid-mountain at the
+        resort point over the whole season, from the archived forecasts of
+        Météo-France's AROME model (1.5 km grid). A snow day has at least
+        {snow_day_cm} cm.
+    params:
+      snow_day_cm: 1.0
+      min_coverage: 0.9
+    drivers:
+      snow_days: { label: { fr: Jours de neige, en: Snow days } }
+      best_day: { label: { fr: Plus grosse journée, en: Snowiest day } }
+      best_day_cm: { label: { fr: Neige ce jour-là, en: Snow that day }, unit: cm, decimals: 0 }
+
+  - id: season_longest_snowfall
+    aggregator: season_longest_snowfall
+    kind: historical
+    value: { unit: h, decimals: 0 }
+    filters: [rewind-2025-26]
+    name: { fr: Plus longue chute de neige, en: Longest snowfall }
+    description:
+      fr: La plus longue chute de neige continue de la saison à la station, en heures.
+      en: The longest continuous snowfall of the season at the resort, in hours.
+    method:
+      fr: >-
+        Une heure est neigeuse quand il tombe au moins {min_rate_cm_h} cm à
+        mi-altitude. Bluebird cherche la plus longue suite d'heures neigeuses de
+        la saison ; une accalmie de {max_gap_hours} h au plus ne l'interrompt pas.
+      en: >-
+        An hour is snowy when at least {min_rate_cm_h} cm falls at mid-mountain.
+        Bluebird looks for the longest run of snowy hours of the season; a lull of
+        {max_gap_hours} h or less does not break it.
+    params:
+      min_rate_cm_h: 0.1
+      max_gap_hours: 1
+      min_coverage: 0.9
+    drivers:
+      start: { label: { fr: Début, en: Start } }
+      end: { label: { fr: Fin, en: End } }
+      snow_cm: { label: { fr: Neige tombée, en: Snow fallen }, unit: cm, decimals: 0 }
+
+  - id: season_domain_snowfall
+    aggregator: season_area_snowfall
+    kind: historical
+    value: { unit: m, decimals: 2, scale: 0.01 }  # computed in cm, shown in metres
+    filters: [rewind-2025-26]
+    name: { fr: Cumul de neige sur le domaine, en: Season snowfall on the slopes }
+    description:
+      fr: Neige tombée sur toute la saison, en moyenne sur le domaine skiable.
+      en: Snow fallen over the whole season, averaged over the ski area.
+    method:
+      fr: >-
+        Bluebird répartit des points à intervalles réguliers le long des pistes
+        de la station (OpenStreetMap), additionne la neige de la saison en chacun
+        d'eux (modèle AROME, à l'altitude du terrain) et en fait la moyenne.
+      en: >-
+        Bluebird spreads points at equal distances along the resort's pistes
+        (OpenStreetMap), adds up the season's snow at each of them (AROME model,
+        at ground elevation) and averages them.
+    params:
+      points: domain
+      min_coverage: 0.9
+    drivers:
+      points: { label: { fr: Points mesurés, en: Points measured } }
+      min_cm: { label: { fr: Point le moins enneigé, en: Least snowy point }, unit: cm, decimals: 0 }
+      max_cm: { label: { fr: Point le plus enneigé, en: Snowiest point }, unit: cm, decimals: 0 }
+
+  - id: season_offpiste_snowfall
+    aggregator: season_area_snowfall
+    kind: historical
+    value: { unit: m, decimals: 2, scale: 0.01 }  # computed in cm, shown in metres
+    filters: [rewind-2025-26]
+    name: { fr: Cumul de neige hors-piste, en: Off-piste season snowfall }
+    description:
+      fr: Neige tombée sur toute la saison, en moyenne hors-piste autour du domaine.
+      en: Snow fallen over the whole season, averaged off-piste around the ski area.
+    method:
+      fr: >-
+        Bluebird place des points en cercle autour du domaine skiable, un peu
+        au-delà de la piste la plus éloignée, additionne la neige de la saison en
+        chacun d'eux (modèle AROME, à l'altitude du terrain) et en fait la moyenne.
+      en: >-
+        Bluebird places points in a circle around the ski area, a little beyond
+        the farthest piste, adds up the season's snow at each of them (AROME
+        model, at ground elevation) and averages them.
+    params:
+      points: offpiste
+      min_coverage: 0.9
+    drivers:
+      points: { label: { fr: Points mesurés, en: Points measured } }
+      min_cm: { label: { fr: Point le moins enneigé, en: Least snowy point }, unit: cm, decimals: 0 }
+      max_cm: { label: { fr: Point le plus enneigé, en: Snowiest point }, unit: cm, decimals: 0 }
+
+  - id: season_deep_snow_days
+    aggregator: season_snow_depth_days
+    kind: historical
+    value: { unit: "%", decimals: 0, scale: 100, max: 100 }  # share of days; bars 0-100 %
+    filters: [rewind-2025-26]
+    name: { fr: Jours d'enneigement idéal, en: Ideal snow cover days }
+    description:
+      fr: >-
+        Part des jours de la saison où le manteau neigeux dépasse 70 cm
+        en moyenne sur le domaine : l'enneigement idéal, qui absorbe les
+        irrégularités du terrain (voire le paradis de la poudreuse si la neige
+        est fraîche).
+      en: >-
+        Share of the season's days when the snowpack exceeds 70 cm on
+        average over the ski area: the ideal cover, smoothing out the bumps of the
+        terrain (even powder paradise when the snow is fresh).
+    method:
+      fr: >-
+        Chaque jour, Bluebird fait la moyenne de l'épaisseur de neige au sol sur
+        les points répartis le long des pistes et sur les heures de la journée
+        (modèle ICON du service météo allemand, maille d'environ 7 km). Un jour
+        compte si cette moyenne dépasse {threshold_cm} cm ; le pourcentage est la
+        part de ces jours sur la saison.
+      en: >-
+        Each day, Bluebird averages the snow depth on the ground over the points
+        spread along the pistes and over the day's hours (German weather
+        service's ICON model, ~7 km grid). A day counts when this average exceeds
+        {threshold_cm} cm; the percentage is the share of such days in the season.
+    params:
+      points: domain
+      threshold_cm: 70.0
+      min_coverage: 0.9
+    drivers:
+      deep_days: { label: { fr: Jours au-dessus du seuil, en: Days above the threshold } }
+      days: { label: { fr: Jours de la saison, en: Season days } }
+      max_depth_cm: { label: { fr: Manteau le plus épais, en: Deepest snowpack }, unit: cm, decimals: 0 }
+
+  - id: season_white_days
+    aggregator: season_white_days
+    kind: historical
+    order: asc   # fewest white days first
+    value:
+      unit: d
+      unit_label: { fr: jours, en: days }
+      unit_label_one: { fr: jour, en: day }
+      decimals: 0
+    filters: [rewind-2025-26]
+    name: { fr: Jours blancs de la saison, en: White days of the season }
+    description:
+      fr: >-
+        Nombre de jours blancs de la saison sur le domaine : des journées sans
+        relief visible, dans le nuage, sous la neige ou en lumière plate. La
+        station qui en a eu le moins est en tête.
+      en: >-
+        Number of white days of the season on the slopes: days without visible
+        relief, inside the cloud, in snowfall or in flat light. The resort with
+        the fewest comes first.
+    method:
+      fr: >-
+        Sur les points répartis le long des pistes, Bluebird regarde chaque heure
+        skiable ({ski_start}–{ski_end}) avec le modèle AROME archivé. Une heure est
+        blanche si la moitié des points sont dans le nuage (humidité ≥ {rh_min_pct} %
+        et nuages bas ≥ {low_cloud_min_pct} %), sous au moins {snowfall_min_cm_h} cm/h
+        de neige ou en lumière plate (rayonnement sous {clear_sky_index_max} fois celui
+        d'un ciel clair). Un jour est blanc dès {min_white_hours} heures blanches.
+      en: >-
+        On the points spread along the pistes, Bluebird checks every ski hour
+        ({ski_start}–{ski_end}) with the archived AROME model. An hour is white when
+        half of the points are inside the cloud (humidity ≥ {rh_min_pct} % and low
+        cloud ≥ {low_cloud_min_pct} %), under at least {snowfall_min_cm_h} cm/h of snow
+        or in flat light (sunlight below {clear_sky_index_max} times a clear sky's).
+        A day is white from {min_white_hours} white hours.
+    params:
+      points: domain
+      min_point_share: 0.5
+      min_coverage: 0.9
+      ski_start: "09:00"
+      ski_end: "17:00"
+      rh_min_pct: 98
+      low_cloud_min_pct: 90
+      snowfall_min_cm_h: 0.5
+      clear_sky_index_max: 0.3
+      min_white_hours: 6
+    drivers:
+      days: { label: { fr: Jours analysés, en: Days analysed } }
+      white_share_pct: { label: { fr: Part de jours blancs, en: Share of white days }, unit: "%" }

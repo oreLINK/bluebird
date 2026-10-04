@@ -1,8 +1,10 @@
 <!--
   Static placeholder shown in place of a tile while its data loads. Mirrors
-  the layout of the tile type (banner or list). No animation, on purpose.
+  the layout of the tile type (banner, full banner, simple or list). No
+  animation, on purpose.
 -->
 <script lang="ts">
+  import type { SkeletonVariant } from './registry';
   import TileShell from './TileShell.svelte';
 
   let {
@@ -14,7 +16,7 @@
     id: string;
     title: string;
     icon?: string | null;
-    variant?: 'banner' | 'full' | 'list';
+    variant?: SkeletonVariant;
   } = $props();
 </script>
 
@@ -22,6 +24,18 @@
   <section class="card" aria-labelledby="{id}-title" aria-busy="true">
     <div class="card-body">
       <div class="full">
+        <h2 id="{id}-title">{title}</h2>
+        <div class="odds" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+      <div class="more" aria-hidden="true"></div>
+    </div>
+  </section>
+{:else if variant === 'simple'}
+  <section class="card" aria-labelledby="{id}-title" aria-busy="true">
+    <div class="card-body">
+      <div class="content simple">
         <h2 id="{id}-title">{title}</h2>
         <div class="odds" aria-hidden="true">
           <span></span><span></span><span></span>
@@ -78,6 +92,14 @@
     text-align: center;
   }
 
+  .content.simple {
+    align-content: center;
+    gap: 12px;
+    height: var(--tile-simple-h);
+    padding-top: 12px;
+    text-align: left;
+  }
+
   .more {
     height: var(--tile-more-h);
     border-top: 1px solid var(--line);
@@ -104,7 +126,7 @@
   .odds span,
   .rows span {
     display: block;
-    height: 4.25rem;
+    height: var(--odds-button-h);
     border-radius: var(--radius-m);
     background: var(--track);
   }

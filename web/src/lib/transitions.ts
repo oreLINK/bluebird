@@ -24,6 +24,18 @@ export function arrive(
   };
 }
 
+/**
+ * A full-window sheet (Sheet.svelte) rising from the bottom of the screen;
+ * played backwards when it closes, so it slides down again.
+ */
+export function rise(_node: Element, { duration = 380 }: { duration?: number } = {}): TransitionConfig {
+  return {
+    duration: motion(duration),
+    easing: cubicOut,
+    css: (t) => `transform: translateY(${(1 - t) * 100}%);`,
+  };
+}
+
 /** A tile leaving: quick fade and slight shrink toward the back. */
 export function leave(_node: Element, { duration = 140 }: { duration?: number } = {}): TransitionConfig {
   return {

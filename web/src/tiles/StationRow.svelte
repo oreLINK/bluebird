@@ -1,70 +1,92 @@
 <!--
-  One ranked station: rank, name, probability bar and pill. Tapping it toggles
-  its StationDetails. Shared by every tile type.
+  One ranked station: rank, name (with reliability dots for live KPIs), bar
+  and value pill. Shared by every tile type and both KPI kinds (lib/kpiView.ts).
+  With `details` (live only), the row is a button that toggles its
+  StationDetails; without (the default for now), it is a static row and a tap
+  on it does nothing (not even a flip).
 -->
 <script lang="ts">
+  import ConfidenceDots from '../components/ConfidenceDots.svelte';
   import Icon from '../components/Icon.svelte';
-  import ProbabilityPill from '../components/ProbabilityPill.svelte';
-  import type { Kpi } from '../lib/config';
-  import type { RankingEntry, StationInfo } from '../lib/data';
-  import { formatPercent } from '../lib/format';
+  import ValuePill from '../components/ValuePill.svelte';
+  import { formatOdds } from '../lib/format';
   import { i18n } from '../lib/i18n/i18n.svelte';
+  import { type KpiView, type RankItem, fullName, itemLabel, shortName } from '../lib/kpiView';
   import StationDetails from './StationDetails.svelte';
+  import { itemSummary } from './summary';
 
   let {
     id,
     rank,
-    entry,
-    kpi,
-    station,
-    timezone,
+    item,
+    view,
     open,
     ontoggle,
     showOdds = false,
     showWindow = false,
+    details = false,
   }: {
     id: string;
     rank: number;
-    entry: RankingEntry;
-    kpi: Kpi | undefined;
-    station: StationInfo | undefined;
-    timezone: string;
+    item: RankItem;
+    view: KpiView;
     open: boolean;
     ontoggle: () => void;
     showOdds?: boolean;
     showWindow?: boolean;
+    details?: boolean;
   } = $props();
 
-  const name = $derived(station?.short_name ?? station?.name ?? entry.station_id);
-  const fullName = $derived(station?.name ?? entry.station_id);
+  const summary = $derived(itemSummary(view, item, rank, fullName(view, item.stationId), i18n));
+  const interactive = $derived(details && !!item.entry);
 </script>
 
-<li class:open>
-  <button
-    type="button"
-    class="row"
-    aria-expanded={open}
-    aria-controls="{id}-details"
-    aria-label={i18n.t('a11y.rowSummary', {
-      rank,
-      station: fullName,
-      percent: formatPercent(entry.probability, i18n.locale),
-    })}
-    onclick={ontoggle}
-  >
-    <span class="rank tabular" aria-hidden="true">{rank}</span>
-    <span class="who" aria-hidden="true">
-      <span class="name">
-        {name}
-      </span>
-      <span class="bar"><span style="--p: {entry.probability}"></span></span>
+{#snippet cells()}
+  <span class="rank tabular" aria-hidden="true">{rank}</span>
+  <span class="who" aria-hidden="true">
+    <span class="name-line">
+      <span class="name">{shortName(view, item.stationId)}</span>
+      {#if item.confidence}<ConfidenceDots level={item.confidence} size={5} />{/if}
     </span>
-    <span aria-hidden="true"><ProbabilityPill probability={entry.probability} {showOdds} /></span>
-    <Icon name="chevron" size={18} class="chevron" />
-  </button>
-  {#if open}
+    <span class="bar"><span style="--p: {item.share}"></span></span>
+  </span>
+  <span aria-hidden="true">
+    <ValuePill
+      label={itemLabel(view, item, i18n.locale)}
+      odds={showOdds ? i18n.t('tile.odds', { odds: formatOdds(item.value, i18n.locale) }) : ''}
+    />
+  </span>
+{/snippet}
+
+<li class:open>
+  {#if interactive}
+    <button
+      type="button"
+      class="row"
+      aria-expanded={open}
+      aria-controls="{id}-details"
+      aria-label={summary}
+      onclick={ontoggle}
+    >
+      {@render cells()}
+      <Icon name="chevron" size={18} class="chevron" />
+    </button>
+  {:else}
+    <div class="row static" data-no-flip>
+      <span class="visually-hidden">{summary}</span>
+      {@render cells()}
+    </div>
+  {/if}
+  {#if interactive && open && item.entry}
     <div class="details-wrap">
-      <StationDetails id="{id}-details" {entry} {kpi} {station} {timezone} {showWindow} />
+      <StationDetails
+        id="{id}-details"
+        entry={item.entry}
+        kpi={view.kpi}
+        station={view.stations[item.stationId]}
+        timezone={view.timezone}
+        {showWindow}
+      />
     </div>
   {/if}
 </li>
@@ -93,6 +115,11 @@
     cursor: pointer;
   }
 
+  .row.static {
+    grid-template-columns: 1.5rem minmax(0, 1fr) auto;
+    cursor: default;
+  }
+
   .rank {
     font-size: 0.9375rem;
     font-weight: 700;
@@ -104,6 +131,17 @@
     display: grid;
     gap: 6px;
     min-width: 0;
+  }
+
+  .name-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .name-line :global(.dots) {
+    flex: none;
   }
 
   .name {

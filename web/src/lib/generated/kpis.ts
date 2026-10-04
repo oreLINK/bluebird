@@ -5,11 +5,29 @@ export type Id = string;
  * Id of a registered gold Aggregator.
  */
 export type Aggregator = string;
-export type Enabled = boolean;
+/**
+ * live: probability for today, computed by the daily run; historical: value over a past season, computed by `bluebird rewind` (config/rewinds.yaml).
+ */
+export type Kind = 'live' | 'historical';
+export type Unit = string;
+export type Decimals = number;
+/**
+ * Multiplier from the aggregator's unit (cm for snow, h for durations) to `unit`, e.g. 0.01 to publish centimetres as metres.
+ */
+export type Scale = number;
 export type Fr = string;
 export type En = string;
-export type Unit = string | null;
-export type Decimals = number;
+/**
+ * Value (in `unit`) of a full bar in the tiles, e.g. 100 for a percentage. Default: the best value of the ranking.
+ */
+export type Max = number | null;
+/**
+ * Ranking order: desc puts the highest value first; asc the lowest (e.g. fewest white days).
+ */
+export type Order = 'desc' | 'asc';
+export type Enabled = boolean;
+export type Unit1 = string | null;
+export type Decimals1 = number;
 /**
  * Ids of the filters (config/filters.yaml) this KPI appears under.
  */
@@ -28,6 +46,12 @@ export interface KpisFile {
 export interface Kpi {
   id: Id;
   aggregator: Aggregator;
+  kind?: Kind;
+  /**
+   * Unit and decimals of the value; required for historical KPIs.
+   */
+  value?: ValueSpec | null;
+  order?: Order;
   enabled?: Enabled;
   name: Localized;
   description: Localized;
@@ -38,6 +62,23 @@ export interface Kpi {
   params?: Params;
   drivers?: Drivers;
   filters?: Filters;
+}
+/**
+ * Unit of the value of a historical KPI, as published and displayed (e.g. 4.43 m).
+ */
+export interface ValueSpec {
+  unit: Unit;
+  decimals?: Decimals;
+  scale?: Scale;
+  /**
+   * Unit as shown on the site when it differs by language (e.g. jours / days).
+   */
+  unit_label?: Localized | null;
+  /**
+   * Singular of `unit_label` (e.g. jour / day), used where the language says so.
+   */
+  unit_label_one?: Localized | null;
+  max?: Max;
 }
 /**
  * A user-facing string in every supported UI language.
@@ -57,6 +98,6 @@ export interface Drivers {
  */
 export interface DriverSpec {
   label: Localized;
-  unit?: Unit;
-  decimals?: Decimals;
+  unit?: Unit1;
+  decimals?: Decimals1;
 }

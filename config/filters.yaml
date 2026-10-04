@@ -2,7 +2,9 @@
 #
 # Filter bar under the header, in display order. A filter shows the tiles
 # whose KPIs list its id under `filters:` in config/kpis.yaml. A filter with
-# `all: true` shows every tile. The first filter is selected by default.
+# `all: true` shows every tile, except those of `exclusive` filters, which only
+# appear under their own filter (the Rewinds). `theme` colours the chip
+# (default | rewind). The first filter is selected by default.
 #
 # To add a filter: add an entry here, then tag the KPIs it should show with
 # its id in config/kpis.yaml. A filter that matches no enabled KPI is an error.
@@ -12,6 +14,13 @@ filters:
     icon: sparkle
     all: true
 
+  # Stays right after "All": the Rewind of the last season (config/rewinds.yaml).
+  - id: rewind-2025-26
+    name: { fr: Rewind 25/26, en: Rewind 25/26 }
+    icon: rewind
+    exclusive: true
+    theme: rewind
+
   - id: snow
     name: { fr: Neige, en: Snow }
     icon: snowflake
@@ -19,3 +28,7 @@ filters:
   - id: powder
     name: { fr: Poudreuse, en: Powder }
     icon: mountain
+
+  - id: visibility
+    name: { fr: Visibilité, en: Visibility }
+    icon: fog

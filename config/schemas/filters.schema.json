@@ -28,9 +28,25 @@
         },
         "all": {
           "default": false,
-          "description": "Show every tile, whatever its KPIs.",
+          "description": "Show every tile, except those of exclusive filters.",
           "title": "All",
           "type": "boolean"
+        },
+        "exclusive": {
+          "default": false,
+          "description": "Its tiles appear only under this filter, never under an `all` filter.",
+          "title": "Exclusive",
+          "type": "boolean"
+        },
+        "theme": {
+          "default": "default",
+          "description": "Colour of the chip (rewind: Christmas red).",
+          "enum": [
+            "default",
+            "rewind"
+          ],
+          "title": "Theme",
+          "type": "string"
         }
       },
       "required": [

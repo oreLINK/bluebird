@@ -1,0 +1,204 @@
+# yaml-language-server: $schema=./schemas/pages.schema.json
+#
+# Footer and full-window pages (opened over the site, like a sheet).
+#
+#   footer.repository  link behind the GitHub logo of the footer.
+#   footer.pages       ids of the pages linked on the small line below it.
+#   pages              each page opens at <site>/#<id>. A section has a title
+#                      and paragraphs, links and/or a built-in `block`:
+#                        data_sources   attribution of every enabled source
+#                                       (config/sources.yaml)
+#                        photo_credits  credit of every banner photo
+#                                       (web/src/assets/photos/credits.yaml)
+#
+# Write long texts with the `>-` folded style, one {fr, en} pair per paragraph.
+footer:
+  repository: https://github.com/oreLINK/bluebird
+  pages: [about, legal, privacy]
+
+pages:
+  - id: about
+    title:
+      fr: À propos
+      en: About
+    sections:
+      - id: what
+        title:
+          fr: Ce qu'est Bluebird
+          en: What Bluebird is
+        paragraphs:
+          - fr: >-
+              Chaque matin, Bluebird estime pour chaque station la probabilité de
+              bonnes conditions de ski : neige dans la journée, poudreuse sur piste
+              et poudreuse hors-piste.
+            en: >-
+              Every morning, Bluebird estimates for each resort the probability of
+              good skiing conditions: snow during the day, powder on piste and
+              off-piste powder.
+      - id: method
+        title:
+          fr: Comment c'est calculé
+          en: How it is computed
+        paragraphs:
+          - fr: >-
+              Chaque probabilité est la part des scénarios de prévision d'ensemble
+              qui remplissent la condition. Le verso de chaque tuile détaille la
+              méthode et la fiabilité du jour.
+            en: >-
+              Each probability is the share of ensemble forecast scenarios that
+              meet the condition. The back of each tile details the method and
+              today's reliability.
+      - id: disclaimer
+        title:
+          fr: Avertissement
+          en: Disclaimer
+        paragraphs:
+          - fr: >-
+              Bluebird aide à préparer sa journée, ce n'est pas un bulletin
+              d'avalanche. Avant tout hors-piste, consultez le bulletin
+              d'estimation du risque d'avalanche de Météo-France.
+            en: >-
+              Bluebird helps you plan your day; it is not an avalanche bulletin.
+              Before going off-piste, check the Météo-France avalanche risk
+              bulletin.
+        links:
+          - label:
+              fr: Bulletins montagne de Météo-France
+              en: Météo-France mountain bulletins
+            url: https://meteofrance.com/meteo-montagne
+      - id: sources
+        title:
+          fr: Sources des données
+          en: Data sources
+        block: data_sources
+
+  - id: legal
+    title:
+      fr: Mentions légales
+      en: Legal notice
+    sections:
+      - id: publisher
+        title:
+          fr: Éditeur
+          en: Publisher
+        paragraphs:
+          - fr: >-
+              Bluebird est un site personnel, gratuit et non commercial, édité par
+              Aurélien Bertrand, qui en est aussi le directeur de la publication.
+            en: >-
+              Bluebird is a personal, free and non-commercial website published by
+              Aurélien Bertrand, who is also its publication director.
+          - fr: >-
+              Contact : par une « issue » sur le dépôt GitHub du projet.
+            en: >-
+              Contact: through an issue on the project's GitHub repository.
+        links:
+          - label:
+              fr: Contacter l'éditeur (GitHub)
+              en: Contact the publisher (GitHub)
+            url: https://github.com/oreLINK/bluebird/issues
+      - id: host
+        title:
+          fr: Hébergeur
+          en: Host
+        paragraphs:
+          - fr: >-
+              GitHub, Inc. (service GitHub Pages), 88 Colin P. Kelly Jr. Street,
+              San Francisco, CA 94107, États-Unis.
+            en: >-
+              GitHub, Inc. (GitHub Pages service), 88 Colin P. Kelly Jr. Street,
+              San Francisco, CA 94107, United States.
+        links:
+          - label:
+              fr: github.com
+              en: github.com
+            url: https://github.com/
+      - id: property
+        title:
+          fr: Propriété intellectuelle
+          en: Intellectual property
+        paragraphs:
+          - fr: >-
+              Les photos appartiennent à leurs auteurs et sont publiées selon leur
+              licence, indiquée ci-dessous. Les données météo et les tracés des
+              domaines skiables proviennent des sources citées dans « À propos ».
+            en: >-
+              Photos belong to their authors and are published under their licence,
+              listed below. Weather data and ski area maps come from the sources
+              listed in "About".
+      - id: photos
+        title:
+          fr: Crédits photo
+          en: Photo credits
+        block: photo_credits
+
+  - id: privacy
+    title:
+      fr: Confidentialité
+      en: Privacy
+    sections:
+      - id: no-data
+        title:
+          fr: Aucune donnée collectée
+          en: No data collected
+        paragraphs:
+          - fr: >-
+              Bluebird ne collecte aucune donnée personnelle : pas de compte, pas de
+              formulaire, pas de mesure d'audience, pas de publicité et pas de
+              cookie. Les polices, les images et les prévisions sont servies par le
+              site lui-même, sans appel à un service tiers.
+            en: >-
+              Bluebird collects no personal data: no account, no form, no
+              analytics, no advertising and no cookies. Fonts, images and forecasts
+              are served by the site itself, without calling any third-party
+              service.
+      - id: device
+        title:
+          fr: Préférences sur votre appareil
+          en: Preferences on your device
+        paragraphs:
+          - fr: >-
+              La langue, le massif et le filtre choisis sont enregistrés dans le
+              stockage local de votre navigateur pour être retrouvés à la prochaine
+              visite. Ils ne quittent jamais votre appareil et vous pouvez les
+              effacer depuis les réglages du navigateur.
+            en: >-
+              The language, mountain range and filter you choose are saved in your
+              browser's local storage so they are kept for your next visit. They
+              never leave your device, and you can clear them in your browser
+              settings.
+      - id: hosting
+        title:
+          fr: Hébergement
+          en: Hosting
+        paragraphs:
+          - fr: >-
+              Le site est servi par GitHub Pages. Comme tout hébergeur, GitHub peut
+              enregistrer l'adresse IP des visiteurs pour la sécurité et le
+              fonctionnement du service, sous sa propre responsabilité.
+            en: >-
+              The site is served by GitHub Pages. Like any host, GitHub may log
+              visitors' IP addresses for the security and operation of its service,
+              under its own responsibility.
+        links:
+          - label:
+              fr: Déclaration de confidentialité de GitHub
+              en: GitHub privacy statement
+            url: https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement
+      - id: rights
+        title:
+          fr: Vos droits
+          en: Your rights
+        paragraphs:
+          - fr: >-
+              Pour toute question, contactez l'éditeur sur le dépôt GitHub. Vous
+              pouvez aussi adresser une réclamation à la CNIL.
+            en: >-
+              For any question, contact the publisher on the GitHub repository. You
+              may also lodge a complaint with the CNIL, the French data protection
+              authority.
+        links:
+          - label:
+              fr: cnil.fr
+              en: cnil.fr
+            url: https://www.cnil.fr/

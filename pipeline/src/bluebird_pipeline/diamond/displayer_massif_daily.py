@@ -13,16 +13,14 @@ from ..config import Massif
 from ..context import RunContext
 from ..gold.base import KpiResult, frame_to_results
 from ..storage import diamond_key, gold_key
+from ._payload import source_payloads, station_payloads
 from .base import DiamondArtifact, Displayer, register_displayer
 from .models import (
-    DiamondElevation,
     DiamondKpi,
     DiamondManifest,
     DiamondManifestEntry,
     DiamondMassifDaily,
     DiamondRankingEntry,
-    DiamondSource,
-    DiamondStation,
 )
 
 DIAMOND_ROOT = "diamond/"
@@ -68,11 +66,12 @@ class DisplayerMassifDaily(Displayer):
         refs = [ref for ref in ctx.stations() if ref.massif.id == massif.id]
         station_ids = {ref.id for ref in refs}
         kpis: dict[str, DiamondKpi] = {}
-        for kpi in ctx.config.enabled_kpis():
+        for kpi in ctx.config.enabled_kpis(kind="live"):
             rows = [r for r in results if r.kpi_id == kpi.id and r.station_id in station_ids]
             if not rows:
                 continue
-            rows.sort(key=lambda r: (-r.probability, r.station_id))
+            sign = 1 if kpi.order == "asc" else -1
+            rows.sort(key=lambda r: (sign * r.probability, r.station_id))
             kpis[kpi.id] = DiamondKpi(
                 kpi_id=kpi.id,
                 aggregator_version=rows[0].aggregator_version,
@@ -94,33 +93,9 @@ class DisplayerMassifDaily(Displayer):
             forecast_date=ctx.run_date,
             generated_at=ctx.generated_at,
             timezone=massif.timezone,
-            stations={
-                ref.id: DiamondStation(
-                    id=ref.id,
-                    name=ref.station.name,
-                    short_name=ref.station.short_name or ref.station.name,
-                    lat=ref.station.lat,
-                    lon=ref.station.lon,
-                    elevation=DiamondElevation(
-                        base=ref.station.elevation.at("base"),
-                        mid=ref.station.elevation.at("mid"),
-                        summit=ref.station.elevation.at("summit"),
-                    ),
-                    aspects=list(ref.station.aspects),
-                    website=ref.station.website,
-                )
-                for ref in refs
-            },
+            stations=station_payloads(refs),
             kpis=kpis,
-            sources=[
-                DiamondSource(
-                    id=source.id,
-                    name=source.attribution.name,
-                    url=source.attribution.url,
-                    license=source.attribution.license,
-                )
-                for source in ctx.config.enabled_sources(schedule="daily")
-            ],
+            sources=source_payloads(ctx.config.enabled_sources(schedule="daily")),
         )
 
     def _manifest(
