@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { kpis, tiles } from '../lib/config';
-import { TILE_COMPONENTS, skeletonVariant } from './registry';
+import { TILE_COMPONENTS, skeletonVariant, tileRows } from './registry';
 import { bannerScene, booleanOption, numberOption } from './options';
 
 describe('tile registry', () => {
@@ -43,5 +43,12 @@ describe('tile registry', () => {
     for (const [type, component] of Object.entries(TILE_COMPONENTS)) {
       expect(component.name, type).toBe(`Tile${pascal(type)}`);
     }
+  });
+
+  it('makes banner tiles span two grid rows and the others one', () => {
+    expect(tileRows('banner')).toBe(2);
+    expect(tileRows('banner_full')).toBe(2);
+    expect(tileRows('simple')).toBe(1);
+    expect(tileRows('ranking')).toBe(1);
   });
 });

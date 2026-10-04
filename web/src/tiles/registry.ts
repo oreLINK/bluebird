@@ -55,3 +55,12 @@ const SKELETON_VARIANTS: Record<string, SkeletonVariant> = {
 export function skeletonVariant(type: string): SkeletonVariant {
   return SKELETON_VARIANTS[type] ?? 'list';
 }
+
+/**
+ * Grid rows a tile of this type spans on wide screens (App.svelte): banner
+ * tiles are as tall as two simple tiles and the gap between them
+ * (`--tile-simple-h` in styles/base.css), so two simple tiles stack beside one.
+ */
+export function tileRows(type: string): 1 | 2 {
+  return type === 'banner' || type === 'banner_full' ? 2 : 1;
+}

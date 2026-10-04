@@ -59,6 +59,7 @@
           {view}
           showOdds={model.showOdds}
           details={model.details}
+          compact
         />
       {/if}
     </div>
@@ -90,9 +91,9 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     align-content: center;
-    gap: 12px;
+    gap: 6px;
     height: var(--tile-simple-h);
-    padding: 12px 14px 0;
+    padding: 8px 14px 0;
     overflow: hidden;
   }
 
@@ -108,7 +109,7 @@
   h2 {
     overflow: hidden;
     font-family: var(--font-display);
-    font-size: 1.5rem;
+    font-size: 1.375rem;
     font-style: italic;
     font-weight: 800;
     line-height: 1.1;
@@ -120,7 +121,7 @@
 
   h2.long {
     display: -webkit-box;
-    font-size: 1.25rem;
+    font-size: 1.0625rem;
     white-space: normal;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;

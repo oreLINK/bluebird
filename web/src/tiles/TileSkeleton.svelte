@@ -94,10 +94,18 @@
 
   .content.simple {
     align-content: center;
-    gap: 12px;
+    gap: 6px;
     height: var(--tile-simple-h);
-    padding-top: 12px;
+    padding-top: 8px;
     text-align: left;
+  }
+
+  .content.simple h2 {
+    font-size: 1.375rem;
+  }
+
+  .content.simple .odds span {
+    height: var(--odds-button-compact-h);
   }
 
   .more {

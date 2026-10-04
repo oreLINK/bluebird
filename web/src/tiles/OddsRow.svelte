@@ -3,6 +3,8 @@
   ("82 %" for live KPIs, "4,43 m" for historical ones, lib/kpiView.ts) and,
   for live KPIs, reliability dots (ConfidenceDots); a bar below each. `overlay` adapts the bars for a photo or illustration background
   (TileBannerFull).
+  `compact`: shorter boxes (one line of name, smaller value) for the simple
+  tiles, so two of them stack beside a banner tile.
   `details`: when true, each box is a button that shows the station details
   (tile option `details`); when false (the default for now) the boxes are
   static and a tap on them does nothing (not even a flip).
@@ -23,6 +25,7 @@
     onselect,
     showOdds = false,
     overlay = false,
+    compact = false,
     details = false,
   }: {
     tileId: string;
@@ -33,6 +36,7 @@
     onselect: (stationId: string) => void;
     showOdds?: boolean;
     overlay?: boolean;
+    compact?: boolean;
     details?: boolean;
   } = $props();
 
@@ -55,7 +59,7 @@
   {/if}
 {/snippet}
 
-<div class="odds" class:overlay role="group" aria-label={label} style="--n: {top.length}">
+<div class="odds" class:overlay class:compact role="group" aria-label={label} style="--n: {top.length}">
   {#each top as item, index (item.stationId)}
     <div class="odd">
       {#if details && item.entry}
@@ -154,6 +158,31 @@
     font-style: italic;
     font-weight: 800;
     line-height: 1.05;
+  }
+
+  .compact {
+    padding-top: 2px;
+  }
+
+  .compact .odd {
+    gap: 6px;
+  }
+
+  .compact .odd-button {
+    grid-template-rows: 0.825rem auto auto;
+    gap: 2px;
+    height: var(--odds-button-compact-h);
+    padding: 6px 6px 5px;
+  }
+
+  .compact .odd-name {
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    font-size: 0.6875rem;
+  }
+
+  .compact .odd-value {
+    font-size: 1.375rem;
   }
 
   .odd-odds {

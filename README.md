@@ -768,7 +768,11 @@ Implement `write_bytes`, `read_bytes`, `exists` and `list` of
 - **Equal sizes**: every banner tile has the same collapsed size, set by
   `--tile-banner-h`, `--tile-front-h` and `--tile-more-h` in `styles/base.css`;
   every `simple` tile has the shorter `--tile-simple-h`, and every odds button
-  the height `--odds-button-h`;
+  the height `--odds-button-h` (`--odds-button-compact-h` in simple tiles:
+  one line of name, smaller value, `OddsRow` `compact`);
+  `--tile-simple-h` is computed so that two simple tiles and the gap between
+  them (`--tile-gap`) are exactly as tall as one banner tile, card frame
+  (`--tile-frame-h`) included;
   titles, descriptions, names and odds buttons are clamped to fixed heights
   (long titles such as "… demain après-midi" use a smaller font on up to two
   lines).
@@ -782,7 +786,11 @@ Implement `write_bytes`, `read_bytes`, `exists` and `list` of
   colour pair; magnitude is shown by the bars). Reduced transparency and
   missing `backdrop-filter` fall back to an opaque header. Buttons expose
   their state with `aria-pressed` / `aria-expanded`.
-- **Mobile first**: one column, two from 768 px, three from 1100 px.
+- **Mobile first**: one column, two from 768 px, three from 1100 px. From
+  768 px, `banner` and `banner_full` tiles span two grid rows
+  (`tileRows` in `tiles/registry.ts`), so two simple tiles stack beside a
+  banner tile with their edges aligned; the grid fills in the tile order
+  (no reordering).
 
 ### Tiles on the site
 

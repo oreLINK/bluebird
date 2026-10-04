@@ -88,7 +88,7 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 | `web/src/tiles/registry.ts` | Tile type id → Svelte component (`xyz` → `TileXyz.svelte`, tested). |
 | `web/src/tiles/TileBanner.svelte` | Type `banner`: banner (photo or illustration), top stations as odds buttons, "see all". |
 | `web/src/tiles/TileBannerFull.svelte` | Type `banner_full`: photo or illustration fills the card behind title and odds. |
-| `web/src/tiles/TileSimple.svelte` | Type `simple`: banner tile without banner (title without icon, odds, "see all"), shorter (`--tile-simple-h`), for KPIs lower on the page. |
+| `web/src/tiles/TileSimple.svelte` | Type `simple`: banner tile without banner (title without icon, compact odds, "see all"), half a banner tile (`--tile-simple-h`), so two stack beside a banner tile on wide screens. |
 | `web/src/lib/kpiView.ts` | **One view of a KPI for every tile**: `liveView` (probabilities, confidence, details) / `historicalView` (Rewind values, bars vs best), `viewFor()` (App), `itemLabel`, `rewindOfKpi`. Tiles never read payloads directly. |
 | `web/src/tiles/tileModel.ts`, `OddsRow.svelte`, `RankingMore.svelte`, `StationRow.svelte`, `summary.ts` | Shared by every tile type and both kinds: top/rest, photo, odds/details (live only), empty message, badge, theme (`TILE_THEMES`, from the Rewind's filter). Odds buttons show reliability dots for live KPIs; the open list has a "see less" button at its top and bottom. |
 | `web/src/tiles/TileBadge.svelte`, `web/src/components/ValuePill.svelte` | Corner badge ("REWIND 25/26") and the value pill of ranking rows ("82 %", "4,43 m"). |
@@ -193,8 +193,11 @@ with `scripts/ci/fetch-gh-pages-data.sh` before computing (fallback).
     `credits.yaml` entry; never commit a photo without them.
 16. **Equal tiles, two faces.** Banner tiles keep the same collapsed size
     (`--tile-*` tokens in `base.css`), `simple` tiles the shorter
-    `--tile-simple-h`; a new tile type uses one of these sizes or adds its own token, shared by
-    all its tiles. Every tile is a
+    `--tile-simple-h`, derived in `base.css` so that two simple tiles plus
+    `--tile-gap` equal one banner tile (frame included); keep that formula
+    when changing a tile token. On wide screens banner tiles span two grid
+    rows (`tileRows`). A new tile type uses one of these sizes or adds its own
+    token, shared by all its tiles. Every tile is a
     `FlipCard`; interactive content inside a tile must be a real button/link or
     carry `data-no-flip`, otherwise a tap on it flips the card. The `.card`
     frame (striped corners) belongs to each face, never to the static wrapper,
