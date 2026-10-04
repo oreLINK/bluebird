@@ -1,6 +1,5 @@
 <!--
-  Site footer: the service status of the last refresh (ServiceStatus), then
-  (config/pages.yaml `footer`) two short centred lines:
+  Site footer (config/pages.yaml `footer`), two short centred lines:
     1. the GitHub logo, linking to the project repository;
     2. small links to the pages (about, legal notice, privacy), each opening
        a full-window sheet (InfoPage) through `#<page id>`.
@@ -12,14 +11,15 @@
   import { i18n } from '../lib/i18n/i18n.svelte';
   import { sheets } from '../lib/sheets.svelte';
   import Icon from './Icon.svelte';
-  import ServiceStatus from './ServiceStatus.svelte';
+  import { STATE_ICON, statusView } from '../lib/status';
 
-  let {
-    status,
-    massifId,
-    timezone,
-    now,
-  }: { status: Status | null; massifId: string; timezone: string; now: number } = $props();
+  /** The page showing diamond/status.json (config/pages.yaml): its link carries the state. */
+  const STATUS_PAGE = 'status';
+
+  let { status, massifId, now }: { status: Status | null; massifId: string; now: number } =
+    $props();
+
+  const state = $derived(status ? statusView(status, massifId, now).state : 'down');
 
   function openPage(event: MouseEvent, id: string) {
     if (event.metaKey || event.ctrlKey || event.shiftKey) return; // new tab or window
@@ -29,9 +29,6 @@
 </script>
 
 <footer class="container footer">
-  <div class="service-box">
-    <ServiceStatus {status} {massifId} {timezone} {now} />
-  </div>
   <a
     class="github"
     href={footer.repository}
@@ -47,7 +44,10 @@
         {#each footerLinks as page (page.id)}
           <li>
             <a href="#{page.id}" onclick={(event) => openPage(event, page.id)}>
-              {i18n.pick(page.title)}
+              {#if page.id === STATUS_PAGE}
+                <span class="state" data-state={state}><Icon name={STATE_ICON[state]} size={10} /></span
+                ><span class="visually-hidden">{i18n.t(`state.${state}`)} · </span>
+              {/if}{i18n.pick(page.title)}
             </a>
           </li>
         {/each}
@@ -57,11 +57,34 @@
 </footer>
 
 <style>
-  .service-box {
-    justify-self: stretch;
-    margin-bottom: 6px;
-    font-size: 0.8125rem;
-    color: var(--ink-soft);
+  .state {
+    display: inline-grid;
+    place-items: center;
+    width: 14px;
+    height: 14px;
+    margin-right: 4px;
+    border-radius: 50%;
+    vertical-align: -2px;
+  }
+
+  .state[data-state='ok'] {
+    background: var(--state-ok-bg);
+    color: var(--state-ok-ink);
+  }
+
+  .state[data-state='partial'] {
+    background: var(--state-partial-bg);
+    color: var(--state-partial-ink);
+  }
+
+  .state[data-state='stale'] {
+    background: var(--state-stale-bg);
+    color: var(--state-stale-ink);
+  }
+
+  .state[data-state='down'] {
+    background: var(--state-down-bg);
+    color: var(--state-down-ink);
   }
 
   .footer {
@@ -91,9 +114,10 @@
     list-style: none;
   }
 
-  li + li::before {
+  /* The dot ends the line it is on, so a wrapped line never starts with one. */
+  li:not(:last-child)::after {
     content: '·';
-    margin-right: 4px;
+    margin-left: 4px;
     color: var(--ink-faint);
   }
 

@@ -118,7 +118,8 @@ def test_repository_periods_cover_the_ski_day(repo_config: Config) -> None:
 def test_footer_pages_must_exist(tmp_path: Path) -> None:
     config_dir = tiny_config_dir(tmp_path)
     pages = (config_dir / "pages.yaml").read_text(encoding="utf-8")
-    pages = pages.replace("pages: [about, legal, privacy]", "pages: [about, nope]")
+    assert "pages: [about, status, legal, privacy]" in pages
+    pages = pages.replace("pages: [about, status, legal, privacy]", "pages: [about, nope]")
     (config_dir / "pages.yaml").write_text(pages, encoding="utf-8")
     with pytest.raises(ConfigError, match="footer references unknown page 'nope'"):
         load_config(config_dir)
@@ -219,3 +220,16 @@ def test_kpi_descriptions_have_no_placeholders(tmp_path: Path) -> None:
     (config_dir / "kpis.yaml").write_text(kpis, encoding="utf-8")
     with pytest.raises(ConfigError, match=r"description \(fr\) has a placeholder"):
         load_config(config_dir)
+
+
+def test_service_status_page_is_linked_from_the_footer(repo_config: Config) -> None:
+    pages = {p.id: p for p in repo_config.pages.pages}
+    assert "status" in repo_config.pages.footer.pages
+    blocks = [s.block for s in pages["status"].sections if s.block]
+    assert blocks == [
+        "service_summary",
+        "service_sources",
+        "service_transforms",
+        "service_kpis",
+        "service_tiles",
+    ]

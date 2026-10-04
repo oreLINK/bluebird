@@ -10,11 +10,18 @@
 #                                       (config/sources.yaml)
 #                        photo_credits  credit of every banner photo
 #                                       (web/src/assets/photos/credits.yaml)
+#                        service_summary, service_sources, service_transforms,
+#                        service_kpis, service_tiles
+#                                       status of the last refresh
+#                                       (diamond/status.json): overall state,
+#                                       then one line per data source,
+#                                       transformation, indicator and tile of
+#                                       the current mountain range
 #
 # Write long texts with the `>-` folded style, one {fr, en} pair per paragraph.
 footer:
   repository: https://github.com/oreLINK/bluebird
-  pages: [about, legal, privacy]
+  pages: [about, status, legal, privacy]
 
 pages:
   - id: about
@@ -131,6 +138,73 @@ pages:
           fr: Crédits photo
           en: Photo credits
         block: photo_credits
+
+  - id: status
+    title:
+      fr: État du service
+      en: Service status
+    sections:
+      - id: summary
+        title:
+          fr: Dernière mise à jour
+          en: Last update
+        paragraphs:
+          - fr: >-
+              Bluebird met à jour ses données toutes les 6 heures (vers 0 h, 6 h,
+              12 h et 18 h, heure de Paris, de novembre à mai). Cette page dit
+              comment s'est passée la dernière mise à jour.
+            en: >-
+              Bluebird updates its data every 6 hours (around midnight, 6 am, noon
+              and 6 pm, Paris time, from November to May). This page tells how the
+              last update went.
+        block: service_summary
+
+      - id: sources
+        title:
+          fr: Sources de données (API)
+          en: Data sources (APIs)
+        block: service_sources
+
+      - id: transforms
+        title:
+          fr: Transformations
+          en: Data processing
+        block: service_transforms
+
+      - id: kpis
+        title:
+          fr: Indicateurs
+          en: Indicators
+        block: service_kpis
+
+      - id: tiles
+        title:
+          fr: Tuiles
+          en: Tiles
+        paragraphs:
+          - fr: Les tuiles du massif affiché, pour les créneaux qui ne sont pas encore passés.
+            en: The tiles of the mountain range shown, for the time slots not over yet.
+        block: service_tiles
+
+      - id: states
+        title:
+          fr: Comprendre les états
+          en: Understanding the states
+        paragraphs:
+          - fr: "Disponible : données fraîches et complètes."
+            en: "Available: fresh and complete data."
+          - fr: "Partiel : données fraîches, mais certaines stations manquent."
+            en: "Partial: fresh data, but some resorts are missing."
+          - fr: >-
+              Ancien : les valeurs affichées viennent d'une mise à jour précédente
+              (par exemple « données de 06:00 »), car la dernière n'a pas pu les
+              calculer. La tuile porte alors un badge avec cette heure.
+            en: >-
+              Outdated: the values shown come from an earlier update (for example
+              "data from 06:00"), because the last one could not compute them. The
+              tile then carries a badge with that time.
+          - fr: "Indisponible : aucune valeur pour l'instant."
+            en: "Unavailable: no value for now."
 
   - id: privacy
     title:

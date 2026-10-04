@@ -68,13 +68,22 @@ a {
 /*
  * Shared tile dimensions: every banner tile has the same collapsed size, every
  * simple tile a shorter one, and the "see all" bar the same height everywhere.
+ * Two simple tiles and the gap between them are exactly as tall as one banner
+ * tile, so on wide screens they stack beside it (App.svelte: banner tiles span
+ * two grid rows). --tile-simple-h is derived to keep that true.
  */
 :root {
   --tile-banner-h: 9.5rem; /* illustrated banner of a `banner` tile */
   --tile-front-h: 19.5rem; /* banner + title + odds (whole hero of `banner_full`) */
-  --tile-simple-h: 10.5rem; /* title + odds of a `simple` tile (no banner) */
   --tile-more-h: 2.875rem; /* "see all" bar */
+  --tile-gap: 18px; /* between tiles, both ways (App.svelte .tiles) */
+  --tile-frame-h: 5px; /* .card frame: 3px stripe padding + 2px .card-body borders */
+  /* title + odds of a `simple` tile (no banner): half a banner tile, minus the gap */
+  --tile-simple-h: calc(
+    (var(--tile-front-h) - var(--tile-more-h) - var(--tile-frame-h) - var(--tile-gap)) / 2
+  );
   --odds-button-h: 5.25rem; /* odds button: name, percentage, reliability dots */
+  --odds-button-compact-h: 3.625rem; /* same, one line of name (simple tiles) */
 }
 
 /*

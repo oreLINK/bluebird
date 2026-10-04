@@ -25,7 +25,7 @@
   import { flip } from 'svelte/animate';
   import { viewFor } from './lib/kpiView';
   import { expandTiles, instanceTitle, isLiveTile, nextBoundary } from './lib/periods';
-  import { skeletonVariant, tileComponent } from './tiles/registry';
+  import { skeletonVariant, tileComponent, tileRows } from './tiles/registry';
   import TileShell from './tiles/TileShell.svelte';
   import TileSkeleton from './tiles/TileSkeleton.svelte';
 
@@ -56,6 +56,13 @@
   /** One tile per live tile and period not over yet, then the Rewind tiles. */
   const instances = $derived(expandTiles(visibleTiles, payload, now));
   const massif = $derived(massifs.find((m) => m.id === massifId));
+  /** What the "Service status" page needs (config/pages.yaml `service_*` blocks). */
+  const serviceContext = $derived({
+    status: serviceStatus,
+    massifId,
+    timezone: payload?.timezone ?? massif?.timezone ?? 'Europe/Paris',
+    now,
+  });
 
   $effect(() => {
     const id = massifId;
@@ -167,7 +174,7 @@
       <p class="visually-hidden" role="status">{i18n.t('status.loading')}</p>
       <div class="tiles">
         {#each visibleTiles as { tile, kpis } (tile.id)}
-          <div class="slot">
+          <div class="slot" class:tall={tileRows(tile.type) === 2}>
             <TileSkeleton
               id={tile.id}
               title={i18n.pick(instanceTitle(tile, kpis, { fr: '', en: '' })).trim()}
@@ -187,6 +194,7 @@
           {@const view = viewFor(kpis[0], massifId, payload, rewinds, rewindPayload, slot)}
           <div
             class="slot"
+            class:tall={tileRows(tile.type) === 2}
             animate:flip={{ duration: motion(260) }}
             in:arrive={{ delay: Math.min(index, 8) * 45 }}
             out:leave
@@ -211,18 +219,13 @@
     {/if}
   </main>
 
-  <AppFooter
-    status={serviceStatus}
-    {massifId}
-    timezone={payload?.timezone ?? massif?.timezone ?? 'Europe/Paris'}
-    {now}
-  />
+  <AppFooter status={serviceStatus} {massifId} {now} />
 </div>
 
 <AppMenu open={menuOpen} onclose={() => (menuOpen = false)} />
 
 {#each pages as page (page.id)}
-  <InfoPage {page} />
+  <InfoPage {page} service={serviceContext} />
 {/each}
 
 <style>
@@ -240,7 +243,7 @@
   .tiles {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 18px;
+    gap: var(--tile-gap);
     align-items: start;
   }
 
@@ -252,6 +255,11 @@
   @media (min-width: 768px) {
     .tiles {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    /* A banner tile spans two rows: two simple tiles stack beside it (tileRows). */
+    .slot.tall {
+      grid-row: span 2;
     }
   }
 
