@@ -48,6 +48,12 @@
   {:else if name === 'globe'}
     <circle cx="12" cy="12" r="9" />
     <path d="M3 12h18M12 3c2.5 2.6 3.7 5.6 3.7 9S14.5 18.4 12 21c-2.5-2.6-3.7-5.6-3.7-9S9.5 5.6 12 3Z" />
+  {:else if name === 'clock'}
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7.5V12l3 2" />
+  {:else if name === 'alert'}
+    <path d="M12 3.5 21.5 20h-19Z" />
+    <path d="M12 10v4.5M12 17.5v.01" />
   {:else if name === 'refresh'}
     <path d="M20 11a8 8 0 1 0-2.3 5.7" />
     <path d="M20 4v7h-7" />

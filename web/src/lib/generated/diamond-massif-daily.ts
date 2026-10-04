@@ -1,7 +1,10 @@
 /* Generated from config/schemas/diamond-massif-daily.schema.json by `npm run gen:types`. Do not edit. */
 
-export type SchemaVersion = 1;
+export type SchemaVersion = 2;
 export type MassifId = string;
+/**
+ * Ski day of the run (local date, before 06:00: the day before).
+ */
 export type ForecastDate = string;
 export type GeneratedAt = string;
 export type Timezone = string;
@@ -20,6 +23,27 @@ export type Aspects = string[];
 export type Website = string | null;
 export type KpiId = string;
 export type AggregatorVersion = string;
+/**
+ * Stable id across runs, e.g. `evening@2026-12-14`.
+ */
+export type Key = string;
+/**
+ * Period id from config/periods.yaml.
+ */
+export type PeriodId = string;
+export type SkiDay = string;
+/**
+ * Local time, with UTC offset.
+ */
+export type Start = string;
+/**
+ * Local time, with UTC offset. Hidden afterwards.
+ */
+export type End = string;
+/**
+ * When these values were computed; older than the payload = stale.
+ */
+export type GeneratedAt1 = string;
 export type StationId = string;
 export type Probability = number;
 export type Confidence = 'low' | 'medium' | 'high';
@@ -36,6 +60,10 @@ export type Members = number;
  * Sorted by probability, descending.
  */
 export type Ranking = DiamondRankingEntry[];
+/**
+ * Periods not over yet, by start time.
+ */
+export type Periods = DiamondKpiPeriod[];
 export type Id1 = string;
 export type Name1 = string;
 export type Url = string;
@@ -79,6 +107,18 @@ export interface Kpis {
 export interface DiamondKpi {
   kpi_id: KpiId;
   aggregator_version: AggregatorVersion;
+  periods: Periods;
+}
+/**
+ * The ranking of one KPI for one period of one ski day.
+ */
+export interface DiamondKpiPeriod {
+  key: Key;
+  period_id: PeriodId;
+  ski_day: SkiDay;
+  start: Start;
+  end: End;
+  generated_at: GeneratedAt1;
   ranking: Ranking;
 }
 export interface DiamondRankingEntry {

@@ -8,6 +8,7 @@
   The "?" button (or a tap outside the rows) flips it to KpiBack.
 -->
 <script lang="ts">
+  import StaleBadge from '../components/StaleBadge.svelte';
   import { formatWindow } from '../lib/format';
   import { i18n } from '../lib/i18n/i18n.svelte';
   import { numberOption } from './options';
@@ -39,6 +40,9 @@
 <FlipCard labelledby="{tile.id}-title" theme={model.theme}>
   {#snippet front()}
     <TileShell id={tile.id} {title} icon={tile.icon} framed={false}>
+      {#if model.staleSince}
+        <StaleBadge since={model.staleSince} timezone={view.timezone} />
+      {/if}
       {#if ranking.length === 0}
         <p class="note">{i18n.t(model.emptyMessage)}</p>
       {:else}

@@ -1,0 +1,363 @@
+# Refresh the site data every 6 hours (00:00, 06:00, 12:00 and 18:00 Paris
+# time, November to May) with the code of `main`, one pipeline per layer:
+#
+#   plan ─▶ bronze[source] ─▶ silver[source] ─▶ gold[KPI] ─▶ diamond[massif] ─▶ status ─▶ publish
+#
+# - plan:    gate on Paris time and season, then `bluebird plan` lists the units
+#            (from config/) and fixes the run id every job shares.
+# - bronze:  one job per source, ONE grouped API request each.
+# - silver:  one job per source, producing its dataset.
+# - gold:    one job per KPI. A KPI that cannot be recomputed keeps its last
+#            valid values (restored from gh-pages), flagged as stale.
+# - diamond: one job per massif (the JSON the site loads).
+# - status:  always runs: diamond/status.json (footer) and the job summary.
+# - publish: the only job that writes to gh-pages (gold, diamond, status).
+#
+# A failing job does not stop the others (fail-fast off, `if: always()`): the
+# status shows what is down. Files move between jobs as workflow artifacts;
+# bronze and silver are kept 7 days for debugging.
+name: Data refresh
+
+on:
+  schedule:
+    # GitHub cron is in UTC. One line per Paris offset; the plan job keeps the
+    # line matching the current offset, so runs happen at 00:07, 06:07, 12:07
+    # and 18:07 local time all season. :07 avoids the busy top of the hour.
+    - cron: '7 23,5,11,17 * 1-3,10-12 *' # winter time (CET, UTC+1)
+    - cron: '7 22,4,10,16 * 3-5 *' # summer time (CEST, UTC+2)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Shared with deploy.yml: never push to gh-pages from two runs at once.
+concurrency:
+  group: gh-pages-publish
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      run: ${{ steps.gate.outputs.run }}
+      run_id: ${{ steps.plan.outputs.run_id }}
+      sources: ${{ steps.plan.outputs.sources || '[]' }}
+      silver: ${{ steps.plan.outputs.silver || '[]' }}
+      kpis: ${{ steps.plan.outputs.kpis || '[]' }}
+      massifs: ${{ steps.plan.outputs.massifs || '[]' }}
+    steps:
+      - name: Gate on Paris time and season
+        id: gate
+        env:
+          EVENT: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          run=true
+          if [ "$EVENT" = "schedule" ]; then
+            offset=$(TZ=Europe/Paris date +%z)
+            month=$(TZ=Europe/Paris date +%-m)
+            case "$SCHEDULE" in
+              '7 23,5,11,17 * 1-3,10-12 *') wanted=+0100 ;;
+              '7 22,4,10,16 * 3-5 *') wanted=+0200 ;;
+              *) wanted=unknown ;;
+            esac
+            if [ "$offset" != "$wanted" ]; then
+              echo "Paris is at UTC$offset: the other cron line runs this refresh."
+              run=false
+            elif [ "$month" -gt 5 ] && [ "$month" -lt 11 ]; then
+              echo "Out of season (month $month in Paris)."
+              run=false
+            fi
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v5
+        if: steps.gate.outputs.run == 'true'
+        with:
+          ref: main
+      - uses: ./.github/actions/setup-pipeline
+        if: steps.gate.outputs.run == 'true'
+      - name: List the units of this refresh
+        id: plan
+        if: steps.gate.outputs.run == 'true'
+        working-directory: pipeline
+        run: |
+          plan=$(uv run bluebird plan --json)
+          echo "$plan" | jq .
+          {
+            echo "run_id=$(jq -r .run_id <<<"$plan")"
+            echo "sources=$(jq -c .sources <<<"$plan")"
+            echo "silver=$(jq -c .silver <<<"$plan")"
+            echo "kpis=$(jq -c .kpis <<<"$plan")"
+            echo "massifs=$(jq -c .massifs <<<"$plan")"
+          } >> "$GITHUB_OUTPUT"
+
+  bronze:
+    name: Bronze · ${{ matrix.source }}
+    needs: plan
+    if: needs.plan.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        source: ${{ fromJSON(needs.plan.outputs.sources) }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: ./.github/actions/setup-pipeline
+      - name: Fetch (one grouped request)
+        working-directory: pipeline
+        env:
+          RUN_ID: ${{ needs.plan.outputs.run_id }}
+          SOURCE: ${{ matrix.source }}
+        run: |
+          uv run bluebird run --layer bronze --source "$SOURCE" --run-id "$RUN_ID" --strict \
+            --report "$RUNNER_TEMP/report/bronze-$SOURCE.json" --export "$RUNNER_TEMP/export"
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-bronze-${{ matrix.source }}
+          path: ${{ runner.temp }}/report
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Keep the raw data for 7 days
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: data-bronze-${{ matrix.source }}
+          path: ${{ runner.temp }}/export
+          retention-days: 7
+          if-no-files-found: ignore
+
+  silver:
+    name: Silver · ${{ matrix.dataset }}
+    needs: [plan, bronze]
+    if: always() && needs.plan.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.silver) }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: ./.github/actions/setup-pipeline
+      - name: Get the raw data of the source
+        continue-on-error: true # a failed source has none: the report says so
+        uses: actions/download-artifact@v4
+        with:
+          name: data-bronze-${{ matrix.source }}
+          path: ${{ env.BLUEBIRD_DATA_DIR }}
+      - name: Transform
+        working-directory: pipeline
+        env:
+          RUN_ID: ${{ needs.plan.outputs.run_id }}
+          SOURCE: ${{ matrix.source }}
+        run: |
+          uv run bluebird run --layer silver --source "$SOURCE" --run-id "$RUN_ID" --strict \
+            --report "$RUNNER_TEMP/report/silver-$SOURCE.json" --export "$RUNNER_TEMP/export"
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-silver-${{ matrix.source }}
+          path: ${{ runner.temp }}/report
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Keep the dataset for 7 days
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: data-silver-${{ matrix.dataset }}
+          path: ${{ runner.temp }}/export
+          retention-days: 7
+          if-no-files-found: ignore
+
+  gold:
+    name: Gold · ${{ matrix.kpi }}
+    needs: [plan, silver]
+    if: always() && needs.plan.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        kpi: ${{ fromJSON(needs.plan.outputs.kpis) }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: ./.github/actions/setup-pipeline
+      - name: Restore the published data (last valid values)
+        run: scripts/ci/fetch-gh-pages-data.sh "$BLUEBIRD_DATA_DIR"
+      - name: Get every silver dataset
+        uses: actions/download-artifact@v4
+        with:
+          pattern: data-silver-*
+          merge-multiple: true
+          path: ${{ env.BLUEBIRD_DATA_DIR }}
+      - name: Compute the KPI
+        working-directory: pipeline
+        env:
+          RUN_ID: ${{ needs.plan.outputs.run_id }}
+          KPI: ${{ matrix.kpi }}
+        run: |
+          uv run bluebird run --layer gold --kpi "$KPI" --run-id "$RUN_ID" --strict \
+            --report "$RUNNER_TEMP/report/gold-$KPI.json" --export "$RUNNER_TEMP/export"
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-gold-${{ matrix.kpi }}
+          path: ${{ runner.temp }}/report
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Keep the KPI file
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: data-gold-${{ matrix.kpi }}
+          path: ${{ runner.temp }}/export
+          retention-days: 7
+          if-no-files-found: ignore
+
+  diamond:
+    name: Diamond · ${{ matrix.massif }}
+    needs: [plan, gold]
+    if: always() && needs.plan.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        massif: ${{ fromJSON(needs.plan.outputs.massifs) }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: ./.github/actions/setup-pipeline
+      - name: Restore the published data (KPIs whose job failed)
+        run: scripts/ci/fetch-gh-pages-data.sh "$BLUEBIRD_DATA_DIR"
+      - name: Get the KPI files of this refresh
+        uses: actions/download-artifact@v4
+        with:
+          pattern: data-gold-*
+          merge-multiple: true
+          path: ${{ env.BLUEBIRD_DATA_DIR }}
+      - name: Build the site JSON
+        working-directory: pipeline
+        env:
+          RUN_ID: ${{ needs.plan.outputs.run_id }}
+          MASSIF: ${{ matrix.massif }}
+        run: |
+          uv run bluebird run --layer diamond --massif "$MASSIF" --run-id "$RUN_ID" --strict \
+            --report "$RUNNER_TEMP/report/diamond-$MASSIF.json" --export "$RUNNER_TEMP/export"
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-diamond-${{ matrix.massif }}
+          path: ${{ runner.temp }}/report
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Keep the site JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: data-diamond-${{ matrix.massif }}
+          path: ${{ runner.temp }}/export
+          retention-days: 7
+          if-no-files-found: ignore
+
+  status:
+    name: Site status
+    needs: [plan, bronze, silver, gold, diamond]
+    if: always() && needs.plan.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: ./.github/actions/setup-pipeline
+      - name: Restore the published data
+        run: scripts/ci/fetch-gh-pages-data.sh "$BLUEBIRD_DATA_DIR"
+      - name: Get the KPI files of this refresh
+        uses: actions/download-artifact@v4
+        with:
+          pattern: data-gold-*
+          merge-multiple: true
+          path: ${{ env.BLUEBIRD_DATA_DIR }}
+      - name: Get the site JSON of this refresh
+        uses: actions/download-artifact@v4
+        with:
+          pattern: data-diamond-*
+          merge-multiple: true
+          path: ${{ env.BLUEBIRD_DATA_DIR }}
+      - name: Get the step reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: report-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/reports
+      - name: Write status.json and the summary
+        working-directory: pipeline
+        env:
+          RUN_ID: ${{ needs.plan.outputs.run_id }}
+        run: |
+          uv run bluebird status --run-id "$RUN_ID" --reports "$RUNNER_TEMP/reports" \
+            --summary "$GITHUB_STEP_SUMMARY" --export "$RUNNER_TEMP/export"
+      - name: Keep the status
+        uses: actions/upload-artifact@v4
+        with:
+          name: data-status
+          path: ${{ runner.temp }}/export
+          retention-days: 7
+
+  publish:
+    name: Publish to gh-pages
+    needs: [plan, status]
+    if: always() && needs.plan.outputs.run == 'true' && needs.status.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Deploy key is configured
+        env:
+          HAS_KEY: ${{ secrets.GH_PAGES_DEPLOY_KEY != '' }}
+        run: |
+          if [ "$HAS_KEY" != "true" ]; then
+            echo "::error::Secret GH_PAGES_DEPLOY_KEY is missing. Run scripts/setup-github.sh (see README)."
+            exit 1
+          fi
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          ssh-key: ${{ secrets.GH_PAGES_DEPLOY_KEY }}
+      - name: Get the KPI files
+        uses: actions/download-artifact@v4
+        with:
+          pattern: data-gold-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/publish
+      - name: Get the site JSON
+        uses: actions/download-artifact@v4
+        with:
+          pattern: data-diamond-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/publish
+      - name: Get the status
+        uses: actions/download-artifact@v4
+        with:
+          name: data-status
+          path: ${{ runner.temp }}/publish
+      - name: Publish to gh-pages/data
+        env:
+          RUN_ID: ${{ needs.plan.outputs.run_id }}
+        run: |
+          scripts/ci/publish-gh-pages.sh data "$RUNNER_TEMP/publish" "data: refresh $RUN_ID"

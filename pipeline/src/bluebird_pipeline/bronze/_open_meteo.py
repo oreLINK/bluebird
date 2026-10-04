@@ -1,8 +1,13 @@
 """Shared logic of the Open-Meteo extractors (forecast and ensemble APIs).
 
 Both APIs accept several locations per request (comma-separated coordinates).
-We send one request per station with one location per elevation band, so the
-model downscales temperature and snow to each band's altitude.
+We send **one request per source and run** with one location per station and
+elevation band, so the model downscales temperature and snow to each band's
+altitude. ``max_locations_per_request`` splits it into batches if a response
+ever grows too large.
+
+Open-Meteo still counts every location in its weighted quota: grouping cuts the
+number of HTTP requests (and connection overhead), not the quota consumed.
 """
 
 from __future__ import annotations
@@ -23,6 +28,9 @@ class OpenMeteoParams(ExtractorParams):
     bands: list[Band] = Field(default_factory=lambda: ["base", "mid", "summit"], min_length=1)
     past_days: int = Field(default=2, ge=0, le=7)
     forecast_days: int = Field(default=3, ge=1, le=16)
+    max_locations_per_request: int | None = Field(
+        default=None, ge=1, description="Split the request in batches; default: one request."
+    )
 
 
 class OpenMeteoExtractor(Extractor):
@@ -31,32 +39,41 @@ class OpenMeteoExtractor(Extractor):
     params: OpenMeteoParams
 
     def extract(self, ctx: RunContext) -> list[BronzeRecord]:
-        records: list[BronzeRecord] = []
-        bands = list(self.params.bands)
-        for ref in ctx.stations():
-            station = ref.station
-            elevations = [station.elevation.at(band) for band in bands]
-            query = {
-                "latitude": ",".join(str(station.lat) for _ in bands),
-                "longitude": ",".join(str(station.lon) for _ in bands),
-                "elevation": ",".join(str(e) for e in elevations),
-                "hourly": ",".join(self.params.hourly),
-                "models": ",".join(self.params.models),
-                "past_days": self.params.past_days,
-                "forecast_days": self.params.forecast_days,
-                "timezone": "UTC",
+        locations = [
+            {
+                "station_id": ref.id,
+                "band": band,
+                "elevation": ref.station.elevation.at(band),
+                "lat": ref.station.lat,
+                "lon": ref.station.lon,
             }
-            records.append(
-                self.get_json(
-                    self.params.base_url,
-                    query,
-                    station_id=station.id,
-                    context={
-                        "bands": bands,
-                        "elevations": elevations,
-                        "models": list(self.params.models),
-                        "hourly": list(self.params.hourly),
-                    },
-                )
-            )
-        return records
+            for ref in ctx.stations()
+            for band in self.params.bands
+        ]
+        size = self.params.max_locations_per_request or max(1, len(locations))
+        return [
+            self._fetch(locations[index : index + size]) for index in range(0, len(locations), size)
+        ]
+
+    def _fetch(self, locations: list[dict]) -> BronzeRecord:
+        query = {
+            "latitude": ",".join(str(loc["lat"]) for loc in locations),
+            "longitude": ",".join(str(loc["lon"]) for loc in locations),
+            "elevation": ",".join(str(loc["elevation"]) for loc in locations),
+            "hourly": ",".join(self.params.hourly),
+            "models": ",".join(self.params.models),
+            "past_days": self.params.past_days,
+            "forecast_days": self.params.forecast_days,
+            "timezone": "UTC",
+        }
+        return self.get_json(
+            self.params.base_url,
+            query,
+            context={
+                "locations": [
+                    {k: loc[k] for k in ("station_id", "band", "elevation")} for loc in locations
+                ],
+                "models": list(self.params.models),
+                "hourly": list(self.params.hourly),
+            },
+        )

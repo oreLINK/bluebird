@@ -86,13 +86,14 @@ def test_whiteout_chance_is_the_share_of_white_scenarios(ctx: RunContext) -> Non
         stations=["alpha", "beta"], bands=["mid"], members=10, start=start, hours=48, values=values
     )
     ctx._silver_cache["ensemble_hourly"] = frame
-    kpi = next(k for k in ctx.config.kpis if k.id == "whiteout_chance_today")
+    kpi = ctx.config.kpi("whiteout_chance")
     results = AGGREGATORS.get(kpi.aggregator)(kpi).aggregate(ctx)
-    assert {r.station_id: r.probability for r in results} == {"alpha": 0.4, "beta": 0.4}
-    assert results[0].members == 10
-
-    tomorrow = next(k for k in ctx.config.kpis if k.id == "whiteout_chance_tomorrow")
-    later = AGGREGATORS.get(tomorrow.aggregator)(tomorrow).aggregate(ctx)
+    # One result per station for the whole-day period of today and of tomorrow.
+    today = [r for r in results if r.forecast_date.isoformat() == "2026-12-14"]
+    assert {r.station_id: r.probability for r in today} == {"alpha": 0.4, "beta": 0.4}
+    assert today[0].members == 10
+    assert {r.period_id for r in results} == {"day"}
+    later = [r for r in results if r.forecast_date.isoformat() == "2026-12-15"]
     assert {r.window_start.date().isoformat() for r in later} == {"2026-12-15"}
 
 

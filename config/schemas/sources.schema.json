@@ -60,7 +60,7 @@
         },
         "schedule": {
           "default": "daily",
-          "description": "daily: fetched every morning; on_demand: only with `bluebird run --source`; reference: slow-changing data refreshed with `bluebird reference` and committed under config/reference/; season: archive of a closed season, fetched once by `bluebird rewind` and committed under config/rewind/.",
+          "description": "daily: fetched by every refresh; on_demand: only with `bluebird run --source`; reference: slow-changing data refreshed with `bluebird reference` and committed under config/reference/; season: archive of a closed season, fetched once by `bluebird rewind` and committed under config/rewind/.",
           "enum": [
             "daily",
             "on_demand",

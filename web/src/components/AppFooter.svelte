@@ -1,5 +1,6 @@
 <!--
-  Site footer (config/pages.yaml `footer`), two short centred lines:
+  Site footer: the service status of the last refresh (ServiceStatus), then
+  (config/pages.yaml `footer`) two short centred lines:
     1. the GitHub logo, linking to the project repository;
     2. small links to the pages (about, legal notice, privacy), each opening
        a full-window sheet (InfoPage) through `#<page id>`.
@@ -7,9 +8,18 @@
 -->
 <script lang="ts">
   import { footer, footerLinks } from '../lib/config';
+  import type { ServiceStatus as Status } from '../lib/data';
   import { i18n } from '../lib/i18n/i18n.svelte';
   import { sheets } from '../lib/sheets.svelte';
   import Icon from './Icon.svelte';
+  import ServiceStatus from './ServiceStatus.svelte';
+
+  let {
+    status,
+    massifId,
+    timezone,
+    now,
+  }: { status: Status | null; massifId: string; timezone: string; now: number } = $props();
 
   function openPage(event: MouseEvent, id: string) {
     if (event.metaKey || event.ctrlKey || event.shiftKey) return; // new tab or window
@@ -19,6 +29,9 @@
 </script>
 
 <footer class="container footer">
+  <div class="service-box">
+    <ServiceStatus {status} {massifId} {timezone} {now} />
+  </div>
   <a
     class="github"
     href={footer.repository}
@@ -44,6 +57,13 @@
 </footer>
 
 <style>
+  .service-box {
+    justify-self: stretch;
+    margin-bottom: 6px;
+    font-size: 0.8125rem;
+    color: var(--ink-soft);
+  }
+
   .footer {
     display: grid;
     justify-items: center;

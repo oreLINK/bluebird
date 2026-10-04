@@ -32,6 +32,12 @@ export type Decimals1 = number;
  * Ids of the filters (config/filters.yaml) this KPI appears under.
  */
 export type Filters = string[];
+/**
+ * Ids of the periods (config/periods.yaml) a live KPI is computed for; ignored for historical KPIs.
+ *
+ * @minItems 1
+ */
+export type Periods = [string, ...string[]];
 export type Kpis = Kpi[];
 
 /**
@@ -62,6 +68,7 @@ export interface Kpi {
   params?: Params;
   drivers?: Drivers;
   filters?: Filters;
+  periods?: Periods;
 }
 /**
  * Unit of the value of a historical KPI, as published and displayed (e.g. 4.43 m).

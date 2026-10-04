@@ -24,7 +24,19 @@ import type { Attribution, Source, SourcesFile } from './generated/sources';
 import type { StationsFile } from './generated/stations';
 import type { Tile, TilesFile } from './generated/tiles';
 
-export type { Attribution, DiamondRewind, Filter, Footer, Kpi, Massif, Page, PageSection, Rewind, Tile };
+export type {
+  Attribution,
+  DiamondRewind,
+  Filter,
+  Footer,
+  Kpi,
+  Massif,
+  Page,
+  PageSection,
+  Rewind,
+  Source,
+  Tile,
+};
 
 /** Enabled massifs, sorted by `order` then id. */
 export function enabledMassifs(file: MassifsFile): Massif[] {
@@ -147,6 +159,7 @@ export const filters: Filter[] = filtersFile.filters;
 export const pages: Page[] = pagesFile.pages;
 export const footer: Footer = pagesFile.footer;
 export const footerLinks: Page[] = footerPages(pagesFile);
+export const sources: Source[] = sourcesFile.sources;
 export const attributions: Attribution[] = sourceAttributions(sourcesFile.sources);
 export const rewinds: Rewind[] = enabledRewinds(rewindsFile);
 

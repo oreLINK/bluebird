@@ -5,26 +5,35 @@ Commands:
 - ``validate``  check configuration files, cross-references and plugins.
 - ``schemas``   regenerate (or ``--check``) the JSON Schemas in ``config/schemas``.
 - ``plugins``   list registered extractors, transformers, aggregators, displayers.
+- ``plan``      print the units of a refresh (sources, datasets, KPIs, massifs).
 - ``run``       execute pipeline layers on daily data.
+- ``status``    write ``diamond/status.json`` and the manifest from step reports.
 - ``reference`` refresh reference files (pistes, lifts…) in ``config/reference``.
 - ``rewind``    build the Rewind of a closed season in ``config/rewind``.
 - ``demo``      write synthetic demo data to ``web/public/data`` (frontend dev).
+
+The CI workflow (``.github/workflows/refresh.yml``) runs ``plan`` once, then one
+``run`` per source, dataset, KPI and massif, all with the same ``--run-id``,
+then ``status``.
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import logging
+import shutil
 import sys
-from datetime import date
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 from .checks import plugin_errors
 from .config import ConfigError, load_config
-from .context import RunContext
+from .context import RunContext, parse_run_id
 from .paths import default_data_dir
 from .registry import load_plugins
-from .runner import LAYERS, run_pipeline
+from .report import read_reports
+from .runner import LAYERS, RunReport, finalize, run_pipeline
 from .schemas import stale_schemas, write_schemas
 from .storage import LocalStorage
 
@@ -91,6 +100,51 @@ def _cmd_plugins(_: argparse.Namespace) -> int:
     return 0
 
 
+# A live fetch stored under a run id older than this would corrupt history.
+MAX_RUN_ID_AGE = timedelta(hours=3)
+
+
+def _cmd_plan(args: argparse.Namespace) -> int:
+    from .silver.base import TRANSFORMERS
+
+    config = load_config(args.config_dir)
+    load_plugins()
+    storage = LocalStorage(args.data_dir or default_data_dir())
+    ctx = RunContext.create(config, storage, run_id=args.run_id)
+    sources = config.enabled_sources(schedule="daily")
+    plan = {
+        "run_id": ctx.run_id,
+        "ski_day": ctx.run_date.isoformat(),
+        "sources": [s.id for s in sources],
+        "silver": [
+            {"source": s.id, "dataset": TRANSFORMERS.get(s.transformer).dataset} for s in sources
+        ],
+        "kpis": [k.id for k in config.enabled_kpis(kind="live")],
+        "massifs": [m.id for m in ctx.massifs()],
+    }
+    if args.json:
+        print(json.dumps(plan, separators=(",", ":")))
+    else:
+        for name, value in plan.items():
+            print(f"{name}: {value}")
+    return 0
+
+
+def _export(report: RunReport, data_dir: Path, target: Path) -> None:
+    """Copy the files a run wrote to ``target``, keeping their storage keys as paths."""
+    for key in report.written:
+        source = data_dir / key
+        if source.is_file():
+            (target / key).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target / key)
+
+
+def _write_report(report: RunReport, ctx: RunContext, path: Path | None) -> None:
+    if path is not None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(report.to_file(ctx).model_dump_json(indent=2), encoding="utf-8")
+
+
 def _cmd_run(args: argparse.Namespace) -> int:
     config = load_config(args.config_dir)
     layers = list(LAYERS) if args.layer == "all" else [args.layer]
@@ -103,27 +157,76 @@ def _cmd_run(args: argparse.Namespace) -> int:
                 file=sys.stderr,
             )
             return 2
-    storage = LocalStorage(args.data_dir or default_data_dir())
-    ctx = RunContext.create(config, storage, run_date=args.date, massif_ids=args.massif or None)
-    today = RunContext.create(config, storage, massif_ids=args.massif or None).run_date
-    if "bronze" in layers and ctx.run_date != today:
-        # Live sources always return the current forecast: storing it under another
-        # date would silently corrupt history.
-        print(
-            f"--date {ctx.run_date} cannot be used with the bronze layer (today is {today}). "
-            "Use --layer silver, gold or diamond to recompute a stored day.",
-            file=sys.stderr,
-        )
+    unknown_kpis = set(args.kpi or []) - {k.id for k in config.enabled_kpis(kind="live")}
+    if unknown_kpis:
+        print(f"unknown or not live KPI(s): {', '.join(sorted(unknown_kpis))}", file=sys.stderr)
         return 2
-    report = run_pipeline(ctx, layers, sources)
+    data_dir = args.data_dir or default_data_dir()
+    storage = LocalStorage(data_dir)
+    massifs = args.massif or None
+    ctx = RunContext.create(
+        config, storage, run_date=args.date, massif_ids=massifs, run_id=args.run_id
+    )
+    if "bronze" in layers:
+        # Live sources always return the current forecast: storing it under another
+        # date or an old run id would silently corrupt history.
+        today = RunContext.create(config, storage, massif_ids=massifs).run_date
+        if ctx.run_date != today:
+            print(
+                f"--date {ctx.run_date} cannot be used with the bronze layer "
+                f"(today's ski day is {today}). "
+                "Use --layer silver, gold or diamond to recompute a stored day.",
+                file=sys.stderr,
+            )
+            return 2
+        if args.run_id and datetime.now(UTC) - parse_run_id(args.run_id) > MAX_RUN_ID_AGE:
+            print(f"--run-id {args.run_id} is too old to fetch live data.", file=sys.stderr)
+            return 2
+    report = run_pipeline(
+        ctx,
+        layers,
+        sources,
+        kpi_ids=args.kpi or None,
+        final=args.layer == "all" and not args.kpi,
+    )
+    _write_report(report, ctx, args.report)
+    if args.export:
+        _export(report, data_dir, args.export)
 
-    print(f"\nRun {ctx.run_id} for {ctx.run_date}: {len(report.written)} file(s) written")
+    print(f"\nRun {ctx.run_id} for ski day {ctx.run_date}: {len(report.written)} file(s) written")
     for message in report.errors:
         print(f"  error: {message}", file=sys.stderr)
     if args.strict and report.errors:
         return 1
     # Without --strict, succeed as long as the last requested layer produced output.
     return 0 if report.wrote_layer(layers[-1]) else 1
+
+
+def _cmd_status(args: argparse.Namespace) -> int:
+    from .diamond._status import summary_markdown
+
+    config = load_config(args.config_dir)
+    load_plugins()
+    data_dir = args.data_dir or default_data_dir()
+    ctx = RunContext.create(config, LocalStorage(data_dir), run_id=args.run_id)
+    steps = read_reports(args.reports) if args.reports else []
+    report = RunReport()
+    finalize(ctx, report, steps)
+    if report.errors:
+        for message in report.errors:
+            print(f"  error: {message}", file=sys.stderr)
+        return 1
+    from .diamond.models import DiamondStatus
+    from .storage import status_key
+
+    status = DiamondStatus.model_validate(ctx.storage.read_json(status_key()))
+    if args.summary:
+        with args.summary.open("a", encoding="utf-8") as handle:
+            handle.write(summary_markdown(status, steps))
+    if args.export:
+        _export(report, data_dir, args.export)
+    print(f"Status of {ctx.run_id}: {status.state}")
+    return 0
 
 
 def _cmd_reference(args: argparse.Namespace) -> int:
@@ -194,7 +297,7 @@ def _cmd_demo(args: argparse.Namespace) -> int:
 
     config = load_config(args.config_dir)
     out_dir = args.out or repo_root() / "web" / "public" / "data"
-    report = build_demo(config, out_dir)
+    report = build_demo(config, out_dir, **({"now": args.now} if args.now else {}))
     for message in report.errors:
         print(f"  error: {message}", file=sys.stderr)
     print(f"Demo data written to {out_dir / 'diamond'}")
@@ -217,12 +320,28 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("plugins", help="list registered plugins").set_defaults(func=_cmd_plugins)
 
+    plan = sub.add_parser("plan", help="print the units of a refresh")
+    plan.add_argument("--json", action="store_true", help="one-line JSON (for CI matrices)")
+    plan.add_argument("--run-id", help="pin the run start (default: now)")
+    plan.add_argument("--data-dir", type=Path, help="storage root (default: <repo>/data)")
+    plan.set_defaults(func=_cmd_plan)
+
     run = sub.add_parser("run", help="run pipeline layers")
     run.add_argument("--layer", choices=["all", *LAYERS], default="all")
     run.add_argument(
-        "--date", type=date.fromisoformat, help="forecast date YYYY-MM-DD (default: today)"
+        "--date",
+        type=date.fromisoformat,
+        help="ski day YYYY-MM-DD (default: the current one, which starts at 06:00)",
+    )
+    run.add_argument(
+        "--run-id", help="pin the run start, e.g. 20261214T050700Z (shared by CI jobs)"
     )
     run.add_argument("--massif", action="append", help="restrict to a massif (repeatable)")
+    run.add_argument("--kpi", action="append", help="gold: only this KPI (repeatable)")
+    run.add_argument("--report", type=Path, help="write the step report to this JSON file")
+    run.add_argument(
+        "--export", type=Path, help="copy the files written to this folder (CI artifacts)"
+    )
     run.add_argument(
         "--source",
         action="append",
@@ -231,6 +350,14 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--data-dir", type=Path, help="storage root (default: <repo>/data)")
     run.add_argument("--strict", action="store_true", help="fail on any error")
     run.set_defaults(func=_cmd_run)
+
+    status = sub.add_parser("status", help="write diamond/status.json and the manifest")
+    status.add_argument("--run-id", help="the refresh to describe (default: now)")
+    status.add_argument("--reports", type=Path, help="folder of `run --report` JSON files")
+    status.add_argument("--data-dir", type=Path, help="storage root (default: <repo>/data)")
+    status.add_argument("--summary", type=Path, help="append a Markdown summary to this file")
+    status.add_argument("--export", type=Path, help="copy the files written to this folder")
+    status.set_defaults(func=_cmd_status)
 
     ref = sub.add_parser("reference", help="refresh reference files in config/reference")
     ref.add_argument("--source", action="append", help="reference source id (repeatable)")
@@ -261,6 +388,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     demo = sub.add_parser("demo", help="write synthetic demo data for the frontend")
     demo.add_argument("--out", type=Path, help="default: <repo>/web/public/data")
+    demo.add_argument(
+        "--now",
+        type=datetime.fromisoformat,
+        help="refresh time to simulate, e.g. 2027-01-15T17:07+00:00 (default: 06:00 refresh)",
+    )
     demo.set_defaults(func=_cmd_demo)
     return parser
 

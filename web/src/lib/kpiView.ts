@@ -1,8 +1,9 @@
 /**
  * One view of a KPI for the tiles, whatever its kind (unit-tested).
  *
- *   live        probabilities of today, from the daily payload
- *               (`diamond/<massif>/latest.json`, fetched at runtime);
+ *   live        probabilities for one period (this evening, tomorrow morning…),
+ *               from the refreshed payload (`diamond/<massif>/latest.json`,
+ *               fetched at runtime);
  *   historical  values over a closed season, from a Rewind payload
  *               (`config/rewind/<id>/<massif>.json`, bundled at build time).
  *
@@ -12,6 +13,7 @@
  */
 import type { DiamondRewind, Kpi, Rewind } from './config';
 import type { MassifDaily, RankingEntry, StationInfo } from './data';
+import type { Slot } from './periods';
 import { formatDriver, formatPercent } from './format';
 import type { Locale } from './i18n/core';
 
@@ -56,8 +58,12 @@ interface ViewBase {
 export interface LiveView extends ViewBase {
   kind: 'live';
   ranking: RankingEntry[];
-  /** YYYY-MM-DD the forecast is for (a KPI may look at tomorrow). */
+  /** YYYY-MM-DD: ski day of the period shown. */
   forecastDate: string;
+  /** The period shown; `null` reads no period (no ranking). */
+  slot: Slot | null;
+  /** The values were computed by an earlier refresh than the payload (the KPI failed since). */
+  stale: boolean;
 }
 
 export interface HistoricalView extends ViewBase {
@@ -69,14 +75,17 @@ export interface HistoricalView extends ViewBase {
 
 export type KpiView = LiveView | HistoricalView;
 
-export function liveView(kpi: Kpi, payload: MassifDaily): LiveView {
-  const ranking = payload.kpis[kpi.id]?.ranking ?? [];
+export function liveView(kpi: Kpi, payload: MassifDaily, slot: Slot | null = null): LiveView {
+  const period = slot ? payload.kpis[kpi.id]?.periods.find((p) => p.key === slot.key) : undefined;
+  const ranking = period?.ranking ?? [];
   return {
     kind: 'live',
     kpi,
     massifId: payload.massif_id,
     ranking,
-    forecastDate: payload.forecast_date,
+    forecastDate: slot?.skiDay ?? payload.forecast_date,
+    slot,
+    stale: period ? Date.parse(period.generated_at) < Date.parse(payload.generated_at) : false,
     items: ranking.map((entry) => ({
       stationId: entry.station_id,
       value: entry.probability,
@@ -87,7 +96,7 @@ export function liveView(kpi: Kpi, payload: MassifDaily): LiveView {
     stations: payload.stations,
     timezone: payload.timezone,
     sources: payload.sources,
-    generatedAt: payload.generated_at,
+    generatedAt: period?.generated_at ?? payload.generated_at,
   };
 }
 
@@ -147,8 +156,8 @@ export function fullName(view: KpiView, stationId: string): string {
 
 /**
  * The view of a tile's KPI: historical KPIs read their Rewind payload (always
- * available, bundled); live KPIs need the daily payload, so `null` means "not
- * loaded yet" (the tile shows its placeholder).
+ * available, bundled); live KPIs need the refreshed payload and the period of
+ * the tile, so `null` means "not loaded yet" (the tile shows its placeholder).
  */
 export function viewFor(
   kpi: Kpi | undefined,
@@ -156,11 +165,12 @@ export function viewFor(
   live: MassifDaily | null,
   rewinds: Rewind[],
   rewindPayload: (rewindId: string, massifId: string) => DiamondRewind | undefined,
+  slot: Slot | null = null,
 ): KpiView | null {
   if (!kpi) return null;
   if (kpi.kind === 'historical') {
     const rewind = rewindOfKpi(kpi.id, rewinds);
     return rewind ? historicalView(kpi, rewind, massifId, rewindPayload(rewind.id, massifId)) : null;
   }
-  return live ? liveView(kpi, live) : null;
+  return live ? liveView(kpi, live, slot) : null;
 }

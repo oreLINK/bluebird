@@ -6,8 +6,7 @@ default:
   - snowfall_today
   - onpiste_powder
   - offpiste_powder
-  - whiteout_today
-  - whiteout_tomorrow
+  - whiteout
   - rewind_2025_26_total_snowfall
   - rewind_2025_26_longest_snowfall
   - rewind_2025_26_domain_snowfall

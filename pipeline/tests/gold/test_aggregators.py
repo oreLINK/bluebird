@@ -1,7 +1,8 @@
 """KPI models on synthetic silver data with known answers.
 
-Run date 2026-12-14, Europe/Paris = UTC+1. Station ``alpha`` grooms until
-02:00 and opens at 09:00; ``beta`` grooms until 22:00 the previous evening.
+Ski day 2026-12-14, Europe/Paris = UTC+1, run at 05:30 local: every period of
+the 14th and 15th is still to come. Station ``alpha`` grooms until 02:00 and
+opens at 09:00; ``beta`` grooms until 22:00 the previous evening.
 """
 
 from __future__ import annotations
@@ -33,10 +34,18 @@ def _store(ctx: RunContext, values, members: int = 10) -> None:
     ctx.invalidate_silver()
 
 
-def _run(ctx: RunContext, kpi_id: str) -> dict[str, KpiResult]:
-    kpi = next(k for k in ctx.config.kpis if k.id == kpi_id)
-    results = AGGREGATORS.get(kpi.aggregator)(kpi).aggregate(ctx)
-    return {r.station_id: r for r in results}
+def _all(ctx: RunContext, kpi_id: str) -> list[KpiResult]:
+    kpi = ctx.config.kpi(kpi_id)
+    return AGGREGATORS.get(kpi.aggregator)(kpi).aggregate(ctx)
+
+
+def _run(ctx: RunContext, kpi_id: str, period: str = "day@2026-12-14") -> dict[str, KpiResult]:
+    """Results of one period instance (``period_id@ski_day``), by station."""
+    return {
+        r.station_id: r
+        for r in _all(ctx, kpi_id)
+        if f"{r.period_id}@{r.forecast_date.isoformat()}" == period
+    }
 
 
 def test_snowfall_chance_counts_members_above_threshold(ctx: RunContext) -> None:
@@ -52,6 +61,42 @@ def test_snowfall_chance_counts_members_above_threshold(ctx: RunContext) -> None
     assert alpha.drivers["snow_cm_p50"] == pytest.approx(4.5)  # 9 hours x 0.5 cm
     assert alpha.window_start.isoformat() == "2026-12-14T08:00:00+01:00"
     assert alpha.confidence == "medium"  # agreement |2*0.7-1| = 0.4
+    assert alpha.period_end.isoformat() == "2026-12-14T18:00:00+01:00"
+
+
+def test_time_slots_use_their_own_hours(ctx: RunContext) -> None:
+    # 1 cm/h only for the hours ending 07:00-12:00 local on the 14th (06-11 UTC).
+    def values(station: str, member: int, when: datetime) -> dict:
+        morning = when.day == 14 and 6 <= when.hour <= 11
+        return {"snowfall_cm": 1.0 if morning else 0.0}
+
+    _store(ctx, values)
+    assert _run(ctx, "snowfall_chance", "morning@2026-12-14")["alpha"].probability == 1.0
+    midday = _run(ctx, "snowfall_chance", "midday@2026-12-14")["alpha"]
+    assert midday.probability == 0.0
+    assert midday.window_start.isoformat() == "2026-12-14T12:00:00+01:00"
+    assert midday.window_end.isoformat() == "2026-12-14T14:00:00+01:00"
+
+
+def test_periods_without_data_or_already_over_are_skipped(ctx: RunContext) -> None:
+    _store(ctx, lambda station, member, when: {"snowfall_cm": 0.2})
+    keys = {f"{r.period_id}@{r.forecast_date}" for r in _all(ctx, "snowfall_chance")}
+    # Silver stops at 14th 23:00 UTC: the evening of the 14th ends at midnight
+    # local (23:00 UTC) and is complete; nothing of the 15th after that is.
+    assert "evening@2026-12-14" in keys
+    assert "night@2026-12-14" not in keys
+    assert not any(k.endswith("2026-12-15") for k in keys)
+
+    later = RunContext.create(
+        ctx.config, ctx.storage, now=datetime(2026, 12, 14, 11, 7, tzinfo=UTC)
+    )  # the 12:00 refresh
+    later.storage.write_parquet(
+        silver_key("ensemble_hourly", later.run_date, later.run_id),
+        ctx.silver("ensemble_hourly"),
+    )
+    keys = {f"{r.period_id}@{r.forecast_date}" for r in _all(later, "snowfall_chance")}
+    assert "morning@2026-12-14" not in keys
+    assert {"day@2026-12-14", "midday@2026-12-14"} <= keys
 
 
 def test_onpiste_window_starts_previous_evening_when_grooming_ends_late(ctx: RunContext) -> None:
@@ -69,11 +114,16 @@ def test_onpiste_window_starts_previous_evening_when_grooming_ends_late(ctx: Run
         return {"snowfall_cm": 1.5 if when in night else 0.0}
 
     _store(ctx, values)
-    results = _run(ctx, "onpiste_powder_chance")
+    results = _run(ctx, "onpiste_powder_chance", "morning@2026-12-14")
     assert results["alpha"].probability == 0.0
     assert results["beta"].probability == 1.0
     assert results["beta"].window_start.isoformat() == "2026-12-13T22:00:00+01:00"
+    assert results["beta"].window_end.isoformat() == "2026-12-14T09:00:00+01:00"  # opening
     assert results["beta"].drivers["window_hours"] == 11
+
+    # Later slots look at the snow fallen since grooming until they start.
+    afternoon = _run(ctx, "onpiste_powder_chance", "afternoon@2026-12-14")["alpha"]
+    assert afternoon.window_end.isoformat() == "2026-12-14T14:00:00+01:00"
 
 
 def test_offpiste_powder_is_penalised_by_wind_and_thaw(ctx: RunContext) -> None:
@@ -92,7 +142,7 @@ def test_offpiste_powder_is_penalised_by_wind_and_thaw(ctx: RunContext) -> None:
         }
 
     _store(ctx, values)
-    results = _run(ctx, "offpiste_powder_chance")
+    results = _run(ctx, "offpiste_powder_chance", "morning@2026-12-14")
     assert results["alpha"].probability == pytest.approx(1.0)
     assert results["alpha"].drivers["new_snow_cm_p50"] == 20
     assert results["beta"].probability == pytest.approx((5 * 0.3 * 0.3 + 5 * 0.3) / 10)

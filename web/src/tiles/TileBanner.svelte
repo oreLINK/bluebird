@@ -18,6 +18,7 @@
 -->
 <script lang="ts">
   import BannerMedia from '../components/BannerMedia.svelte';
+  import StaleBadge from '../components/StaleBadge.svelte';
   import { i18n } from '../lib/i18n/i18n.svelte';
   import FlipCard from './FlipCard.svelte';
   import KpiBack from './KpiBack.svelte';
@@ -31,6 +32,8 @@
 
   const model = $derived(tileModel(tile, view));
   const title = $derived(i18n.pick(tile.title ?? view.kpi.name));
+  /** Longer titles ("… demain après-midi") get a smaller font, on up to two lines. */
+  const LONG_TITLE = 24;
 
   let selected = $state<string | null>(null);
   let showAll = $state(false);
@@ -46,12 +49,14 @@
       <BannerMedia scene={model.scene} skyline={model.skyline} photo={model.photo} />
       {#if model.badge}
         <span class="badge-slot"><TileBadge label={i18n.pick(model.badge)} icon="rewind" /></span>
+      {:else if model.staleSince}
+        <span class="badge-slot"><StaleBadge since={model.staleSince} timezone={view.timezone} /></span>
       {/if}
     </header>
 
     <div class="content">
       <div class="headline">
-        <h2 id="{tile.id}-title">{title}</h2>
+        <h2 id="{tile.id}-title" class:long={title.length > LONG_TITLE}>{title}</h2>
       </div>
       {#if model.items.length === 0}
         <p class="empty">{i18n.t(model.emptyMessage)}</p>
@@ -107,6 +112,7 @@
 
   .content {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     align-content: center;
     gap: 12px;
     height: calc(var(--tile-front-h) - var(--tile-banner-h));
@@ -128,6 +134,15 @@
     white-space: nowrap;
     text-overflow: ellipsis;
     color: var(--tile-title, inherit);
+  }
+
+  h2.long {
+    display: -webkit-box;
+    font-size: 1.25rem;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 
   .empty {

@@ -1,17 +1,22 @@
 # Bluebird
 
-Bluebird is a static, mobile-first website that publishes every morning the
-probability of good ski conditions in French ski resorts, computed from
+Bluebird is a static, mobile-first website that publishes, every 6 hours,
+the probability of good ski conditions in French ski resorts, computed from
 ensemble weather forecasts. It starts with the Pyrenees and three KPIs:
 
 | KPI | Question it answers |
 |---|---|
-| `snowfall_chance` | Will it snow during the ski day? |
+| `snowfall_chance` | Will it snow during this time slot (or the whole ski day)? |
 | `onpiste_powder_chance` | Will fresh snow cover the pistes after grooming? |
 | `offpiste_powder_chance` | Will there be fresh, unspoilt powder off-piste? |
 
-Each KPI is a tile that ranks the resorts of the selected mountain range by
-probability, like a sports-betting page. The UI is in French or English.
+Each KPI is computed for several **periods** of today and tomorrow (this
+morning, lunchtime, this afternoon, this evening, tonight, the whole day…, see
+`config/periods.yaml`). Each KPI and period is a tile that ranks the resorts
+of the selected mountain range by probability, like a sports-betting page;
+a tile disappears when its period is over. The footer shows the state of
+every data source, transformation, KPI and tile after the last refresh. The
+UI is in French or English.
 
 These are **live** KPIs. **Rewinds** add **historical** KPIs: the review of a
 closed season, built once from archived forecasts. The first one, *Rewind
@@ -62,7 +67,9 @@ view, [CONTEXT.md](CONTEXT.md) for the AI-assistant briefing and
   │ Displayer*    │   │ Aggregator*   │
   │ site .json    │   │ KPIs .parquet │
   └──────┬────────┘   └───────────────┘
-         │  GitHub Actions (daily.yml) publishes gold + diamond
+         │  GitHub Actions (refresh.yml, every 6 h): one job per source,
+         │  dataset, KPI and massif, then a status job; publishes
+         │  gold + diamond + status.json
          ▼
   gh-pages branch ──▶ GitHub Pages ──▶ smartphone
 ```
@@ -77,6 +84,8 @@ view, [CONTEXT.md](CONTEXT.md) for the AI-assistant briefing and
 - **One contract.** The diamond JSON shape is defined once as pydantic
   models, exported as JSON Schema, and turned into TypeScript types. CI fails
   when the two sides drift.
+- **Few API calls.** Each source is fetched with one grouped request per
+  refresh (every station and elevation band at once), four times a day.
 
 ## Repository layout
 
@@ -95,6 +104,7 @@ bluebird/
 │   ├── tiles.yaml
 │   ├── layout.yaml
 │   ├── sources.yaml
+│   ├── periods.yaml           # time slots of the ski day (morning, evening…) and their labels
 │   ├── pages.yaml             # footer + full-window pages (about, legal notice, privacy)
 │   ├── rewinds.yaml           # Rewinds: closed seasons and their historical KPIs
 │   ├── reference/<dataset>/<massif>.geojson  # fetched once a season (`bluebird reference`)
@@ -107,7 +117,8 @@ bluebird/
 │   │   ├── config.py          # pydantic models of every YAML file + cross-checks
 │   │   ├── registry.py        # plugin registry + autodiscovery
 │   │   ├── context.py         # RunContext: config, storage, dates, silver access
-│   │   ├── runner.py          # runs the layers in order, isolates failures
+│   │   ├── runner.py          # runs the layers in order, isolates failures, gold fallback
+│   │   ├── report.py          # step reports (ok / partial / stale / down) of each unit
 │   │   ├── checks.py          # config ↔ plugin consistency checks
 │   │   ├── schemas.py         # JSON Schema export
 │   │   ├── reference.py       # reference data: refresh, committed files, loading
@@ -118,12 +129,12 @@ bluebird/
 │   │   ├── bronze/            # base.py + extractor_*.py
 │   │   ├── silver/            # base.py + transformer_*.py
 │   │   ├── gold/              # base.py + aggregator_*.py
-│   │   └── diamond/           # base.py + models.py + displayer_*.py
+│   │   └── diamond/           # base.py + models.py + displayer_*.py + _status.py (status.json)
 │   └── tests/                 # mirrors the layer folders
 ├── web/                       # Vite + Svelte 5 + TypeScript
 │   ├── src/
 │   │   ├── App.svelte  main.ts
-│   │   ├── lib/               # config, data loading, i18n, formatting
+│   │   ├── lib/               # config, data loading, periods, status, i18n, formatting
 │   │   │   └── generated/     # GENERATED TypeScript types (npm run gen:types)
 │   │   ├── tiles/             # registry, tileModel, TileBanner, TileBannerFull, TileSimple, TileRanking, OddsRow…
 │   │   ├── components/        # Logo, AppHeader, AppMenu, FilterBar, ConfidenceDots, BannerArt…
@@ -132,8 +143,11 @@ bluebird/
 │   └── public/data/diamond/   # demo data for local development only
 ├── scripts/
 │   ├── setup-github.sh        # one-time GitHub setup (run manually)
-│   └── ci/publish-gh-pages.sh # used by workflows to write gh-pages
-└── .github/workflows/         # ci.yml, deploy.yml, daily.yml, reference.yml, rewind.yml, guard-gh-pages.yml
+│   ├── ci/publish-gh-pages.sh # used by workflows to write gh-pages
+│   └── ci/fetch-gh-pages-data.sh # restores published gold/diamond (read-only)
+└── .github/
+    ├── actions/setup-pipeline/ # composite action: uv + pipeline install
+    └── workflows/             # ci.yml, deploy.yml, refresh.yml, reference.yml, rewind.yml, guard-gh-pages.yml
 ```
 
 ## Getting started
@@ -162,8 +176,8 @@ uv run bluebird run          # fetch live data, write data/{bronze,silver,gold,d
 uv run pytest                # tests (no network)
 ```
 
-The live run takes 1–2 minutes because requests are spaced to respect the
-Open-Meteo rate limits. Output goes to `<repo>/data/` (git-ignored).
+The live run takes a few seconds: one grouped request per source. Output goes
+to `<repo>/data/` (git-ignored).
 
 ### Website
 
@@ -184,18 +198,23 @@ the demo with `uv run bluebird demo`).
 | Command | What it does |
 |---|---|
 | `uv run bluebird validate` | Validate every YAML file, cross-references and plugin parameters. |
-| `uv run bluebird run` | Run all layers for today (Paris time) on daily sources. |
+| `uv run bluebird run` | Run all layers for the current ski day (Paris time; it starts at 06:00) on daily sources, then write `diamond/status.json` and the manifest. |
 | `uv run bluebird run --layer gold` | Run one layer (`bronze`, `silver`, `gold`, `diamond`). |
-| `uv run bluebird run --date 2026-12-14 --layer gold` | Recompute a stored day. Live APIs always return the current forecast, so only use `--date` with `silver`, `gold` or `diamond` on data already in storage. |
+| `uv run bluebird run --date 2026-12-14 --layer gold` | Recompute a stored ski day. Live APIs always return the current forecast, so only use `--date` with `silver`, `gold` or `diamond` on data already in storage. |
 | `uv run bluebird run --massif pyrenees` | Restrict to one massif (repeatable). |
 | `uv run bluebird run --source open_meteo_forecast` | Run selected daily or `on_demand` sources only. |
+| `uv run bluebird run --layer gold --kpi snowfall_chance` | Compute only these KPIs (repeatable), as one CI job per KPI does. |
+| `uv run bluebird run --run-id 20261214T050700Z` | Pin the run start: every CI job of a refresh shares the id chosen by `plan`. Refused with the bronze layer when older than 3 hours. |
+| `uv run bluebird run --report r.json --export out/` | Write the step report (JSON) and copy the files written to `out/` (CI artifacts). |
+| `uv run bluebird plan [--json]` | List the units of a refresh: run id, ski day, sources, silver datasets, KPIs, massifs (the CI matrices). |
+| `uv run bluebird status --reports DIR [--run-id ID] [--summary FILE]` | Write `diamond/status.json` and the manifest from step reports and stored data; append a Markdown summary. |
 | `uv run bluebird reference` | Fetch reference sources (pistes, lifts) and rewrite `config/reference/`. Options: `--massif`, `--source`, `--no-fetch` (rebuild from the last stored bronze). |
 | `uv run bluebird rewind --rewind 2025-26` | Build a Rewind once its season is over: fetch the season archive, write `config/rewind/<id>/` (hourly Parquet + rankings JSON). Options: `--massif`, `--data-dir`, `--source <id>` (fetch only this season source; its rows replace the previous ones of its model, the other sources' rows are kept), `--no-fetch` (recompute the KPIs from the committed hourly files, no API call). Refuses a season that is not over. |
 | `uv run bluebird run --data-dir /tmp/x` | Use another storage root (also `BLUEBIRD_DATA_DIR`). |
 | `uv run bluebird run --strict` | Exit non-zero on any error (default: only if nothing was produced). |
 | `uv run bluebird schemas [--check]` | Regenerate (or verify) `config/schemas/*.schema.json`. |
 | `uv run bluebird plugins` | List registered extractors, transformers, aggregators, displayers. |
-| `uv run bluebird demo` | Rebuild `web/public/data/diamond` from synthetic weather. |
+| `uv run bluebird demo [--now 2027-01-15T17:07+00:00]` | Rebuild `web/public/data/diamond` (payload, status, manifest) from synthetic weather, as the 06:00 refresh (or the refresh at `--now`). |
 | `uv run ruff format . && uv run ruff check .` | Format and lint. |
 
 ### Website (`cd web`)
@@ -214,8 +233,8 @@ the demo with `uv run bluebird demo`).
 |---|---|---|---|---|
 | Bronze | `Extractor*` | Raw responses, unchanged, with request metadata | gzip JSON | `bronze/{source}/{date}/{run_id}.json.gz` |
 | Silver | `Transformer*` | Tidy, typed rows with canonical units | Parquet (zstd) | `silver/{dataset}/date={date}/{run_id}.parquet` |
-| Gold | `Aggregator*` | One row per KPI × station × date | Parquet | `gold/kpis/date={date}/kpis.parquet` |
-| Diamond | `Displayer*` | Frontend payloads, sorted rankings | Minified JSON | `diamond/{massif}/latest.json`, `diamond/{massif}/{date}.json`, `diamond/manifest.json` |
+| Gold | `Aggregator*` | One row per station × period, one file per KPI | Parquet | `gold/kpis/date={ski_day}/{kpi_id}.parquet` |
+| Diamond | `Displayer*` + status step | Frontend payloads (rankings per period), service status | Minified JSON | `diamond/{massif}/latest.json`, `diamond/{massif}/{ski_day}.json`, `diamond/manifest.json`, `diamond/status.json` |
 | Configuration | humans | Massifs, stations, KPIs, tiles, layout, sources | YAML (+ JSON Schema) | `config/*.yaml` |
 | Reference | `Transformer*` of `schedule: reference` sources | Slow-changing facts: pistes and lifts with geometry | GeoJSON | `config/reference/{dataset}/{massif}.geojson` (committed) |
 | Season archive (Rewind) | `Transformer*` of `schedule: season` sources | A closed season, hour by hour, per station and sampling point | Parquet (zstd, float32) | `config/rewind/{id}/{massif}.hourly.parquet` (committed) |
@@ -227,7 +246,8 @@ Why these formats:
   so any later layer can be rebuilt without calling the API again.
 - **Parquet for silver and gold**: typed, columnar and compressed; readable by
   polars, pandas or DuckDB (`duckdb -c "select * from 'gold/**/*.parquet'"`).
-- **JSON for diamond**: the browser reads it directly; small (≈18 KB per massif).
+- **JSON for diamond**: the browser reads it directly (≈120 KB per massif
+  with 24 KPI periods, ≈15 KB gzipped by Pages).
 - **YAML for configuration**: comfortable to edit, validated by strict schemas.
 - **GeoJSON for reference geography**: standard, readable by any GIS tool,
   and rendered as a map by GitHub, which makes refresh pull requests easy to review.
@@ -244,7 +264,8 @@ Station facts never come from an API call at run time:
   to `config/reference/`, committed and reviewed in a pull request. Every run
   reads them with `RunContext.reference(dataset)`, whatever the date, without
   calling the source again. A failed refresh never overwrites an existing file.
-- **Daily data** (weather) is fetched every morning and stored by date.
+- **Daily data** (weather) is fetched by every refresh (every 6 hours) and
+  stored by ski day.
 - **Season archives** (Rewinds, `config/rewinds.yaml`) come from sources with
   `schedule: season`, fetched once *after* a season is over by `bluebird
   rewind` (or the *Build a Rewind* workflow). The hourly table of the season
@@ -257,8 +278,8 @@ Station facts never come from an API call at run time:
 test fails if a station has no piste or lift in it.
 
 **White days.** `gold/_whiteout.py` holds the rule shared by the live
-`whiteout_chance` KPIs (ensemble scenarios, today or tomorrow with
-`day_offset`) and the historical `season_white_days` KPI (AROME archive,
+`whiteout_chance` KPI (ensemble scenarios, computed for the whole-day
+period of today and tomorrow only) and the historical `season_white_days` KPI (AROME archive,
 domain points): an hour of the ski day is white when the point is in the
 cloud (humidity ≥ `rh_min_pct` and low cloud ≥ `low_cloud_min_pct`, total
 cloud for ICON members, which lack low cloud), under ≥ `snowfall_min_cm_h`
@@ -287,7 +308,46 @@ every hourly row. A station without pistes only gets its own point (no
 domain or off-piste value).
 
 `run_id` is a UTC timestamp (`20261214T053000Z`). Silver keeps every run;
-gold and diamond keep one object per date (the last run of the day wins).
+gold and diamond keep one object per ski day (the last run of the day wins).
+Gold files written before periods existed (`kpis.parquet`) stay in the
+history but are ignored by the pipeline.
+
+### Ski days and periods
+
+- A **ski day** runs from 06:00 local time to 06:00 the next day
+  (`day_start` in `config/periods.yaml`). The refresh at 00:00 still belongs to
+  the previous ski day, so "tonight" keeps its meaning after midnight. The
+  ski day of a run is its `run_date` (`RunContext.create`).
+- **Periods** are defined in `config/periods.yaml`: time slots that must
+  cover the ski day exactly once (night 00–06, morning 06–12, midday 12–14,
+  afternoon 14–18, evening 18–00), plus `day` with `native_window: true` (the
+  KPI uses its own window, e.g. 08:00–17:00, and the period is shown from
+  06:00 to 18:00). Each period has one label per day of the horizon
+  (`horizon_days: 2`: today and tomorrow).
+- Each KPI lists its `periods` in `kpis.yaml`. Its aggregator implements
+  `compute(ctx, station, period)`; the base class loops over every station and
+  every period **not over yet** at the run time (`ctx.period_instances()`).
+  A period instance has a stable key, `period_id@ski_day`.
+- Snowfall uses the slot itself as its window. Powder KPIs evaluate the slot
+  at its start, never before lifts open (so the morning slot means "at
+  opening").
+
+### Fallback and service status
+
+- **Fallback.** Before computing a KPI, CI restores the data already
+  published on `gh-pages` (`scripts/ci/fetch-gh-pages-data.sh`). If a KPI
+  cannot be recomputed (source down, error), `run_gold_kpi` keeps the rows of
+  the latest run that computed each period still to come
+  (`gold.base.read_gold`), with their original `generated_at`. The site shows
+  them with a "data from 06:00" badge.
+- **Step reports.** Every unit records a `StepReport` (`report.py`): `ok`,
+  `partial` (some stations missing), `stale` (values from an earlier run) or
+  `down`. In CI each job writes its report with `--report`.
+- **Status.** `diamond/_status.py` builds `diamond/status.json`: sources and
+  transformations from the reports (a missing report counts as `down`), KPI
+  periods from the gold data, and tiles from the published massif payloads
+  (what visitors see). The site footer displays it; the CI job summary lists
+  the same with error messages.
 
 **Canonical silver units**: time in UTC (`time_utc`), heights in m,
 temperature in °C, precipitation in mm, snowfall in cm, wind in km/h. The
@@ -318,16 +378,19 @@ Red Hat YAML extension) validates and autocompletes them from `config/schemas/`.
 |---|---|---|
 | `massifs.yaml` | Mountain ranges of the massif bar | `id`, `name {fr,en}`, `timezone`, `enabled`, `order`, `bbox`, `skyline` |
 | `stations/<massif>.yaml` | Resorts of one massif | `defaults {grooming_end, lifts_open}`, `stations[]`: `id`, `name`, `short_name?` (≤ 20 chars, shown in tiles), `lat`, `lon`, `elevation {base, summit, mid?}`, `aspects`, `grooming_end?`, `lifts_open?`, `website?`, `enabled` |
-| `kpis.yaml` | KPI registry | `id`, `aggregator`, `kind` (`live` / `historical`), `order` (`desc` / `asc`: lowest value first, e.g. fewest white days), `value {unit, unit_label, unit_label_one, decimals, scale, max}` (`unit_label {fr,en}` when the unit depends on the language, e.g. jours / days, and `unit_label_one` its singular, chosen with the language's plural rules) (historical; `scale` converts the aggregator's unit, e.g. `0.01` for cm → m; `max` is the value of a full bar, e.g. `100` for a percentage, default the best value), `name`, `description`, `method?` (`{param}` placeholders, shown on the tile back), `params`, `drivers {key: {label, unit, decimals}}`, `filters[]`, `enabled` |
+| `kpis.yaml` | KPI registry | `id`, `aggregator`, `kind` (`live` / `historical`), `order` (`desc` / `asc`: lowest value first, e.g. fewest white days), `value {unit, unit_label, unit_label_one, decimals, scale, max}` (`unit_label {fr,en}` when the unit depends on the language, e.g. jours / days, and `unit_label_one` its singular, chosen with the language's plural rules) (historical; `scale` converts the aggregator's unit, e.g. `0.01` for cm → m; `max` is the value of a full bar, e.g. `100` for a percentage, default the best value), `name`, `description`, `method?` (`{param}` placeholders, shown on the tile back), `params`, `drivers {key: {label, unit, decimals}}`, `filters[]`, `periods[]` (live KPIs; default `[day]`), `enabled` |
+| `periods.yaml` | Time slots of the ski day | `day_start`, `horizon_days`, `periods[]`: `id`, `start`, `end`, `native_window?`, `labels[]` (`{fr,en}` per day: today, tomorrow) |
 | `filters.yaml` | Filter bar chips, in order | `id`, `name {fr,en}`, `icon?`, `all?` (every tile but exclusive ones), `exclusive?` (its tiles only show under it), `theme?` (`default` / `rewind`) |
-| `tiles.yaml` | KPI containers | `id`, `type`, `kpis[]`, `title?`, `icon?`, `options` (`details` turns station details on, off by default) |
+| `tiles.yaml` | KPI containers; a live tile is shown once per period | `id`, `type`, `kpis[]`, `title?` (live: must contain `{period}`; Rewind: must not), `periods?[]` (live), `icon?`, `options` (`details` turns station details on, off by default) |
 | `layout.yaml` | Tile order | `default[]`, `overrides {massif: [tiles]}` |
 | `sources.yaml` | Data sources | `id`, `extractor`, `transformer`, `schedule (daily/on_demand/reference/season)`, `params`, `attribution` |
 | `rewinds.yaml` | Rewinds (closed seasons) | `id` (e.g. `2025-26`), `name`, `start`, `end` (local days, included), `massifs[]`, `kpis[]` (historical), `filter` (exclusive) |
 | `pages.yaml` | Footer and full-window pages | `footer {repository, pages[]}`, `pages[]`: `id` (URL hash), `title`, `sections[]`: `id`, `title`, `paragraphs[]`, `links[] {label, url}`, `block?` (`data_sources` / `photo_credits`) |
 
 Validation is strict: unknown keys, wrong types, duplicate ids, dangling
-references (tile → KPI, layout → tile, KPI → aggregator, source → extractor),
+references (tile → KPI, layout → tile, KPI → aggregator, KPI → period,
+source → extractor), time slots with gaps or overlaps, tile titles without
+`{period}`,
 invalid plugin parameters and KPIs whose silver dataset no source produces
 are all errors. Run `uv run bluebird validate` after every edit.
 
@@ -352,7 +415,7 @@ A test enforces it.
 4. `uv run bluebird reference --massif <massif>` to add its pistes and lifts.
 5. `uv run bluebird validate`.
 
-The next daily run includes it; no frontend change is needed.
+The next refresh includes it; no frontend change is needed.
 
 ### Add a massif
 
@@ -364,7 +427,8 @@ The next daily run includes it; no frontend change is needed.
 5. `uv run bluebird validate`, then `uv run bluebird demo` if you want demo data.
 
 The massif appears in the massif bar after the next deploy and gets data after
-the next daily run.
+the next refresh (its CI jobs come from `bluebird plan`, nothing to change in
+the workflow).
 
 ### Add a data source (API or scraper)
 
@@ -392,7 +456,9 @@ the next daily run.
    ```
 
    `get_json` / `post_form` retry server errors, wait out HTTP 429 and honour
-   `min_interval_s`. For scrapers, store the raw HTML in `payload` (a string)
+   `min_interval_s` and `timeout_s`. When the API accepts several locations
+   per request (like Open-Meteo), send one grouped request for every station
+   (see `bronze/_open_meteo.py`): each refresh then costs one request per source. For scrapers, store the raw HTML in `payload` (a string)
    and parse it in silver, never in bronze.
 2. **Silver**: create `silver/transformer_<name>.py` with a `dataset` name, a
    polars `schema` and a `transform(batch, ctx)` that ends with `self.conform(frame)`.
@@ -411,17 +477,22 @@ the next daily run.
        Params: ClassVar[type[AggregatorParams]] = MyKpiParams
        required_datasets: ClassVar[tuple[str, ...]] = ("ensemble_hourly",)
 
-       def aggregate(self, ctx: RunContext) -> list[KpiResult]:
-           ...  # use ctx.silver(...), gold/_ensemble.member_window, self.result(...)
+       def compute(self, ctx, ref, period) -> KpiResult | None:
+           ...  # ctx.silver(...), gold/_ensemble.member_window over period.start/end,
+           return self.result(ctx, ref, period, probability=..., ...)
    ```
 
-   Return probabilities in [0, 1]. Put explanatory values in `drivers`.
-   Bump `version` whenever the computation changes.
+   `compute` handles one station and one period (`period.native_window` for the
+   whole-day period, `self.on_ski_day(...)` for station times); return `None`
+   without enough data. Return probabilities in [0, 1]. Put explanatory values
+   in `drivers`. Bump `version` whenever the computation changes.
 2. **Config**: add the KPI to `config/kpis.yaml` with its `name`,
    `description`, `method` (how it is computed, with `{param}` placeholders),
-   `params` and the `drivers` you want displayed (labels in
-   French and English live here, not in the frontend).
-3. **Tile**: add a tile in `config/tiles.yaml` and its id in `config/layout.yaml`.
+   `params`, the `periods` it makes sense for and the `drivers` you want
+   displayed (labels in French and English live here, not in the frontend).
+3. **Tile**: add a tile in `config/tiles.yaml` (title with `{period}`) and its
+   id in `config/layout.yaml`. The refresh workflow gets a gold job for it
+   automatically.
 4. **Tests**: synthetic silver data with a known answer (see `tests/gold/`).
 
 No frontend change is needed for a KPI shown in a `banner`, `banner_full`,
@@ -455,11 +526,23 @@ No frontend change is needed for a KPI shown in a `banner`, `banner_full`,
    `silver/_open_meteo.VARIABLES` and the transformer schema), then fetch
    again; otherwise `uv run bluebird rewind --rewind <id> --no-fetch` is enough.
 
+### Add a period
+
+1. Add it to `config/periods.yaml` (`id`, `start`, `end`, one label per day of
+   the horizon). Time slots must still cover the ski day without gap or
+   overlap: shorten a neighbour.
+2. List it in the `periods` of the KPIs that should compute it.
+3. `uv run bluebird validate && uv run pytest`, then `uv run bluebird demo`.
+
+The site creates its tiles from the payload; no frontend change is needed.
+
 ### Add a tile type
 
 1. Create `web/src/tiles/TileXyz.svelte` (naming convention: type `xyz` →
-   `TileXyz`, checked by a test). It receives `TileProps` (`tile`, `kpis`,
-   `data`). Wrap it in the shared card frame (`<section class="card"><div
+   `TileXyz`, checked by a test). It receives `TileProps` (`tile` with a
+   unique `id` and the title of its period, `kpis`, and `data`: the payload
+   narrowed to one period, where `data.kpis[id]` has `ranking`, `generated_at`
+   and `stale`). Wrap it in the shared card frame (`<section class="card"><div
    class="card-body">…`) or in `TileShell` for a list-style tile, and reuse
    `StationRow` / `StationDetails` to show stations. Read options with
    `numberOption` / `booleanOption` / `stringOption` from `tiles/options.ts`.
@@ -547,8 +630,24 @@ Implement `write_bytes`, `read_bytes`, `exists` and `list` of
   subsets it needs. Tokens `--font-sans` and `--font-display`.
 - **Data flow**: `src/lib/config.ts` imports `config/*.yaml` at build time
   through `@rollup/plugin-yaml`. `src/lib/data.ts` fetches
-  `./data/diamond/<massif>/latest.json` at runtime (relative URL, so the site
-  works under any GitHub Pages path). A 404 shows an "upcoming data" state.
+  `./data/diamond/<massif>/latest.json` and `./data/diamond/status.json` at
+  runtime (relative URLs, so the site works under any GitHub Pages path). A
+  404 shows an "upcoming data" state; a missing status only affects the footer.
+- **Tiles per period**: `src/lib/periods.ts` expands every configured tile
+  into one tile per period of the payload (`expandTiles`), ordered by start
+  time then layout order, titled from the template (`Neige {period}`). Labels
+  ("ce soir", "demain matin") are relative to the ski day of the payload, or
+  of the visitor's clock when a refresh is late. The page keeps a reactive
+  clock (`now` in `App.svelte`) that ticks when the next period ends, every
+  minute and when the tab is shown again, so a tile leaves as soon as its
+  period is over. Values kept from an earlier refresh show a "data from
+  HH:MM" badge (`StaleBadge.svelte`); a period without values says the data
+  is unavailable.
+- **Service status**: the footer (`components/ServiceStatus.svelte`,
+  `lib/status.ts`) summarises `status.json` (all fine, or the number of
+  degraded items, with the refresh time) and opens a list of sources,
+  transformations, KPIs and tiles of the current massif, each with an icon
+  and a word (`--state-*` tokens). Periods already over are not listed.
 - **i18n**: UI strings in `src/lib/i18n/{fr,en}.json`; content labels come
   from the YAML `{fr, en}` objects. The language follows the browser, can be
   switched in the menu and is remembered in `localStorage`.
@@ -653,7 +752,7 @@ Implement `write_bytes`, `read_bytes`, `exists` and `list` of
   and station details) turns it over to `KpiBack`, one section per topic: what the KPI
   measures (its description, which is not repeated on the front), the time
   window studied, how it is computed (`method` from `kpis.yaml` with its params
-  filled in), today's reliability (index, level, station breakdown, scenarios),
+  filled in), the reliability for its period (index, level, station breakdown, scenarios),
   the last update, the data sources and the photo credit. The
   "×" button, or a tap on the back, turns it back. The hidden side is inert.
   Each face has its own card frame, so the striped top corners turn with the
@@ -662,7 +761,9 @@ Implement `write_bytes`, `read_bytes`, `exists` and `list` of
   `--tile-banner-h`, `--tile-front-h` and `--tile-more-h` in `styles/base.css`;
   every `simple` tile has the shorter `--tile-simple-h`, and every odds button
   the height `--odds-button-h`;
-  titles, descriptions, names and odds buttons are clamped to fixed heights.
+  titles, descriptions, names and odds buttons are clamped to fixed heights
+  (long titles such as "… demain après-midi" use a smaller font on up to two
+  lines).
   Stations show their `short_name`; full names stay in accessible labels.
 - **Filter transitions**: changing filter makes tiles arrive "from the back"
   (scale, fade and rise, staggered), leaving tiles fade out and the others
@@ -682,11 +783,10 @@ Keep this table in sync when a tile is added, removed or changed.
 
 | Tile id | Type | KPI (kind) | Filter | Title (fr / en) | Options |
 |---|---|---|---|---|---|
-| `snowfall_today` | `banner_full` | `snowfall_chance` (live) | Snow | Neige aujourd'hui / Snow today | `photo: leader`, `scene: snowfall` |
-| `onpiste_powder` | `banner` | `onpiste_powder_chance` (live) | Powder | Poudreuse sur piste / Powder on piste | `photo: leader`, `scene: piste` |
-| `offpiste_powder` | `simple` | `offpiste_powder_chance` (live) | Powder | Poudreuse hors-piste / Off-piste powder | — |
-| `whiteout_today` | `simple` | `whiteout_chance_today` (live) | Visibility | Jour blanc aujourd'hui / White day today | `top: 3` |
-| `whiteout_tomorrow` | `simple` | `whiteout_chance_tomorrow` (live, tomorrow) | Visibility | Jour blanc demain / White day tomorrow | `top: 3` |
+| `snowfall_today` | `banner_full` | `snowfall_chance` (live: day, morning, midday, afternoon, evening, night) | Snow | Neige {period} / Snow {period} | `photo: leader`, `scene: snowfall` |
+| `onpiste_powder` | `banner` | `onpiste_powder_chance` (live: morning, midday, afternoon) | Powder | Poudreuse sur piste {period} / On-piste powder {period} | `photo: leader`, `scene: piste` |
+| `offpiste_powder` | `simple` | `offpiste_powder_chance` (live: morning, midday, afternoon) | Powder | Poudreuse hors-piste {period} / Off-piste powder {period} | — |
+| `whiteout` | `simple` | `whiteout_chance` (live: day) | Visibility | Jour blanc {period} / White day {period} ("aujourd'hui", "demain") | `top: 3` |
 | `rewind_2025_26_total_snowfall` | `banner_full` | `season_total_snowfall` (historical, m) | Rewind 25/26 | Le plus de neige / Most snow | `photo: leader`, `scene: snowfall` |
 | `rewind_2025_26_longest_snowfall` | `banner` | `season_longest_snowfall` (historical, h) | Rewind 25/26 | La plus longue chute de neige / Longest snowfall | `photo: leader`, `scene: snowfall` |
 | `rewind_2025_26_domain_snowfall` | `banner` | `season_domain_snowfall` (historical, m) | Rewind 25/26 | Le plus de neige sur le domaine / Most snow on the slopes | `photo: leader`, `scene: piste` |
@@ -694,8 +794,10 @@ Keep this table in sync when a tile is added, removed or changed.
 | `rewind_2025_26_deep_snow_days` | `banner` | `season_deep_snow_days` (historical, %, bars 0–100 %) | Rewind 25/26 | L'enneigement idéal / Ideal snow cover | `photo: leader`, `scene: piste` |
 | `rewind_2025_26_white_days` | `banner` | `season_white_days` (historical, days, fewest first) | Rewind 25/26 | Le moins de jours blancs / Fewest white days | `photo: leader`, `scene: mountain` |
 
-Live tiles show under "All" and their filter; Rewind tiles only under their
-exclusive Rewind filter, in the Rewind theme with a "REWIND 25/26" badge.
+Live tiles show under "All" and their filter, once per period of today and
+tomorrow not over yet (`{period}` becomes "ce soir", "demain matin"…); Rewind
+tiles only under their exclusive Rewind filter, once, in the Rewind theme with
+a "REWIND 25/26" badge.
 
 ### Future features (roadmap)
 
@@ -760,10 +862,14 @@ attribution in `config/sources.yaml` and stays within its rate limits.
 | Frontend tests | Vitest | `npm test` |
 | Workflows | actionlint | runs in CI |
 
-Notable tests: KPI models on synthetic data with known answers, Open-Meteo
-key parsing on the real naming scheme, rate-limit handling, a full
-bronze → diamond run, the plugin naming convention, i18n key parity, and a
-check that every tile type in the config has a component.
+Notable tests: KPI models on synthetic data with known answers (per
+period), Open-Meteo key parsing on the real naming scheme, one grouped
+request per source, rate-limit handling, ski-day and period boundaries
+(including summer time), the gold fallback (stale values), the status
+builder, a full bronze → diamond run, a simulated CI chain (`plan`, one gold
+job per KPI, `status` with a missing report), the plugin naming convention,
+i18n key parity, tile expansion and hiding of ended periods, and a check
+that every tile type in the config has a component.
 
 ## Git workflow and deployment
 
@@ -776,20 +882,52 @@ short-lived branches created from `main` and merged back through a pull request.
 | `feat/…`, `fix/…`, `docs/…` | developers and agents | normal push / pull, one branch per change, deleted after merge | none |
 | `reference/refresh-…` | the *Refresh reference data* workflow | one branch per refresh, then a pull request | none |
 | `rewind/<id>-…` | the *Build a Rewind* workflow | one branch per build, then a pull request | none |
-| `gh-pages` | GitHub Actions only | built site + daily data | no push, no PR merge, no deletion; only the deploy key bypasses |
+| `gh-pages` | GitHub Actions only | built site + refreshed data | no push, no PR merge, no deletion; only the deploy key bypasses |
 
 | Workflow | Trigger | Job |
 |---|---|---|
 | `ci.yml` | PR to `main`, push to `main` (after merge), manual | Python + web checks, actionlint; `CI result` is the required check |
 | `deploy.yml` | push to `main` (= merged PR), manual | build `web/`, publish to `gh-pages`, keep `data/` |
-| `daily.yml` | 04:30 and 06:30 Paris (winter time), Nov–May, manual | run the pipeline from `main`, publish gold + diamond to `gh-pages/data/` |
+| `refresh.yml` | 00:07, 06:07, 12:07 and 18:07 Paris, Nov–May, manual | one pipeline per layer from `main` (see below), publish gold + diamond + status to `gh-pages/data/` |
 | `reference.yml` | manual, once a season | refresh `config/reference/` from reference sources, open a PR to `main` |
 | `rewind.yml` | manual, the day after a season ends | build `config/rewind/<id>/` (input `rewind`, optional `no_fetch`), open a PR to `main` |
 | `guard-gh-pages.yml` | PR opened against `gh-pages` | close it with an explanation |
 
-`deploy.yml` and `daily.yml` share a concurrency group, so they never push to
-`gh-pages` at the same time. Both push with the `GH_PAGES_DEPLOY_KEY` deploy
-key; both fail early with a clear message if it is missing.
+`deploy.yml` and `refresh.yml` share a concurrency group, so they never push
+to `gh-pages` at the same time. Both push with the `GH_PAGES_DEPLOY_KEY`
+deploy key; both fail early with a clear message if it is missing.
+
+### The refresh workflow
+
+```
+plan ─▶ bronze[source] ─▶ silver[source] ─▶ gold[KPI] ─▶ diamond[massif] ─▶ status ─▶ publish
+```
+
+| Job | One per | What it does |
+|---|---|---|
+| `plan` | — | Gate, then `bluebird plan --json`: run id, sources, datasets, KPIs, massifs (the matrices). |
+| `bronze` | source | `run --layer bronze --source S`: one grouped API request. |
+| `silver` | source | Downloads its bronze artifact, `run --layer silver --source S`. |
+| `gold` | KPI | Restores published data, downloads every silver dataset, `run --layer gold --kpi K`. |
+| `diamond` | massif | Restores published data, downloads the gold files, `run --layer diamond --massif M`. |
+| `status` | — | Always runs: `bluebird status` writes `status.json`, the manifest and the job summary. |
+| `publish` | — | The only job with the deploy key: publishes gold, diamond and status in one commit. |
+
+- **Schedule.** GitHub cron is in UTC, so there is one cron line per Paris
+  offset (`7 23,5,11,17 * 1-3,10-12 *` for UTC+1, `7 22,4,10,16 * 3-5 *` for
+  UTC+2). The `plan` job compares `github.event.schedule` with the current
+  offset of Europe/Paris and the local month: the other line and
+  out-of-season runs stop there, without any API call.
+- **Isolation.** Matrices use `fail-fast: false` and later jobs run with
+  `if: always()`, so a failing source only affects the KPIs that need it,
+  which fall back to their last valid values. Every job passes `--run-id` from
+  `plan`, so they agree on the ski day and the visible periods.
+- **Artifacts.** Files move between jobs as artifacts (`--export`): bronze
+  and silver are kept 7 days for debugging, reports 7 days.
+- **Setup.** `.github/actions/setup-pipeline` installs uv and the pipeline
+  (without dev tools, `UV_NO_SYNC=1`) and sets `BLUEBIRD_DATA_DIR`.
+- **Cost.** About ten short jobs per refresh (4–5 minutes wall time); free on
+  a public repository.
 
 ### First-time GitHub setup
 
@@ -803,7 +941,7 @@ The script is idempotent. It makes `main` the default branch (and deletes a
 leftover `dev` branch if it is fully merged), creates the deploy key and
 secret, creates or updates the two rulesets, allows workflows to open pull
 requests, triggers the first site build, configures Pages to
-serve `gh-pages`, and runs the daily workflow once. Options: `--rotate-key`,
+serve `gh-pages`, and runs the data refresh workflow once. Options: `--rotate-key`,
 `--no-runs`. Rulesets and Pages are free on public repositories; private
 repositories need GitHub Pro or higher.
 
@@ -822,8 +960,12 @@ Merging into `main` deploys the site.
 
 Scheduled workflows only run on the default branch and can start several
 minutes late. GitHub disables schedules in public repositories after 60 days
-without activity: re-enable `Daily data` in the Actions tab at the start of a
-season if needed.
+without activity: re-enable `Data refresh` in the Actions tab at the start of
+a season if needed.
+
+After a change of the diamond `schema_version` (2 since periods), the site
+deployed on merge cannot read the data published before: run the `Data
+refresh` workflow manually right after the merge (outside the season too).
 
 ## Data sources, limits and licences
 
@@ -836,12 +978,14 @@ season if needed.
 | Open-Meteo Historical Forecast API (Météo-France AROME: humidity, low cloud, radiation) | Rewind white days (`open_meteo_historical_light`, station and domain points) | CC BY 4.0; free API for non-commercial use |
 | Open-Meteo Historical Forecast API (DWD ICON, `icon_seamless`, ~7 km over the Pyrenees) | Rewind snow depth on the ground (AROME has none in the archive): ideal snow cover days | CC BY 4.0; free API for non-commercial use |
 
-- Open-Meteo weighs ensemble requests by member count. The free tier allows
-  roughly 600 weighted calls per minute and 10,000 per day. A full Pyrenees
-  run (18 stations, 2 bands, 91 members) completed without rate limiting
-  during development; the daily quota is what to watch when adding massifs.
-  Extractors space requests (`min_interval_s`) and wait out HTTP 429. Request
-  only the bands and days the KPIs need.
+- Open-Meteo weighs ensemble requests by member count, and counts every
+  location of a grouped request. The free tier allows roughly 600 weighted
+  calls per minute and 10,000 per day. Bluebird sends one grouped request per
+  source and refresh (2 HTTP requests, 4 times a day); a full Pyrenees
+  ensemble response (36 locations, 3 days, 91 members) is about 1 MB gzipped.
+  The daily quota is what to watch when adding massifs or forecast days.
+  Extractors wait out HTTP 429 and can split requests
+  (`max_locations_per_request`). Request only the bands and days the KPIs need.
 - Open-Meteo counts a request covering more than two weeks per location as
   several calls (a five-month season ≈ 11 calls per point). A Pyrenees Rewind
   (18 stations × up to 17 points) weighs about 3,400 calls: the season source
@@ -866,11 +1010,13 @@ season if needed.
 |---|---|
 | `ModuleNotFoundError: bluebird_pipeline` | Virtualenv inside iCloud (hidden `.pth`). Set `UV_PROJECT_ENVIRONMENT` outside iCloud and `uv sync` again. |
 | `Configuration error: … Extra inputs are not permitted` | Typo or unknown key in YAML. A comma inside an unquoted flow-mapping value (`{ fr: a, b }`) also splits it: quote the value. |
-| `rate limited (HTTP 429), waiting 65s` | Normal with Open-Meteo bursts; the run continues. Many in a row: lower the request weight or raise `min_interval_s`. |
+| `rate limited (HTTP 429), waiting 65s` | Normal with Open-Meteo bursts; the run continues. Many in a row: lower the request weight (bands, days, models). |
 | `Stale schemas` in CI | Run `uv run bluebird schemas` and `npm run gen:types`, commit both. |
 | `svelte-check` complains about TypeScript 7 | The project pins TypeScript 6 until svelte-check supports TypeScript 7 alone. |
-| Site shows "No forecast yet" | No `latest.json` on `gh-pages` yet: run the `Daily data` workflow. |
-| Site shows an old date | The daily run failed or has not run yet. Check the Actions tab; bronze/silver artifacts help debugging. |
+| Site shows "No forecast yet" | No `latest.json` on `gh-pages` yet: run the `Data refresh` workflow. |
+| Site cannot load the forecasts after a merge | The published data has an older `schema_version`: run the `Data refresh` workflow manually. |
+| Footer shows degraded items, or tiles show "data from 06:00" | A source, KPI or job failed during the last refresh. Open the run in the Actions tab: its summary lists every unit with the error message; bronze/silver artifacts help debugging. |
+| Site shows an old date | The refreshes failed or are out of season. Check the Actions tab. |
 | Deploy fails with "GH_PAGES_DEPLOY_KEY is missing" | Run `scripts/setup-github.sh`. |
 | `warning: config/reference/… is missing` | A new massif or reference source has no reference file yet: run `uv run bluebird reference --massif <id>` (or the *Refresh reference data* workflow). |
 | *Refresh reference data* cannot open its pull request | Run `scripts/setup-github.sh` again: it allows workflows to create pull requests. |

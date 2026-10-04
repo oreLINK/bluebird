@@ -9,7 +9,7 @@
 #
 #   0. Makes `main` the default branch and removes a fully merged `dev`.
 #   1. Creates a write deploy key and stores its private half in the
-#      GH_PAGES_DEPLOY_KEY secret (used by deploy.yml and daily.yml).
+#      GH_PAGES_DEPLOY_KEY secret (used by deploy.yml and refresh.yml).
 #   2. Creates or updates two branch rulesets:
 #        "Protect main":     no direct push, no force push, no deletion,
 #                            changes only through pull requests with the
@@ -19,7 +19,7 @@
 #   2b. Allows workflows to open pull requests (reference.yml opens one to main).
 #   3. Builds the site once if gh-pages does not exist yet (deploy.yml).
 #   4. Configures GitHub Pages to serve the gh-pages branch.
-#   5. Runs the daily data workflow once so the site has data.
+#   5. Runs the data refresh workflow once so the site has data.
 #
 # Options:
 #   --rotate-key   replace the deploy key and secret
@@ -194,9 +194,9 @@ fi
 # ------------------------------------------------------- 5. first data run
 say "5. First data run"
 if $TRIGGER_RUNS && gh api "repos/$REPO/branches/gh-pages" >/dev/null 2>&1; then
-  run_and_wait daily.yml
+  run_and_wait refresh.yml
 else
-  echo "Skipped. Run the 'Daily data' workflow from the Actions tab when ready."
+  echo "Skipped. Run the 'Data refresh' workflow from the Actions tab when ready."
 fi
 
 say "Done."

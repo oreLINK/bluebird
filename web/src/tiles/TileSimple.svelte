@@ -17,6 +17,7 @@
   import OddsRow from './OddsRow.svelte';
   import RankingMore from './RankingMore.svelte';
   import type { TileProps } from './registry';
+  import StaleBadge from '../components/StaleBadge.svelte';
   import TileBadge from './TileBadge.svelte';
   import { tileModel } from './tileModel';
 
@@ -24,6 +25,8 @@
 
   const model = $derived(tileModel(tile, view));
   const title = $derived(i18n.pick(tile.title ?? view.kpi.name));
+  /** Longer titles ("… demain après-midi") get a smaller font, on up to two lines. */
+  const LONG_TITLE = 24;
 
   let selected = $state<string | null>(null);
   let showAll = $state(false);
@@ -37,8 +40,12 @@
   {#snippet front()}
     <div class="content">
       <header class="headline">
-        {#if model.badge}<TileBadge label={i18n.pick(model.badge)} icon="rewind" />{/if}
-        <h2 id="{tile.id}-title">{title}</h2>
+        {#if model.badge}
+          <TileBadge label={i18n.pick(model.badge)} icon="rewind" />
+        {:else if model.staleSince}
+          <StaleBadge since={model.staleSince} timezone={view.timezone} />
+        {/if}
+        <h2 id="{tile.id}-title" class:long={title.length > LONG_TITLE}>{title}</h2>
       </header>
       {#if model.items.length === 0}
         <p class="empty">{i18n.t(model.emptyMessage)}</p>
@@ -81,6 +88,7 @@
 <style>
   .content {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     align-content: center;
     gap: 12px;
     height: var(--tile-simple-h);
@@ -108,6 +116,15 @@
     white-space: nowrap;
     text-overflow: ellipsis;
     color: var(--tile-title, inherit);
+  }
+
+  h2.long {
+    display: -webkit-box;
+    font-size: 1.25rem;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 
   .empty {

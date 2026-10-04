@@ -15,6 +15,7 @@ from .keys import (
     rewind_gold_key,
     rewind_key,
     silver_key,
+    status_key,
 )
 from .local import LocalStorage
 
@@ -28,4 +29,5 @@ __all__ = [
     "rewind_gold_key",
     "rewind_key",
     "silver_key",
+    "status_key",
 ]

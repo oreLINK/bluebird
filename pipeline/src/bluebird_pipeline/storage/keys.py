@@ -5,9 +5,9 @@ Layer     Key                                                         Format
 ========  ==========================================================  ==========
 bronze    ``bronze/{source_id}/{date}/{run_id}.json.gz``              gzip JSON
 silver    ``silver/{dataset}/date={date}/{run_id}.parquet``           Parquet
-gold      ``gold/kpis/date={date}/kpis.parquet``                      Parquet
+gold      ``gold/kpis/date={date}/{kpi_id}.parquet``                  Parquet
 diamond   ``diamond/{massif_id}/latest.json`` and ``{date}.json``     JSON
-diamond   ``diamond/manifest.json``                                   JSON
+diamond   ``diamond/manifest.json``, ``diamond/status.json``          JSON
 gold      ``gold/rewind/{rewind_id}/kpis.parquet`` (Rewind)            Parquet
 ========  ==========================================================  ==========
 
@@ -16,7 +16,9 @@ Rewind season files are committed under the configuration folder instead:
 ``rewind/{rewind_id}/{massif_id}.json`` (diamond), see :func:`rewind_key`.
 
 ``run_id`` is a UTC timestamp (``20261214T053000Z``) so keys sort chronologically.
-Gold and diamond keep one object per date: a later run of the same day wins.
+``date`` is the ski day of the run (see ``RunContext``). Gold and diamond keep
+one object per ski day: a later run of the same day wins. Gold files written
+before periods existed are named ``kpis.parquet`` and are ignored when reading.
 """
 
 from __future__ import annotations
@@ -42,8 +44,8 @@ def silver_prefix(dataset: str, run_date: date) -> str:
     return f"silver/{dataset}/date={run_date.isoformat()}"
 
 
-def gold_key(run_date: date) -> str:
-    return f"gold/kpis/date={run_date.isoformat()}/kpis.parquet"
+def gold_key(run_date: date, kpi_id: str) -> str:
+    return f"gold/kpis/date={run_date.isoformat()}/{kpi_id}.parquet"
 
 
 def diamond_key(massif_id: str | None, name: str) -> str:
@@ -51,6 +53,10 @@ def diamond_key(massif_id: str | None, name: str) -> str:
     if massif_id is None:
         return f"diamond/{name}.json"
     return f"diamond/{massif_id}/{name}.json"
+
+
+def status_key() -> str:
+    return "diamond/status.json"
 
 
 def rewind_gold_key(rewind_id: str) -> str:

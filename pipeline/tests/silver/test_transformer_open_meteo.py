@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
+import polars as pl
 import pytest
 from _factories import RUN_DATE, hourly_times, open_meteo_location
 
@@ -104,3 +105,30 @@ def test_location_count_must_match_bands(ctx: RunContext) -> None:
     transformer = TRANSFORMERS.get("open_meteo_ensemble")(ctx.config.sources[0])
     with pytest.raises(OpenMeteoParseError, match="expected 2 locations"):
         transformer.transform(_batch([location], ["mid", "summit"], [2000, 2500]), ctx)
+
+
+def test_grouped_request_maps_each_location_to_its_station(ctx: RunContext) -> None:
+    times = hourly_times(RUN_DATE, 1)
+    locations = [
+        open_meteo_location(times=times, elevation=e, variables=VARS, models=MODELS, ensemble=False)
+        for e in (2000, 1800)
+    ]
+    batch = _batch(locations, [], [])
+    batch.records[0] = batch.records[0].model_copy(
+        update={
+            "station_id": None,
+            "context": {
+                "locations": [
+                    {"station_id": "alpha", "band": "mid", "elevation": 2000},
+                    {"station_id": "beta", "band": "mid", "elevation": 1800},
+                ],
+                "models": MODELS,
+                "hourly": VARS,
+            },
+        }
+    )
+    transformer = TRANSFORMERS.get("open_meteo_ensemble")(ctx.config.sources[0])
+    frame = transformer.transform(batch, ctx)
+
+    by_station = dict(frame.group_by("station_id").agg(pl.col("elevation_m").first()).iter_rows())
+    assert by_station == {"alpha": 2000, "beta": 1800}

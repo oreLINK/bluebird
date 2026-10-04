@@ -65,6 +65,9 @@ class ExtractorParams(BaseModel):
         default=65.0, ge=0, description="Delay before retrying after HTTP 429."
     )
     max_rate_limit_waits: int = Field(default=4, ge=0, le=20)
+    timeout_s: float = Field(
+        default=120.0, gt=0, description="Timeout of one request (grouped responses are large)."
+    )
 
 
 class Extractor(ABC):
@@ -150,7 +153,7 @@ class Extractor(ABC):
         while True:
             self._throttle()
             try:
-                response = self.http.request(method, url, **kwargs)
+                response = self.http.request(method, url, timeout=self.params.timeout_s, **kwargs)
             except httpx.TransportError as exc:
                 failures += 1
                 if failures >= self.max_attempts:

@@ -12,11 +12,18 @@
 #                           lower on the page (TileSimple.svelte)
 #              ranking      compact list of every station (TileRanking.svelte)
 #   kpis:    KPI ids (config/kpis.yaml) the tile reads; tiles show the first one.
-#            Every type works for live KPIs (probabilities of today) and for
-#            historical KPIs (Rewind values: "4,43 m", "46 h"). A historical
-#            tile takes the theme of its Rewind's filter (Christmas red) and a
-#            "REWIND 25/26" badge; odds and details are live only.
-#   title:   optional; defaults to the first KPI's name.
+#            Every type works for live KPIs (probabilities) and for historical
+#            KPIs (Rewind values: "4,43 m", "46 h"). A historical tile takes the
+#            theme of its Rewind's filter (Christmas red) and a "REWIND 25/26"
+#            badge; odds and details are live only.
+#   title:   optional; defaults to the first KPI's name (followed by the period
+#            for live KPIs). For live KPIs it must contain {period}, replaced by
+#            the period label of config/periods.yaml ("Neige {period}" ->
+#            "Neige ce soir"); Rewind titles have no {period}.
+#   periods: optional, live KPIs only; the periods to show a tile for (default:
+#            every period of its KPIs). The page shows one tile per period not
+#            yet over, in chronological order, then in config/layout.yaml order.
+#            Rewind tiles are shown once.
 #   icon:    optional; one of the icons in web/src/components/Icon.svelte.
 #   options: free-form, interpreted by the tile component:
 #              every type: theme (default | rewind) overrides the colour theme.
@@ -37,7 +44,7 @@ tiles:
   - id: snowfall_today
     type: banner_full
     kpis: [snowfall_chance]
-    title: { fr: Neige aujourd'hui, en: Snow today }
+    title: { fr: "Neige {period}", en: "Snow {period}" }
     icon: snowflake
     options:
       top: 3
@@ -48,7 +55,7 @@ tiles:
   - id: onpiste_powder
     type: banner
     kpis: [onpiste_powder_chance]
-    title: { fr: Poudreuse sur piste, en: Powder on piste }
+    title: { fr: "Poudreuse sur piste {period}", en: "On-piste powder {period}" }
     icon: piste
     options:
       top: 3
@@ -59,25 +66,17 @@ tiles:
   - id: offpiste_powder
     type: simple
     kpis: [offpiste_powder_chance]
-    title: { fr: Poudreuse hors-piste, en: Off-piste powder }
+    title: { fr: "Poudreuse hors-piste {period}", en: "Off-piste powder {period}" }
     icon: mountain
     options:
       top: 3
       show_odds: false
 
   # Visibility: white days today and tomorrow (live, filter "Visibilité").
-  - id: whiteout_today
+  - id: whiteout
     type: simple
-    kpis: [whiteout_chance_today]
-    title: { fr: Jour blanc aujourd'hui, en: White day today }
-    icon: fog
-    options:
-      top: 3
-
-  - id: whiteout_tomorrow
-    type: simple
-    kpis: [whiteout_chance_tomorrow]
-    title: { fr: Jour blanc demain, en: White day tomorrow }
+    kpis: [whiteout_chance]
+    title: { fr: "Jour blanc {period}", en: "White day {period}" }
     icon: fog
     options:
       top: 3

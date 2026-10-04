@@ -5,7 +5,7 @@ export type Extractor = string;
 export type Transformer = string;
 export type Enabled = boolean;
 /**
- * daily: fetched every morning; on_demand: only with `bluebird run --source`; reference: slow-changing data refreshed with `bluebird reference` and committed under config/reference/; season: archive of a closed season, fetched once by `bluebird rewind` and committed under config/rewind/.
+ * daily: fetched by every refresh; on_demand: only with `bluebird run --source`; reference: slow-changing data refreshed with `bluebird reference` and committed under config/reference/; season: archive of a closed season, fetched once by `bluebird rewind` and committed under config/rewind/.
  */
 export type Schedule = 'daily' | 'on_demand' | 'reference' | 'season';
 export type Name = string;

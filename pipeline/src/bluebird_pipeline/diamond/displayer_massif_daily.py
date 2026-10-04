@@ -1,92 +1,113 @@
-"""One JSON payload per massif and day, with every KPI ranking, plus a manifest.
+"""One JSON payload per massif with every KPI ranking, per period.
 
 Outputs (relative to the storage root):
 
 - ``diamond/{massif_id}/latest.json``: what the site loads.
-- ``diamond/{massif_id}/{date}.json``: dated archive of the same payload.
-- ``diamond/manifest.json``: latest date per massif (merged with the previous one).
+- ``diamond/{massif_id}/{ski_day}.json``: dated archive of the same payload.
+
+Only periods not over at the run time are published, and each period keeps the
+time its values were computed: values carried over from an earlier run (see
+``gold.base.read_gold``) are older than the payload, which the site flags.
+``diamond/manifest.json`` is written by the final status step
+(:mod:`._status`), once every massif is done.
 """
 
 from __future__ import annotations
 
-from ..config import Massif
+import polars as pl
+
+from ..config import Kpi, Massif
 from ..context import RunContext
-from ..gold.base import KpiResult, frame_to_results
-from ..storage import diamond_key, gold_key
+from ..gold.base import frame_to_results, read_gold
+from ..storage import diamond_key
 from ._payload import source_payloads, station_payloads
 from .base import DiamondArtifact, Displayer, register_displayer
 from .models import (
     DiamondKpi,
-    DiamondManifest,
-    DiamondManifestEntry,
+    DiamondKpiPeriod,
     DiamondMassifDaily,
     DiamondRankingEntry,
 )
 
-DIAMOND_ROOT = "diamond/"
-
 
 @register_displayer("massif_daily")
 class DisplayerMassifDaily(Displayer):
-    """Rank stations by probability for every enabled KPI of every massif."""
+    """Rank stations for every live KPI and period of every massif.
+
+    Highest probability first, or lowest for a KPI with ``order: asc``.
+    """
 
     def display(self, ctx: RunContext) -> list[DiamondArtifact]:
-        key = gold_key(ctx.run_date)
-        if not ctx.storage.exists(key):
-            raise FileNotFoundError(f"no gold data at {key}; run the gold layer first")
-        results = frame_to_results(ctx.storage.read_parquet(key))
-
+        gold = read_gold(ctx, [kpi.id for kpi in ctx.config.enabled_kpis(kind="live")])
+        if gold.is_empty():
+            raise FileNotFoundError(
+                f"no gold data for {ctx.run_date} or the day before; run the gold layer first"
+            )
         artifacts: list[DiamondArtifact] = []
-        manifest_entries: dict[str, DiamondManifestEntry] = {}
         for massif in ctx.massifs():
-            payload = self._massif_payload(ctx, massif, results)
+            payload = self._massif_payload(ctx, massif, gold)
             if not payload.kpis:
                 continue
-            latest = diamond_key(massif.id, "latest")
-            archive = diamond_key(massif.id, ctx.run_date.isoformat())
-            artifacts += [DiamondArtifact(latest, payload), DiamondArtifact(archive, payload)]
-            manifest_entries[massif.id] = DiamondManifestEntry(
-                forecast_date=ctx.run_date,
-                generated_at=ctx.generated_at,
-                latest=latest.removeprefix(DIAMOND_ROOT),
-                archive=archive.removeprefix(DIAMOND_ROOT),
-            )
-
-        if manifest_entries:
-            artifacts.append(
-                DiamondArtifact(
-                    diamond_key(None, "manifest"), self._manifest(ctx, manifest_entries)
-                )
-            )
+            artifacts += [
+                DiamondArtifact(diamond_key(massif.id, "latest"), payload),
+                DiamondArtifact(diamond_key(massif.id, ctx.run_date.isoformat()), payload),
+            ]
         return artifacts
 
+    def _kpi_periods(
+        self, ctx: RunContext, massif: Massif, kpi: Kpi, gold: pl.DataFrame
+    ) -> list[DiamondKpiPeriod]:
+        rows = gold.filter((pl.col("kpi_id") == kpi.id) & (pl.col("massif_id") == massif.id))
+        sign = 1 if kpi.order == "asc" else -1
+        out: list[DiamondKpiPeriod] = []
+        for instance in ctx.period_instances(massif, kpi.periods):
+            selected = rows.filter(
+                (pl.col("period_id") == instance.period_id)
+                & (pl.col("forecast_date") == instance.ski_day)
+            )
+            if selected.is_empty():
+                continue
+            results = sorted(
+                frame_to_results(selected), key=lambda r: (sign * r.probability, r.station_id)
+            )
+            out.append(
+                DiamondKpiPeriod(
+                    key=instance.key,
+                    period_id=instance.period_id,
+                    ski_day=instance.ski_day,
+                    start=instance.start,
+                    end=instance.end,
+                    generated_at=selected["generated_at"].max(),  # type: ignore[arg-type]
+                    ranking=[
+                        DiamondRankingEntry(
+                            station_id=r.station_id,
+                            probability=r.probability,
+                            confidence=r.confidence,
+                            window_start=r.window_start.astimezone(massif.tz),
+                            window_end=r.window_end.astimezone(massif.tz),
+                            members=r.members,
+                            drivers=r.drivers,
+                        )
+                        for r in results
+                    ],
+                )
+            )
+        return out
+
     def _massif_payload(
-        self, ctx: RunContext, massif: Massif, results: list[KpiResult]
+        self, ctx: RunContext, massif: Massif, gold: pl.DataFrame
     ) -> DiamondMassifDaily:
         refs = [ref for ref in ctx.stations() if ref.massif.id == massif.id]
-        station_ids = {ref.id for ref in refs}
         kpis: dict[str, DiamondKpi] = {}
         for kpi in ctx.config.enabled_kpis(kind="live"):
-            rows = [r for r in results if r.kpi_id == kpi.id and r.station_id in station_ids]
-            if not rows:
+            periods = self._kpi_periods(ctx, massif, kpi, gold)
+            if not periods:
                 continue
-            sign = 1 if kpi.order == "asc" else -1
-            rows.sort(key=lambda r: (sign * r.probability, r.station_id))
+            versions = gold.filter(pl.col("kpi_id") == kpi.id)["aggregator_version"]
             kpis[kpi.id] = DiamondKpi(
                 kpi_id=kpi.id,
-                aggregator_version=rows[0].aggregator_version,
-                ranking=[
-                    DiamondRankingEntry(
-                        station_id=r.station_id,
-                        probability=r.probability,
-                        confidence=r.confidence,
-                        window_start=r.window_start.astimezone(massif.tz),
-                        window_end=r.window_end.astimezone(massif.tz),
-                        members=r.members,
-                        drivers=r.drivers,
-                    )
-                    for r in rows
-                ],
+                aggregator_version=str(versions.max()),
+                periods=periods,
             )
         return DiamondMassifDaily(
             massif_id=massif.id,
@@ -97,15 +118,3 @@ class DisplayerMassifDaily(Displayer):
             kpis=kpis,
             sources=source_payloads(ctx.config.enabled_sources(schedule="daily")),
         )
-
-    def _manifest(
-        self, ctx: RunContext, entries: dict[str, DiamondManifestEntry]
-    ) -> DiamondManifest:
-        key = diamond_key(None, "manifest")
-        previous: dict[str, DiamondManifestEntry] = {}
-        if ctx.storage.exists(key):
-            try:
-                previous = DiamondManifest.model_validate(ctx.storage.read_json(key)).massifs
-            except ValueError:
-                previous = {}
-        return DiamondManifest(generated_at=ctx.generated_at, massifs=previous | entries)

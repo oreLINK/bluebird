@@ -272,6 +272,14 @@ class Kpi(StrictModel):
         default_factory=list,
         description="Ids of the filters (config/filters.yaml) this KPI appears under.",
     )
+    periods: list[Slug] = Field(
+        default_factory=lambda: ["day"],
+        min_length=1,
+        description=(
+            "Ids of the periods (config/periods.yaml) a live KPI is computed for; "
+            "ignored for historical KPIs."
+        ),
+    )
 
     @model_validator(mode="after")
     def _value_for_historical(self) -> Kpi:
@@ -286,6 +294,78 @@ class KpisFile(StrictModel):
     kpis: list[Kpi]
 
 
+# ------------------------------------------------------------------------ periods
+
+
+class Period(StrictModel):
+    """A time slot of the ski day a KPI is computed for (morning, evening…)."""
+
+    id: Slug
+    start: LocalTime
+    end: LocalTime = Field(description="'00:00' after a later start means midnight.")
+    native_window: bool = Field(
+        default=False,
+        description=(
+            "The KPI computes over its own window (e.g. the whole ski day); "
+            "`start`/`end` then only decide when the period is shown."
+        ),
+    )
+    labels: list[Localized] = Field(
+        min_length=1,
+        description="Label per day offset: [today, tomorrow, …], used in tile titles.",
+    )
+
+
+class PeriodsFile(StrictModel):
+    """Schema of ``config/periods.yaml``."""
+
+    day_start: LocalTime = Field(
+        default="06:00",
+        description="Local time a ski day starts: ski day D runs from D day_start to D+1.",
+    )
+    horizon_days: int = Field(
+        default=2, ge=1, le=7, description="Ski days published: 1 = today, 2 = + tomorrow."
+    )
+    periods: list[Period] = Field(min_length=1)
+
+    def minutes_after_day_start(self, value: str) -> int:
+        """Minutes from ``day_start`` to the wall-clock ``value`` (0..1439)."""
+        start = parse_local_time(self.day_start)
+        moment = parse_local_time(value)
+        delta = (moment.hour * 60 + moment.minute) - (start.hour * 60 + start.minute)
+        return delta % 1440
+
+    def span(self, period: Period) -> tuple[int, int]:
+        """``(start, end)`` of ``period`` in minutes after ``day_start``; end in 1..1440."""
+        start = self.minutes_after_day_start(period.start)
+        end = self.minutes_after_day_start(period.end) or 1440
+        return start, end
+
+    def errors(self) -> list[str]:
+        errors: list[str] = []
+        slots: list[tuple[int, int, str]] = []
+        for period in self.periods:
+            start, end = self.span(period)
+            if end <= start:
+                errors.append(f"period '{period.id}' ends before it starts")
+            if len(period.labels) < self.horizon_days:
+                errors.append(
+                    f"period '{period.id}' needs {self.horizon_days} labels "
+                    f"(one per day of the horizon), has {len(period.labels)}"
+                )
+            if not period.native_window:
+                slots.append((start, end, period.id))
+        cursor = 0
+        for start, end, period_id in sorted(slots):
+            if start != cursor:
+                kind = "overlaps the previous slot" if start < cursor else "leaves a gap before it"
+                errors.append(f"period '{period_id}' {kind}")
+            cursor = max(cursor, end)
+        if slots and cursor != 1440:
+            errors.append("time slots must cover the whole ski day (24 h from day_start)")
+        return errors
+
+
 # -------------------------------------------------------------------- tiles/layout
 
 
@@ -295,8 +375,21 @@ class Tile(StrictModel):
     id: Slug
     type: Slug = Field(description="Frontend tile component id (web/src/tiles/registry.ts).")
     kpis: list[Slug] = Field(default_factory=list)
-    title: Localized | None = None
+    title: Localized | None = Field(
+        default=None,
+        description=(
+            "Defaults to the first KPI's name. A tile of live KPIs must contain `{period}`, "
+            "replaced by the period label (e.g. 'Neige {period}' -> 'Neige ce soir'); a "
+            "tile of historical KPIs (Rewind) must not."
+        ),
+    )
     icon: str | None = None
+    periods: list[Slug] | None = Field(
+        default=None,
+        description=(
+            "Periods to show a tile of live KPIs for; defaults to every period of its KPIs."
+        ),
+    )
     options: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -358,7 +451,7 @@ class Source(StrictModel):
     schedule: Literal["daily", "on_demand", "reference", "season"] = Field(
         default="daily",
         description=(
-            "daily: fetched every morning; on_demand: only with `bluebird run --source`; "
+            "daily: fetched by every refresh; on_demand: only with `bluebird run --source`; "
             "reference: slow-changing data refreshed with `bluebird reference` and "
             "committed under config/reference/; season: archive of a closed season, "
             "fetched once by `bluebird rewind` and committed under config/rewind/."
@@ -478,6 +571,7 @@ class Config:
     tiles: list[Tile]
     layout: LayoutFile
     sources: list[Source]
+    periods: PeriodsFile
     pages: PagesFile
     rewinds: list[Rewind]
 
@@ -526,6 +620,34 @@ class Config:
             if rewind.id == rewind_id:
                 return rewind
         raise ConfigError(f"unknown rewind '{rewind_id}'")
+
+    def kpi(self, kpi_id: str) -> Kpi:
+        for kpi in self.kpis:
+            if kpi.id == kpi_id:
+                return kpi
+        raise ConfigError(f"unknown KPI '{kpi_id}'")
+
+    def period(self, period_id: str) -> Period:
+        for period in self.periods.periods:
+            if period.id == period_id:
+                return period
+        raise ConfigError(f"unknown period '{period_id}'")
+
+    def is_live_tile(self, tile: Tile) -> bool:
+        """Whether a tile shows live KPIs (one tile per period) rather than a Rewind."""
+        kinds = {k.kind for k in self.kpis if k.id in tile.kpis}
+        return "live" in kinds or not kinds
+
+    def tile_periods(self, tile: Tile) -> list[str]:
+        """Period ids a tile is shown for, in ``periods.yaml`` order (none for a Rewind)."""
+        if not self.is_live_tile(tile):
+            return []
+        wanted = set(tile.periods or [])
+        if not wanted:
+            for kpi_id in tile.kpis:
+                kpi = next((k for k in self.kpis if k.id == kpi_id), None)
+                wanted.update(kpi.periods if kpi else [])
+        return [p.id for p in self.periods.periods if p.id in wanted]
 
     def enabled_sources(
         self, schedule: str | None = None, only: list[str] | None = None
@@ -593,10 +715,37 @@ class Config:
             if not flt.all and flt.id not in used:
                 errors.append(f"filter '{flt.id}' matches no enabled KPI")
 
+        errors.extend(f"periods.yaml: {e}" for e in self.periods.errors())
+        duplicates("period", [p.id for p in self.periods.periods])
+        period_ids = {p.id for p in self.periods.periods}
+        for kpi in self.kpis:
+            for period_id in kpi.periods:
+                if period_id not in period_ids:
+                    errors.append(f"KPI '{kpi.id}' references unknown period '{period_id}'")
+
         for tile in self.tiles:
             for kpi_id in tile.kpis:
                 if kpi_id not in kpi_ids:
                     errors.append(f"tile '{tile.id}' references unknown KPI '{kpi_id}'")
+            live = self.is_live_tile(tile)
+            if tile.title is not None:
+                for language, text in tile.title.model_dump().items():
+                    if live and "{period}" not in text:
+                        errors.append(
+                            f"tile '{tile.id}' title ({language}) must contain '{{period}}'"
+                        )
+                    elif not live and "{period}" in text:
+                        errors.append(
+                            f"Rewind tile '{tile.id}' title ({language}) cannot use '{{period}}'"
+                        )
+            if not live and tile.periods:
+                errors.append(f"Rewind tile '{tile.id}' cannot list periods")
+            kpi_periods = {p for k in self.kpis if k.id in tile.kpis for p in k.periods}
+            for period_id in tile.periods or []:
+                if period_id not in kpi_periods:
+                    errors.append(
+                        f"tile '{tile.id}' period '{period_id}' is not computed by its KPIs"
+                    )
 
         layouts = {"default": self.layout.default} | {
             f"overrides.{k}": v for k, v in self.layout.overrides.items()
@@ -679,6 +828,7 @@ def load_config(config_dir: Path | None = None) -> Config:
         tiles=_read_model(root / "tiles.yaml", TilesFile).tiles,
         layout=_read_model(root / "layout.yaml", LayoutFile),
         sources=_read_model(root / "sources.yaml", SourcesFile).sources,
+        periods=_read_model(root / "periods.yaml", PeriodsFile),
         pages=_read_model(root / "pages.yaml", PagesFile),
         rewinds=_read_model(root / "rewinds.yaml", RewindsFile).rewinds,
     )

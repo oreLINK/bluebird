@@ -1,12 +1,13 @@
 # Bluebird
 
-**Morning snow odds, resort by resort.**
+**Snow odds, time slot by time slot, resort by resort.**
 
 A "bluebird day" is what skiers call the first sunny day after a snowstorm:
-deep blue sky, fresh snow everywhere. Bluebird helps you find those days. Every
-morning it tells you, for each ski resort of a mountain range, how likely it
-is to snow today and how likely you are to find fresh powder on or off the
-pistes.
+deep blue sky, fresh snow everywhere. Bluebird helps you find those days.
+Four times a day it tells you, for each ski resort of a mountain range, how
+likely it is to snow this morning, at lunchtime, this afternoon, this
+evening, tonight and tomorrow, and how likely you are to find fresh powder
+on or off the pistes.
 
 Once a season is over, a **Rewind** looks back at it: which resort got the
 most snow, the longest snowfall, the snowiest slopes and the snowiest
@@ -25,8 +26,28 @@ the page to one kind of indicator: **All**, **Snow**, **Powder** or
 **Visibility**. Just
 above the tiles, a date tells you which day the data are for (the day of
 their last update), with the update time on a small line below it. Each
-tile then answers one question (see [Available indicators](#available-indicators))
-and presents the resorts like the odds of a match on a betting site.
+tile then answers one question for one **time slot** (see [Available
+indicators](#available-indicators)) and presents the resorts like the odds of
+a match on a betting site.
+
+### Time slots
+
+| Slot | Hours (Paris time) |
+|---|---|
+| This morning | 06:00 – 12:00 |
+| At lunchtime | 12:00 – 14:00 |
+| This afternoon | 14:00 – 18:00 |
+| This evening | 18:00 – midnight |
+| Tonight | midnight – 06:00 |
+| Today (whole day) | shown from 06:00 to 18:00 |
+
+Tiles are sorted by time: the slots coming soonest first, then tomorrow's.
+**A tile disappears as soon as its slot is over**, even if the page stays
+open: after noon you no longer see "this morning", after 18:00 you no longer
+see "at lunchtime" or "this afternoon", but "this evening", "tonight" and
+tomorrow's slots remain. The day switches at 06:00: at 00:30, "tonight" is
+still the night that has just started, and "tomorrow morning" is the coming
+morning.
 
 Each tile shows:
 
@@ -57,8 +78,26 @@ Resorts appear under a short name in the tiles (for example "Cauterets" for
 "Cauterets – Cirque du Lys"). All tiles have the same size, so the page stays
 tidy; switching filter brings the matching tiles in with a short animation.
 
-If today's update is not available yet, the date above the tiles is the day
-of the last update, so you can see the data are older.
+If an update is late, a line under the date above the tiles says so.
+
+### Service status
+
+At the bottom of the page, **Service status** says whether the last update
+went well ("All systems running") or how many items are degraded, with the
+time of the update. Open it to see, one line each, the state of every data
+source, every data processing step, every indicator and every tile:
+
+- **Available**: fresh and complete;
+- **Partial**: fresh, but some resorts are missing;
+- **Outdated**: the values shown come from an earlier update (for example
+  "data from 06:00"), because the latest one could not compute them;
+- **Unavailable**: no value.
+
+When an indicator cannot be updated, Bluebird keeps showing its last valid
+values for the slots still to come, with a "Data from 06:00" badge on the
+tile, rather than an empty page. A slot with no value at all says so on its
+tile.
+
 
 ### Rewind 25/26
 
@@ -80,17 +119,17 @@ instead of the update time.
 
 ## Available indicators
 
-### Every morning (live)
+### Every 6 hours (live)
 
-Probabilities for today, refreshed twice each morning, with reliability dots.
+Probabilities for each time slot of today and tomorrow (see [Time
+slots](#time-slots)), refreshed every 6 hours, with reliability dots.
 
-| Indicator | Filter | Question | How to read a high percentage |
-|---|---|---|---|
-| **Snow today** | Snow | Will it snow during the ski day (08:00–17:00), at mid-mountain? | Bring goggles for flat light; fresh snow may build up during the day. |
-| **Powder on piste** | Powder | Did at least 5 cm fall after the grooming machines finished, before the lifts open? | First runs on the pistes will be in fresh, ungroomed snow. |
-| **Off-piste powder** | Powder | Did at least 15 cm fall in the last 36 hours near the summit, without strong wind or a thaw spoiling it? | Good chances of light, untracked powder off-piste. Always check the avalanche bulletin first. |
-| **White day today** | Visibility | Will today's ski day (09:00–17:00) be a white day at mid-mountain? | Expect no relief and poor contrast: stay near trees and markers, take tinted goggles. |
-| **White day tomorrow** | Visibility | Same question for tomorrow's ski day. | Plan tomorrow accordingly, or pick a resort with a lower chance. |
+| Indicator | Filter | Slots | Question | How to read a high percentage |
+|---|---|---|---|---|
+| **Snow** | Snow | whole day, morning, lunchtime, afternoon, evening, night | Will at least 1 cm of snow fall during the slot (for the whole day: between 08:00 and 17:00), at mid-mountain? | Bring goggles for flat light; fresh snow may build up. |
+| **Powder on piste** | Powder | morning, lunchtime, afternoon | Has at least 5 cm fallen since the grooming machines finished, by the start of the slot (at lift opening for the morning)? | The pistes will be covered with fresh, ungroomed snow. |
+| **Off-piste powder** | Powder | morning, lunchtime, afternoon | Has at least 15 cm fallen in the 36 hours before the start of the slot near the summit, without strong wind or a thaw spoiling it? | Good chances of light, untracked powder off-piste. Always check the avalanche bulletin first. |
+| **White day** | Visibility | today, tomorrow (whole day) | Will the ski day (09:00–17:00) be a white day at mid-mountain? | Expect no relief and poor contrast: stay near trees and markers, take tinted goggles. |
 
 A **white day** ("jour blanc") is a day without visible relief. Hour by hour
 over the ski day (09:00–17:00), Bluebird counts an hour as white when the
@@ -119,7 +158,7 @@ Ideas under study, not yet on the site. They are ranked by family; the most
 likely next ones are marked ⭐. Each will be checked against the data really
 available before it is built.
 
-**Every morning (live)**
+**Every 6 hours (live)**
 
 | Indicator | Question |
 |---|---|
@@ -193,7 +232,7 @@ true**. "72 %" means 72 out of 100 scenarios give enough snow.
 **Reliability** ("Confidence") reflects how much the scenarios agree: when
 almost all agree (very likely or very unlikely), reliability is high; when
 they split half and half, it is low. The back of each tile also gives a
-**reliability index** for the day: the average reliability of all resorts
+**reliability index** for the slot: the average reliability of all resorts
 for that indicator (high counts fully, medium half, low not at all).
 
 The high-resolution Météo-France model (AROME) is shown next to it as a
@@ -201,7 +240,8 @@ second opinion.
 
 Fixed facts about each resort (position, elevations, grooming and opening
 times, pistes and lifts) are stored with the project and refreshed at most
-once a season. Only the weather is fetched every morning.
+once a season. Only the weather is fetched at each update, with a single
+request per weather service for all resorts at once.
 
 **Rewinds** use a different source: the archived hour-by-hour forecasts of
 Météo-France's high-resolution model (AROME, 1.5 km grid), via Open-Meteo,
@@ -215,8 +255,8 @@ archive does not include it), on a coarser grid of about 7 km.
 
 ### Update schedule
 
-- Twice each morning, around **04:30 and 06:30** (Paris time), from November
-  to May.
+- Every 6 hours: around **00:00, 06:00, 12:00 and 18:00** (Paris time), from
+  November to May.
 - Updates can arrive a few minutes late.
 
 ## Features
@@ -224,11 +264,16 @@ archive does not include it), on a coarser grid of about 7 km.
 ### Available now
 
 - Pyrenees: 18 French resorts, from La Pierre Saint-Martin to Formiguères.
-- Three probabilities: snow today, powder on piste, powder off-piste.
+- Three probabilities: snow, powder on piste, powder off-piste, for each
+  time slot of today and tomorrow (morning, lunchtime, afternoon, evening,
+  night, whole day for snow).
+- Updated every 6 hours; tiles of slots that are over disappear on their own.
+- Service status in the footer, and the last valid values kept (and flagged)
+  when an update fails.
 - Betting-style tiles: top three resorts as odds buttons with their
   reliability dots, full ranking on demand, optional odds.
   Compact tiles without a picture for the indicators lower on the page.
-- Two-sided tiles: the back explains the indicator and today's reliability.
+- Two-sided tiles: the back explains the indicator and the reliability for its slot.
 - Filters by kind of indicator (All, Snow, Powder, Visibility), remembered on
   your device.
 - White day chances for today and tomorrow, under the **Visibility** filter.
@@ -262,6 +307,7 @@ archive does not include it), on a coarser grid of about 7 km.
 - Resort opening status (open lifts and pistes).
 - Slope orientation and steepness to refine the powder estimate
   (north-facing slopes keep powder longer).
+- Weekend and week-long slots, and quick "Today / Tomorrow" filters.
 - A 7-day trend tile and a map of the ski areas (piste and lift data from
   OpenStreetMap is already collected and refreshed once a season).
 - More mountain ranges: Northern and Southern Alps, Massif Central, Vosges, Jura.

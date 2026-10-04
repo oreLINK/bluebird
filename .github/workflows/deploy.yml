@@ -1,5 +1,5 @@
 # Build the site from `main` and publish it to `gh-pages`, keeping the data/
-# folder written by the daily workflow. `main` only changes through merged pull
+# folder written by the data refresh (refresh.yml). `main` only changes through merged pull
 # requests (see the ruleset), so this runs once per merged pull request.
 name: Deploy site
 
@@ -11,7 +11,7 @@ on:
 permissions:
   contents: read
 
-# Shared with daily.yml: never push to gh-pages from two runs at once.
+# Shared with refresh.yml: never push to gh-pages from two runs at once.
 concurrency:
   group: gh-pages-publish
   cancel-in-progress: false

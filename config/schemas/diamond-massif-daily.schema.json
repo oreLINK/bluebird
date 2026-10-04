@@ -37,6 +37,60 @@
           "title": "Aggregator Version",
           "type": "string"
         },
+        "periods": {
+          "description": "Periods not over yet, by start time.",
+          "items": {
+            "$ref": "#/$defs/DiamondKpiPeriod"
+          },
+          "title": "Periods",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kpi_id",
+        "aggregator_version",
+        "periods"
+      ],
+      "title": "DiamondKpi",
+      "type": "object"
+    },
+    "DiamondKpiPeriod": {
+      "additionalProperties": false,
+      "description": "The ranking of one KPI for one period of one ski day.",
+      "properties": {
+        "key": {
+          "description": "Stable id across runs, e.g. `evening@2026-12-14`.",
+          "title": "Key",
+          "type": "string"
+        },
+        "period_id": {
+          "description": "Period id from config/periods.yaml.",
+          "title": "Period Id",
+          "type": "string"
+        },
+        "ski_day": {
+          "format": "date",
+          "title": "Ski Day",
+          "type": "string"
+        },
+        "start": {
+          "description": "Local time, with UTC offset.",
+          "format": "date-time",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "description": "Local time, with UTC offset. Hidden afterwards.",
+          "format": "date-time",
+          "title": "End",
+          "type": "string"
+        },
+        "generated_at": {
+          "description": "When these values were computed; older than the payload = stale.",
+          "format": "date-time",
+          "title": "Generated At",
+          "type": "string"
+        },
         "ranking": {
           "description": "Sorted by probability, descending.",
           "items": {
@@ -47,11 +101,15 @@
         }
       },
       "required": [
-        "kpi_id",
-        "aggregator_version",
+        "key",
+        "period_id",
+        "ski_day",
+        "start",
+        "end",
+        "generated_at",
         "ranking"
       ],
-      "title": "DiamondKpi",
+      "title": "DiamondKpiPeriod",
       "type": "object"
     },
     "DiamondRankingEntry": {
@@ -225,8 +283,8 @@
   "description": "``diamond/{massif_id}/latest.json`` and ``diamond/{massif_id}/{date}.json``.",
   "properties": {
     "schema_version": {
-      "const": 1,
-      "default": 1,
+      "const": 2,
+      "default": 2,
       "title": "Schema Version",
       "type": "integer"
     },
@@ -235,6 +293,7 @@
       "type": "string"
     },
     "forecast_date": {
+      "description": "Ski day of the run (local date, before 06:00: the day before).",
       "format": "date",
       "title": "Forecast Date",
       "type": "string"

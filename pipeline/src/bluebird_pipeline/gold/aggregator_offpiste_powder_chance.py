@@ -1,6 +1,8 @@
-"""KPI ``offpiste_powder_chance``: fresh, unspoilt powder off-piste at opening time.
+"""KPI ``offpiste_powder_chance``: fresh, unspoilt powder off-piste during a period.
 
-For each ensemble member, at the summit band, looking back from lifts opening:
+The reference time ``T`` is the start of the period, but never before lifts
+open (the morning slot is evaluated at opening). For each ensemble member, at
+the summit band, looking back from ``T``:
 
 1. ``new_snow``: snowfall over the last ``lookback_hours`` (default 36 h).
    The member scores 0 unless ``new_snow >= threshold_cm``.
@@ -15,19 +17,16 @@ Probability = mean member score.
 
 from __future__ import annotations
 
-import logging
 from datetime import UTC, datetime, timedelta
 from typing import ClassVar
 
 import polars as pl
 from pydantic import Field, model_validator
 
-from ..config import Band
-from ..context import RunContext
+from ..config import Band, StationRef
+from ..context import PeriodInstance, RunContext
 from ._ensemble import Reduction, member_window, quantile
 from .base import Aggregator, AggregatorParams, KpiResult, register_aggregator
-
-log = logging.getLogger(__name__)
 
 
 class OffpisteParams(AggregatorParams):
@@ -53,7 +52,7 @@ class OffpisteParams(AggregatorParams):
 class AggregatorOffpistePowderChance(Aggregator):
     """Mean over members of: enough new snow x wind factor x thaw factor."""
 
-    version: ClassVar[str] = "1"
+    version: ClassVar[str] = "2"
     Params: ClassVar[type[AggregatorParams]] = OffpisteParams
     required_datasets: ClassVar[tuple[str, ...]] = ("ensemble_hourly",)
     params: OffpisteParams
@@ -80,65 +79,59 @@ class AggregatorOffpistePowderChance(Aggregator):
             alias=alias,
         )
 
-    def aggregate(self, ctx: RunContext) -> list[KpiResult]:
+    def compute(self, ctx: RunContext, ref: StationRef, period: PeriodInstance) -> KpiResult | None:
         ensemble = ctx.silver("ensemble_hourly")
         p = self.params
-        results: list[KpiResult] = []
-        for ref in ctx.stations():
-            opening = ctx.local_datetime(ref.massif, ref.lifts_open)
-            snow = self._lookback(
-                ensemble, ref.id, opening, p.lookback_hours, "snowfall_cm", "sum", "new_snow"
-            )
-            if snow.is_empty():
-                log.warning("%s: no complete ensemble data for %s", self.kpi.id, ref.id)
-                continue
-            wind = self._lookback(
-                ensemble,
-                ref.id,
-                opening,
-                p.wind_lookback_hours,
-                "wind_speed_kmh",
-                "max",
-                "max_wind",
-            )
-            temp = self._lookback(
-                ensemble, ref.id, opening, p.thaw_lookback_hours, "temperature_c", "max", "max_temp"
-            )
-            members = (
-                snow.join(wind, on=["model", "member"], how="left")
-                .join(temp, on=["model", "member"], how="left")
-                .with_columns(
-                    wind_factor=(
-                        1 - (pl.col("max_wind") - p.wind_ok_kmh) / (p.wind_bad_kmh - p.wind_ok_kmh)
-                    )
-                    .clip(0, 1)
-                    .mul(1 - p.wind_floor)
-                    .add(p.wind_floor)
-                    .fill_null(1.0),
-                    thaw=pl.when(pl.col("max_temp") > p.thaw_temp_c)
-                    .then(p.thaw_factor)
-                    .otherwise(1.0),
+        opening = self.on_ski_day(ctx, ref, period, ref.lifts_open)
+        reference = opening if period.period.native_window else max(opening, period.start)
+        snow = self._lookback(
+            ensemble, ref.id, reference, p.lookback_hours, "snowfall_cm", "sum", "new_snow"
+        )
+        if snow.is_empty():
+            return None
+        wind = self._lookback(
+            ensemble,
+            ref.id,
+            reference,
+            p.wind_lookback_hours,
+            "wind_speed_kmh",
+            "max",
+            "max_wind",
+        )
+        temp = self._lookback(
+            ensemble, ref.id, reference, p.thaw_lookback_hours, "temperature_c", "max", "max_temp"
+        )
+        members = (
+            snow.join(wind, on=["model", "member"], how="left")
+            .join(temp, on=["model", "member"], how="left")
+            .with_columns(
+                wind_factor=(
+                    1 - (pl.col("max_wind") - p.wind_ok_kmh) / (p.wind_bad_kmh - p.wind_ok_kmh)
                 )
-                .with_columns(
-                    score=(pl.col("new_snow") >= p.threshold_cm).cast(pl.Float64)
-                    * pl.col("wind_factor")
-                    * pl.col("thaw")
-                )
+                .clip(0, 1)
+                .mul(1 - p.wind_floor)
+                .add(p.wind_floor)
+                .fill_null(1.0),
+                thaw=pl.when(pl.col("max_temp") > p.thaw_temp_c).then(p.thaw_factor).otherwise(1.0),
             )
-            results.append(
-                self.result(
-                    ctx,
-                    ref,
-                    probability=float(members["score"].mean()),
-                    members=members.height,
-                    window_start=opening - timedelta(hours=p.lookback_hours),
-                    window_end=opening,
-                    drivers={
-                        "new_snow_cm_p50": quantile(members["new_snow"], 0.5, 0),
-                        "max_wind_kmh_p50": quantile(members["max_wind"].drop_nulls(), 0.5, 0),
-                        "max_temp_c_p50": quantile(members["max_temp"].drop_nulls(), 0.5, 1),
-                        "members": members.height,
-                    },
-                )
+            .with_columns(
+                score=(pl.col("new_snow") >= p.threshold_cm).cast(pl.Float64)
+                * pl.col("wind_factor")
+                * pl.col("thaw")
             )
-        return results
+        )
+        return self.result(
+            ctx,
+            ref,
+            period,
+            probability=float(members["score"].mean()),
+            members=members.height,
+            window_start=reference - timedelta(hours=p.lookback_hours),
+            window_end=reference,
+            drivers={
+                "new_snow_cm_p50": quantile(members["new_snow"], 0.5, 0),
+                "max_wind_kmh_p50": quantile(members["max_wind"].drop_nulls(), 0.5, 0),
+                "max_temp_c_p50": quantile(members["max_temp"].drop_nulls(), 0.5, 1),
+                "members": members.height,
+            },
+        )

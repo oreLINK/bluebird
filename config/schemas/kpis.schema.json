@@ -125,6 +125,16 @@
           },
           "title": "Filters",
           "type": "array"
+        },
+        "periods": {
+          "description": "Ids of the periods (config/periods.yaml) a live KPI is computed for; ignored for historical KPIs.",
+          "items": {
+            "pattern": "^[a-z0-9]+(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Periods",
+          "type": "array"
         }
       },
       "required": [

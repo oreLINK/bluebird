@@ -2,10 +2,14 @@
 
 Runs the real pipeline (every layer) against a mocked Open-Meteo that returns
 synthetic but plausible winter weather: a snowstorm overnight, heavier on the
-Atlantic (western) side, windier in the east, with member-to-member spread.
-The diamond output is copied to ``web/public/data`` so ``npm run dev`` shows a
+Atlantic (western) side, windier in the east, with member-to-member spread,
+then a second, weaker episode the next evening. The diamond output (payloads,
+status, manifest) is copied to ``web/public/data`` so ``npm run dev`` shows a
 realistic page without network access. Regenerate it whenever the diamond
 schema changes.
+
+``now`` picks the refresh to simulate (default: the 06:00 one); e.g. 17:07 UTC
+shows what the page looks like after the 18:00 refresh.
 """
 
 from __future__ import annotations
@@ -27,7 +31,9 @@ from .runner import LAYERS, RunReport, run_pipeline
 from .storage import LocalStorage
 
 DEMO_DATE = date(2027, 1, 15)
+DEMO_NOW = datetime(2027, 1, 15, 5, 7, tzinfo=UTC)  # the 06:00 refresh, Paris time
 _STORM_PEAK = datetime(2027, 1, 15, 2, tzinfo=UTC)
+_SECOND_PEAK = datetime(2027, 1, 16, 21, tzinfo=UTC)
 
 # Open-Meteo series suffix and perturbed member count per requested model.
 _ENSEMBLE_MODELS = {
@@ -64,6 +70,8 @@ def demo_value(
     altitude = min(1.3, max(0.5, 0.6 + (elevation - 1500) / 1500))
     hours_from_peak = (when - _STORM_PEAK).total_seconds() / 3600
     storm = max(0.0, 1 - abs(hours_from_peak) / 11)
+    hours_from_second = (when - _SECOND_PEAK).total_seconds() / 3600
+    storm = max(storm, 0.45 * max(0.0, 1 - abs(hours_from_second) / 6))
     showers = 0.0
     if (
         when.date() == DEMO_DATE
@@ -96,10 +104,12 @@ def demo_value(
     return values.get(variable)
 
 
-def _location(query: dict[str, str], lon: float, elevation: int, ensemble: bool) -> dict[str, Any]:
+def _location(
+    query: dict[str, str], lon: float, elevation: int, ensemble: bool, today: date
+) -> dict[str, Any]:
     past_days = int(query.get("past_days", 0))
     days = past_days + int(query.get("forecast_days", 1))
-    start = datetime.combine(DEMO_DATE - timedelta(days=past_days), datetime.min.time(), UTC)
+    start = datetime.combine(today - timedelta(days=past_days), datetime.min.time(), UTC)
     times = [start + timedelta(hours=h) for h in range(days * 24)]
     models = query["models"].split(",")
     variables = query["hourly"].split(",")
@@ -118,8 +128,12 @@ def _location(query: dict[str, str], lon: float, elevation: int, ensemble: bool)
     return {"elevation": float(elevation), "hourly_units": units, "hourly": hourly}
 
 
-def demo_transport() -> httpx.MockTransport:
-    """Mocked Open-Meteo forecast and ensemble APIs serving :func:`demo_value`."""
+def demo_transport(today: date = DEMO_DATE) -> httpx.MockTransport:
+    """Mocked Open-Meteo forecast and ensemble APIs serving :func:`demo_value`.
+
+    Like the real API, hourly series start at 00:00 UTC ``past_days`` before
+    ``today`` (the UTC date of the request).
+    """
 
     def handler(request: httpx.Request) -> httpx.Response:
         query = {k: v[0] for k, v in parse_qs(request.url.query.decode()).items()}
@@ -127,14 +141,15 @@ def demo_transport() -> httpx.MockTransport:
         elevations = [int(v) for v in query["elevation"].split(",")]
         ensemble = "ensemble" in request.url.host
         payload = [
-            _location(query, lon, e, ensemble) for lon, e in zip(lons, elevations, strict=True)
+            _location(query, lon, e, ensemble, today)
+            for lon, e in zip(lons, elevations, strict=True)
         ]
         return httpx.Response(200, json=payload if len(payload) > 1 else payload[0])
 
     return httpx.MockTransport(handler)
 
 
-def build_demo(config: Config, out_dir: Path) -> RunReport:
+def build_demo(config: Config, out_dir: Path, now: datetime = DEMO_NOW) -> RunReport:
     """Run every layer on synthetic weather and copy the diamond output to ``out_dir``."""
     sources = [
         s.model_copy(update={"params": {**s.params, "min_interval_s": 0}})
@@ -143,13 +158,8 @@ def build_demo(config: Config, out_dir: Path) -> RunReport:
     ]
     with tempfile.TemporaryDirectory() as tmp:
         storage = LocalStorage(Path(tmp))
-        ctx = RunContext.create(
-            config,
-            storage,
-            run_date=DEMO_DATE,
-            now=datetime(2027, 1, 15, 4, 32, tzinfo=UTC),
-        )
-        with httpx.Client(transport=demo_transport()) as http:
+        ctx = RunContext.create(config, storage, now=now)
+        with httpx.Client(transport=demo_transport(now.astimezone(UTC).date())) as http:
             report = run_pipeline(ctx, list(LAYERS), sources, http=http)
         target = out_dir / "diamond"
         if target.exists():

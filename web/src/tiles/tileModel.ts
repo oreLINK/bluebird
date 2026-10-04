@@ -30,6 +30,8 @@ export interface TileModel {
   theme: TileTheme;
   /** Small label on the tile, e.g. the Rewind name for historical KPIs. */
   badge: Localized | undefined;
+  /** Live only: when the values were computed, if by an earlier refresh than the page's. */
+  staleSince: string | null;
   /** i18n key of the message shown when the ranking is empty. */
   emptyMessage: 'tile.noRanking' | 'rewind.noData';
 }
@@ -65,6 +67,7 @@ export function tileModel(tile: Tile, view: KpiView, filters: Filter[] = configF
     timeWindow: live ? sharedWindow(view.ranking) : null,
     theme: tileTheme(tile, view, filters),
     badge: view.kind === 'historical' ? view.rewind.name : undefined,
+    staleSince: view.kind === 'live' && view.stale ? view.generatedAt : null,
     emptyMessage: live ? 'tile.noRanking' : 'rewind.noData',
   };
 }
