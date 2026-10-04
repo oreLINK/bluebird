@@ -32,7 +32,7 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 - The UI mimics a sports-betting page: one tile per live KPI and period (tile
   templates in `tiles.yaml` are expanded per period, "Neige {period}"),
   stations ranked by descending probability. A tile disappears when its
-  period ends. The footer shows the service status of the last refresh. Style: betting-app look (Betclic-like) in dark
+  period ends. A full-window page (`#status`, linked from the footer) shows the service status of the last refresh. Style: betting-app look (Betclic-like) in dark
   blue, light blue and white, sober plain background, no background animation.
   Header: "Bluebird" wordmark (text only) left, menu (language) right;
   below, the massif bar (large chips, no "all", the only massif choice) then
@@ -81,8 +81,8 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 | `web/src/lib/config.ts` | Imports the YAML at build time; `resolveLayout()`. |
 | `web/src/lib/data.ts` | Fetches `./data/diamond/<massif>/latest.json` (schema 2) and `./data/diamond/status.json` (schema 1). |
 | `web/src/lib/periods.ts` | Pure: ski day, slots of the payload, labels, `expandTiles` (one tile per period), `massifView`, `nextBoundary` (tested). |
-| `web/src/lib/status.ts` | Pure: footer status view (`statusView`, `worstState`, period labels), hides ended periods (tested). |
-| `web/src/components/ServiceStatus.svelte`, `StaleBadge.svelte` | Footer service status; "data from HH:MM" badge on tiles with values of an earlier refresh. |
+| `web/src/lib/status.ts` | Pure: service status view (`statusView`, `worstState`, period labels), hides ended periods (tested). |
+| `web/src/components/ServiceStatus.svelte`, `StaleBadge.svelte` | `service_*` blocks of the "Service status" page (`config/pages.yaml`, rendered by `InfoPage`); "data from HH:MM" badge on tiles with values of an earlier refresh. |
 | `web/src/lib/i18n/` | `core.ts` (pure), `i18n.svelte.ts` (reactive store), `fr.json`, `en.json`. |
 | `web/src/lib/generated/` | **Generated** TS types (`npm run gen:types`). Never edit by hand. |
 | `web/src/tiles/registry.ts` | Tile type id → Svelte component (`xyz` → `TileXyz.svelte`, tested). |

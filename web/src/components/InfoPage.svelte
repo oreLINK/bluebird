@@ -3,6 +3,7 @@
   entry, with its paragraphs, its links and its built-in block:
     data_sources   attribution of every enabled source (config/sources.yaml)
     photo_credits  credit of every banner photo (assets/photos/credits.yaml)
+    service_*      status of the last refresh (ServiceStatus.svelte)
   Open while `#<page id>` is in the URL (lib/sheets.svelte.ts).
 -->
 <script lang="ts">
@@ -10,9 +11,10 @@
   import { i18n } from '../lib/i18n/i18n.svelte';
   import { photoCredits } from '../lib/photos';
   import { sheets } from '../lib/sheets.svelte';
+  import ServiceStatus, { type ServiceBlock, type ServiceContext } from './ServiceStatus.svelte';
   import Sheet from './Sheet.svelte';
 
-  let { page }: { page: Page } = $props();
+  let { page, service }: { page: Page; service: ServiceContext } = $props();
 
   /** `pyrenees/cauterets/cauterets_1` → the station name, else the file name. */
   const photoLabel = (key: string) =>
@@ -59,6 +61,8 @@
         {:else}
           <p class="muted">{i18n.t('page.noPhotos')}</p>
         {/if}
+      {:else if section.block?.startsWith('service_')}
+        <ServiceStatus block={section.block as ServiceBlock} context={service} />
       {/if}
 
       {#if section.links?.length}

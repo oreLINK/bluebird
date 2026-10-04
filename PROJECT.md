@@ -82,10 +82,12 @@ If an update is late, a line under the date above the tiles says so.
 
 ### Service status
 
-At the bottom of the page, **Service status** says whether the last update
-went well ("All systems running") or how many items are degraded, with the
-time of the update. Open it to see, one line each, the state of every data
-source, every data processing step, every indicator and every tile:
+At the bottom of the page, the **Service status** link (with a small coloured
+dot showing the overall state) opens a full-window page, like the privacy
+page. It says whether the last update went well ("All systems running") or
+how many items are degraded, with the time of the update, then lists, one
+line each, the state of every data source, every data processing step, every
+indicator and every tile:
 
 - **Available**: fresh and complete;
 - **Partial**: fresh, but some resorts are missing;
@@ -268,7 +270,7 @@ archive does not include it), on a coarser grid of about 7 km.
   time slot of today and tomorrow (morning, lunchtime, afternoon, evening,
   night, whole day for snow).
 - Updated every 6 hours; tiles of slots that are over disappear on their own.
-- Service status in the footer, and the last valid values kept (and flagged)
+- A service status page (linked from the footer), and the last valid values kept (and flagged)
   when an update fails.
 - Betting-style tiles: top three resorts as odds buttons with their
   reliability dots, full ranking on demand, optional odds.

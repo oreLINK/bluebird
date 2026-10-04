@@ -56,6 +56,13 @@
   /** One tile per live tile and period not over yet, then the Rewind tiles. */
   const instances = $derived(expandTiles(visibleTiles, payload, now));
   const massif = $derived(massifs.find((m) => m.id === massifId));
+  /** What the "Service status" page needs (config/pages.yaml `service_*` blocks). */
+  const serviceContext = $derived({
+    status: serviceStatus,
+    massifId,
+    timezone: payload?.timezone ?? massif?.timezone ?? 'Europe/Paris',
+    now,
+  });
 
   $effect(() => {
     const id = massifId;
@@ -211,18 +218,13 @@
     {/if}
   </main>
 
-  <AppFooter
-    status={serviceStatus}
-    {massifId}
-    timezone={payload?.timezone ?? massif?.timezone ?? 'Europe/Paris'}
-    {now}
-  />
+  <AppFooter status={serviceStatus} {massifId} {now} />
 </div>
 
 <AppMenu open={menuOpen} onclose={() => (menuOpen = false)} />
 
 {#each pages as page (page.id)}
-  <InfoPage {page} />
+  <InfoPage {page} service={serviceContext} />
 {/each}
 
 <style>
