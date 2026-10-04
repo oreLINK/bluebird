@@ -80,6 +80,17 @@
   --glass-blur: 18px;
 
   --focus: #1f7ae0;
+
+  /* Service states (footer status, stale badges): text ≥ 4.5:1 on its background */
+  --state-ok-bg: #dcf3e5;
+  --state-ok-ink: #135c33;
+  --state-partial-bg: #fff0cc;
+  --state-partial-ink: #6b4500;
+  --state-stale-bg: #ffe6d1;
+  --state-stale-ink: #8a3b00;
+  --state-down-bg: #fde2df;
+  --state-down-ink: #9c2318;
+
   --radius-l: 20px;
   --radius-m: 14px;
   --radius-s: 10px;
@@ -130,6 +141,14 @@
     --scrim: rgba(1, 6, 16, 0.5);
     --scrim-solid: rgba(1, 6, 16, 0.85);
     --focus: #7cc4ff;
+    --state-ok-bg: #133f2a;
+    --state-ok-ink: #b8f0cf;
+    --state-partial-bg: #43330b;
+    --state-partial-ink: #ffdd99;
+    --state-stale-bg: #4a2a10;
+    --state-stale-ink: #ffcfa8;
+    --state-down-bg: #4d1a18;
+    --state-down-ink: #ffc4bd;
   }
 }
 
@@ -176,4 +195,12 @@
   --scrim: rgba(1, 6, 16, 0.5);
   --scrim-solid: rgba(1, 6, 16, 0.85);
   --focus: #7cc4ff;
+  --state-ok-bg: #133f2a;
+  --state-ok-ink: #b8f0cf;
+  --state-partial-bg: #43330b;
+  --state-partial-ink: #ffdd99;
+  --state-stale-bg: #4a2a10;
+  --state-stale-ink: #ffcfa8;
+  --state-down-bg: #4d1a18;
+  --state-down-ink: #ffc4bd;
 }

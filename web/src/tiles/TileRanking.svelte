@@ -7,6 +7,7 @@
   The "?" button (or a tap outside the rows) flips it to KpiBack.
 -->
 <script lang="ts">
+  import StaleBadge from '../components/StaleBadge.svelte';
   import { formatWindow } from '../lib/format';
   import { i18n } from '../lib/i18n/i18n.svelte';
   import { sharedWindow } from '../lib/ranking';
@@ -20,7 +21,8 @@
   let { tile, kpis, data }: TileProps = $props();
 
   const kpi = $derived(kpis[0]);
-  const ranking = $derived(kpi ? (data.kpis[kpi.id]?.ranking ?? []) : []);
+  const view = $derived(kpi ? data.kpis[kpi.id] : undefined);
+  const ranking = $derived(view?.ranking ?? []);
   const visibleRows = $derived(numberOption(tile.options, 'visible_rows', 5));
   const showOdds = $derived(booleanOption(tile.options, 'show_odds', false));
 
@@ -39,6 +41,9 @@
 <FlipCard labelledby="{tile.id}-title">
   {#snippet front()}
     <TileShell id={tile.id} {title} icon={tile.icon} framed={false}>
+      {#if view?.stale}
+        <StaleBadge since={view.generated_at} timezone={data.timezone} />
+      {/if}
       {#if ranking.length === 0}
         <p class="note">{i18n.t('tile.noRanking')}</p>
       {:else}

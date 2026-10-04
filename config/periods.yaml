@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=./schemas/periods.schema.json
+#
+# Time periods the KPIs are computed for, and the labels that name them in
+# tile titles ("Neige {period}" -> "Neige ce soir").
+#
+#   day_start:    local time a "ski day" starts. Ski day D runs from D 06:00 to
+#                 D+1 06:00, so "cette nuit" (00:00-06:00) belongs to the evening
+#                 before, and a refresh at 00:00 still describes the same ski day.
+#   horizon_days: ski days published by each refresh (2 = today and tomorrow).
+#   periods:
+#     start, end:    local HH:MM. The time slots (periods without native_window)
+#                    must cover the ski day exactly once, without gap or overlap.
+#     native_window: the KPI uses its own window (e.g. 08:00-17:00 for snowfall,
+#                    lifts opening for powder); start/end then only decide when
+#                    the period is shown.
+#     labels:        one per day of the horizon: [today, tomorrow].
+#
+# A period is published and displayed until its end: after 12:00 "ce matin" is
+# gone, after 18:00 "ce midi" and "cet après-midi" are gone. The site also hides
+# ended periods by itself between two refreshes.
+#
+# KPIs choose their periods with `periods: [...]` in config/kpis.yaml.
+day_start: "06:00"
+horizon_days: 2
+periods:
+  - id: day
+    start: "06:00"
+    end: "18:00"
+    native_window: true
+    labels:
+      - { fr: aujourd'hui, en: today }
+      - { fr: demain, en: tomorrow }
+
+  - id: morning
+    start: "06:00"
+    end: "12:00"
+    labels:
+      - { fr: ce matin, en: this morning }
+      - { fr: demain matin, en: tomorrow morning }
+
+  - id: midday
+    start: "12:00"
+    end: "14:00"
+    labels:
+      - { fr: ce midi, en: at lunchtime }
+      - { fr: demain midi, en: tomorrow lunchtime }
+
+  - id: afternoon
+    start: "14:00"
+    end: "18:00"
+    labels:
+      - { fr: cet après-midi, en: this afternoon }
+      - { fr: demain après-midi, en: tomorrow afternoon }
+
+  - id: evening
+    start: "18:00"
+    end: "00:00"
+    labels:
+      - { fr: ce soir, en: this evening }
+      - { fr: demain soir, en: tomorrow evening }
+
+  - id: night
+    start: "00:00"
+    end: "06:00"
+    labels:
+      - { fr: cette nuit, en: tonight }
+      - { fr: la nuit de demain, en: tomorrow night }

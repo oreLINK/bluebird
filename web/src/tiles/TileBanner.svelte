@@ -16,6 +16,7 @@
 -->
 <script lang="ts">
   import BannerMedia from '../components/BannerMedia.svelte';
+  import StaleBadge from '../components/StaleBadge.svelte';
   import { i18n } from '../lib/i18n/i18n.svelte';
   import { bannerModel } from './bannerModel';
   import FlipCard from './FlipCard.svelte';
@@ -28,6 +29,8 @@
 
   const model = $derived(bannerModel(tile, kpis, data));
   const title = $derived(i18n.pick(tile.title ?? model.kpi?.name));
+  /** Longer titles ("… demain après-midi") get a smaller font, on up to two lines. */
+  const LONG_TITLE = 24;
 
   let selected = $state<string | null>(null);
   let showAll = $state(false);
@@ -41,11 +44,14 @@
   {#snippet front()}
     <header class="banner">
       <BannerMedia scene={model.scene} skyline={model.skyline} photo={model.photo} />
+      {#if model.staleSince}
+        <StaleBadge class="corner-badge" since={model.staleSince} timezone={data.timezone} />
+      {/if}
     </header>
 
     <div class="content">
       <div class="headline">
-        <h2 id="{tile.id}-title">{title}</h2>
+        <h2 id="{tile.id}-title" class:long={title.length > LONG_TITLE}>{title}</h2>
       </div>
       {#if model.ranking.length === 0}
         <p class="empty">{i18n.t('tile.noRanking')}</p>
@@ -92,8 +98,15 @@
     overflow: hidden;
   }
 
+  .banner :global(.corner-badge) {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+  }
+
   .content {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     align-content: center;
     gap: 12px;
     height: calc(var(--tile-front-h) - var(--tile-banner-h));
@@ -114,6 +127,15 @@
     line-height: 1.1;
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+
+  h2.long {
+    display: -webkit-box;
+    font-size: 1.25rem;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
 
   .empty {

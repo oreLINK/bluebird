@@ -1,6 +1,6 @@
 """Reference data: slow-changing facts about stations (pistes, lifts, terrain…).
 
-Daily data (weather) is fetched every morning and stored by date. Reference
+Daily data (weather) is fetched by every refresh (every 6 hours) and stored by ski day. Reference
 data is different: it barely changes, so it is fetched rarely and kept.
 
 - Sources with ``schedule: reference`` in ``config/sources.yaml`` are refreshed

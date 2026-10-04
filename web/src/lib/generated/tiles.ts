@@ -9,6 +9,10 @@ export type Kpis = string[];
 export type Fr = string;
 export type En = string;
 export type Icon = string | null;
+/**
+ * Periods to show a tile for; defaults to every period of its KPIs.
+ */
+export type Periods = string[] | null;
 export type Tiles = Tile[];
 
 /**
@@ -24,8 +28,12 @@ export interface Tile {
   id: Id;
   type: Type;
   kpis?: Kpis;
+  /**
+   * Defaults to the first KPI's name. Must contain `{period}`, replaced by the period label (e.g. 'Neige {period}' -> 'Neige ce soir').
+   */
   title?: Localized | null;
   icon?: Icon;
+  periods?: Periods;
   options?: Options;
 }
 /**

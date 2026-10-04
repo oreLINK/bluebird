@@ -1,8 +1,21 @@
 <script lang="ts">
-  import type { MassifDaily } from '../lib/data';
+  import type { MassifDaily, ServiceStatus as Status } from '../lib/data';
   import { i18n } from '../lib/i18n/i18n.svelte';
+  import ServiceStatus from './ServiceStatus.svelte';
 
-  let { data }: { data: MassifDaily | null } = $props();
+  let {
+    data,
+    status,
+    massifId,
+    timezone,
+    now,
+  }: {
+    data: MassifDaily | null;
+    status: Status | null;
+    massifId: string;
+    timezone: string;
+    now: number;
+  } = $props();
 </script>
 
 <footer class="container footer">
@@ -23,6 +36,7 @@
         {/each}
       </p>
     {/if}
+    <ServiceStatus {status} {massifId} {timezone} {now} />
   </div>
 </footer>
 

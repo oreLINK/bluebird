@@ -19,7 +19,7 @@ from typing import Any
 
 import polars as pl
 
-from ..bronze.base import BronzeBatch
+from ..bronze.base import BronzeBatch, BronzeRecord
 
 # Open-Meteo variable -> (canonical silver column, expected unit)
 VARIABLES: dict[str, tuple[str, str]] = {
@@ -129,30 +129,43 @@ def _location_frame(
     )
 
 
+def _record_locations(record: BronzeRecord) -> list[tuple[str, str, int]]:
+    """``(station_id, band, elevation)`` of each location of a response.
+
+    Records list their locations (one grouped request per run). Batches stored
+    before grouping have one record per station with ``bands``/``elevations``.
+    """
+    context = record.context
+    if "locations" in context:
+        return [(loc["station_id"], loc["band"], loc["elevation"]) for loc in context["locations"]]
+    return [
+        (record.station_id or "", band, elevation)
+        for band, elevation in zip(context["bands"], context["elevations"], strict=True)
+    ]
+
+
 def parse_batch(batch: BronzeBatch) -> pl.DataFrame:
     """Tidy table with one row per station, band, model, member and hour."""
     frames: list[pl.DataFrame] = []
     for record in batch.records:
-        context = record.context
-        bands: list[str] = context["bands"]
-        elevations: list[int] = context["elevations"]
-        variables: list[str] = context["hourly"]
-        models: list[str] = context["models"]
+        variables: list[str] = record.context["hourly"]
+        models: list[str] = record.context["models"]
         unsupported = sorted(set(variables) - VARIABLES.keys())
         if unsupported:
             raise OpenMeteoParseError(
                 f"unsupported Open-Meteo variable(s) {unsupported}; add them to VARIABLES"
             )
+        expected = _record_locations(record)
         locations = record.payload if isinstance(record.payload, list) else [record.payload]
-        if len(locations) != len(bands):
+        if len(locations) != len(expected):
             raise OpenMeteoParseError(
-                f"{record.station_id}: expected {len(bands)} locations, got {len(locations)}"
+                f"{record.url}: expected {len(expected)} locations, got {len(locations)}"
             )
-        for location, band, elevation in zip(locations, bands, elevations, strict=True):
+        for location, (station_id, band, elevation) in zip(locations, expected, strict=True):
             frames.append(
                 _location_frame(
                     location,
-                    station_id=record.station_id or "",
+                    station_id=station_id,
                     band=band,
                     elevation=elevation,
                     variables=variables,

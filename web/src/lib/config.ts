@@ -9,14 +9,16 @@ import filtersYaml from '@config/filters.yaml';
 import kpisYaml from '@config/kpis.yaml';
 import layoutYaml from '@config/layout.yaml';
 import massifsYaml from '@config/massifs.yaml';
+import sourcesYaml from '@config/sources.yaml';
 import tilesYaml from '@config/tiles.yaml';
 import type { Filter, FiltersFile } from './generated/filters';
 import type { Kpi, KpisFile } from './generated/kpis';
 import type { LayoutFile } from './generated/layout';
 import type { Massif, MassifsFile } from './generated/massifs';
+import type { Source, SourcesFile } from './generated/sources';
 import type { Tile, TilesFile } from './generated/tiles';
 
-export type { Filter, Kpi, Massif, Tile };
+export type { Filter, Kpi, Massif, Source, Tile };
 
 /** Enabled massifs, sorted by `order` then id. */
 export function enabledMassifs(file: MassifsFile): Massif[] {
@@ -71,12 +73,14 @@ const kpisFile = kpisYaml as KpisFile;
 const tilesFile = tilesYaml as TilesFile;
 const layoutFile = layoutYaml as LayoutFile;
 const filtersFile = filtersYaml as FiltersFile;
+const sourcesFile = sourcesYaml as SourcesFile;
 
 export const massifs: Massif[] = enabledMassifs(massifsFile);
 export const kpis: Kpi[] = kpisFile.kpis;
 export const tiles: Tile[] = tilesFile.tiles;
 export const layout: LayoutFile = layoutFile;
 export const filters: Filter[] = filtersFile.filters;
+export const sources: Source[] = sourcesFile.sources;
 
 export function tilesForMassif(massifId: string): ResolvedTile[] {
   return resolveLayout(massifId, layout, tiles, kpis);

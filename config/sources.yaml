@@ -2,18 +2,22 @@
 #
 # Data sources. Each source pairs a bronze Extractor with a silver Transformer
 # (see pipeline/src/bluebird_pipeline/bronze/ and silver/).
-#   schedule: daily     -> run by the daily GitHub Actions workflow
+#   schedule: daily     -> fetched by every refresh (refresh.yml: 00:00, 06:00,
+#                          12:00 and 18:00 Paris time, November to May)
 #             on_demand -> run only with `bluebird run --source <id>`
 #             reference -> slow-changing data (pistes, lifts…), refreshed with
 #                          `bluebird reference` once a season and committed under
 #                          config/reference/. Never fetched by the daily run.
 #   params:   validated by the Extractor's `Params` model. Every extractor also
-#             accepts min_interval_s, rate_limit_wait_s and max_rate_limit_waits.
+#             accepts min_interval_s, rate_limit_wait_s, max_rate_limit_waits and
+#             timeout_s. Open-Meteo extractors send ONE request per refresh with
+#             every station and band (max_locations_per_request splits it).
 #   attribution: displayed in the site footer (required by most licences).
 #
 # Open-Meteo free tier: non-commercial use, about 600 weighted calls per minute
-# and 10,000 per day. Ensemble requests weigh a lot (each member counts), so
-# only request the bands and days the KPIs actually use.
+# and 10,000 per day. Every location of a grouped request still counts, and
+# ensemble requests weigh a lot (each member counts), so only request the bands
+# and days the KPIs actually use.
 sources:
   - id: open_meteo_ensemble
     extractor: open_meteo_ensemble
@@ -25,8 +29,7 @@ sources:
       hourly: [snowfall, temperature_2m, wind_speed_10m]
       bands: [mid, summit]
       past_days: 2          # covers the 36 h off-piste lookback
-      forecast_days: 1      # KPIs only describe today
-      min_interval_s: 3
+      forecast_days: 3      # the 18:00 refresh shows periods up to the day after tomorrow 06:00
     attribution:
       name: Open-Meteo (ECMWF IFS ENS, DWD ICON-EPS)
       url: https://open-meteo.com/
@@ -51,7 +54,6 @@ sources:
       bands: [base, mid, summit]
       past_days: 2
       forecast_days: 3
-      min_interval_s: 0.5
     attribution:
       name: Open-Meteo (Météo-France AROME / ARPEGE)
       url: https://open-meteo.com/

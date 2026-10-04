@@ -1,6 +1,7 @@
 <!--
   Dark-blue strip above the tiles (where betting apps show their promo
-  banner): forecast date, update time and a notice when data is not today's.
+  banner): date and time of the last refresh, and a notice when it is older
+  than expected (refreshes run every 6 hours).
 -->
 <script lang="ts">
   import { type MassifDaily, todayIn } from '../lib/data';
@@ -8,10 +9,19 @@
   import { i18n } from '../lib/i18n/i18n.svelte';
   import Icon from './Icon.svelte';
 
-  let { data, massifName = '' }: { data: MassifDaily; massifName?: string } = $props();
+  let {
+    data,
+    massifName = '',
+    now,
+  }: { data: MassifDaily; massifName?: string; now: number } = $props();
 
-  const stale = $derived(data.forecast_date !== todayIn(data.timezone));
-  const date = $derived(formatLongDate(data.forecast_date, i18n.locale));
+  /** A refresh every 6 hours, plus margin for late GitHub Actions runs. */
+  const STALE_AFTER_MS = 7 * 3600_000;
+
+  const stale = $derived(now - Date.parse(data.generated_at) > STALE_AFTER_MS);
+  const date = $derived(
+    formatLongDate(todayIn(data.timezone, new Date(data.generated_at)), i18n.locale),
+  );
 </script>
 
 <div class="status" role="status">

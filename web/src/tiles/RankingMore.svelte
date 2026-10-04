@@ -6,7 +6,8 @@
 <script lang="ts">
   import Icon from '../components/Icon.svelte';
   import type { Kpi } from '../lib/config';
-  import type { MassifDaily, RankingEntry } from '../lib/data';
+  import type { RankingEntry } from '../lib/data';
+  import type { MassifView } from '../lib/periods';
   import { i18n } from '../lib/i18n/i18n.svelte';
   import StationDetails from './StationDetails.svelte';
   import StationRow from './StationRow.svelte';
@@ -27,7 +28,7 @@
   }: {
     tileId: string;
     kpi: Kpi | undefined;
-    data: MassifDaily;
+    data: MassifView;
     top: RankingEntry[];
     rest: RankingEntry[];
     total: number;

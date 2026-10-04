@@ -14,15 +14,17 @@
  */
 import type { Component } from 'svelte';
 import type { Kpi, Tile } from '../lib/config';
-import type { MassifDaily } from '../lib/data';
+import type { MassifView } from '../lib/periods';
 import TileBanner from './TileBanner.svelte';
 import TileBannerFull from './TileBannerFull.svelte';
 import TileRanking from './TileRanking.svelte';
 
 export interface TileProps {
+  /** The configured tile, expanded for one period: unique `id`, resolved `title`. */
   tile: Tile;
   kpis: Kpi[];
-  data: MassifDaily;
+  /** The payload narrowed to that period (`data.kpis[id].ranking`, `data.slot`). */
+  data: MassifView;
 }
 
 export const TILE_COMPONENTS: Record<string, Component<TileProps>> = {

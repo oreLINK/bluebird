@@ -1,12 +1,12 @@
 <!--
   Back of a tile: what the KPI is, how it is computed (config/kpis.yaml
   `method`, with its params filled in) and how reliable it is today, from the
-  confidence of every station in the current data.
+  confidence of every station in the current data, for the tile's period.
 -->
 <script lang="ts">
   import Icon from '../components/Icon.svelte';
   import type { Kpi, Tile } from '../lib/config';
-  import type { MassifDaily } from '../lib/data';
+  import type { MassifView } from '../lib/periods';
   import {
     formatLongDate,
     formatMethod,
@@ -17,9 +17,10 @@
   import { i18n } from '../lib/i18n/i18n.svelte';
   import { reliability, sharedWindow } from '../lib/ranking';
 
-  let { tile, kpi, data }: { tile: Tile; kpi: Kpi | undefined; data: MassifDaily } = $props();
+  let { tile, kpi, data }: { tile: Tile; kpi: Kpi | undefined; data: MassifView } = $props();
 
-  const ranking = $derived(kpi ? (data.kpis[kpi.id]?.ranking ?? []) : []);
+  const view = $derived(kpi ? data.kpis[kpi.id] : undefined);
+  const ranking = $derived(view?.ranking ?? []);
   const today = $derived(reliability(ranking));
   const timeWindow = $derived(sharedWindow(ranking));
   const method = $derived(
@@ -80,8 +81,8 @@
       <h4>{i18n.t('back.updateTitle')}</h4>
       <p>
         {i18n.t('back.updated', {
-          date: formatLongDate(data.forecast_date, i18n.locale),
-          time: formatTime(data.generated_at, i18n.locale, data.timezone),
+          date: formatLongDate(data.slot.skiDay, i18n.locale),
+          time: formatTime(view?.generated_at ?? data.generated_at, i18n.locale, data.timezone),
         })}
       </p>
     </section>

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Publish files to the gh-pages branch. Used only by GitHub Actions
-# (deploy.yml and daily.yml); humans never push to gh-pages.
+# (deploy.yml and refresh.yml); humans never push to gh-pages.
 #
 # Usage: scripts/ci/publish-gh-pages.sh <mode> <source_dir> <commit_message>
 #
 #   mode=site  Replace everything on gh-pages with <source_dir>, EXCEPT the
 #              data/ folder, which holds the pipeline output and is preserved.
 #   mode=data  Copy <source_dir> into gh-pages/data/ (adds and overwrites,
-#              never deletes), e.g. gold/ and diamond/ from the daily run.
+#              never deletes), e.g. gold/ and diamond/ from a data refresh.
 #
 # The repository must be checked out with push access to gh-pages: the
 # workflows use the GH_PAGES_DEPLOY_KEY deploy key, the only actor allowed to

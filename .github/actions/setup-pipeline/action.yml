@@ -1,0 +1,25 @@
+# Shared setup of every pipeline job of refresh.yml: uv with its cache, the
+# pipeline installed without dev tools, and a storage folder outside the
+# checkout. Run actions/checkout before this action.
+name: Set up the Bluebird pipeline
+description: Install uv and the pipeline, and point BLUEBIRD_DATA_DIR to a temporary folder.
+
+runs:
+  using: composite
+  steps:
+    - uses: astral-sh/setup-uv@v6
+      with:
+        enable-cache: true
+    - name: Install pipeline
+      shell: bash
+      working-directory: pipeline
+      run: uv sync --locked --no-dev
+    - name: Storage folder and environment
+      shell: bash
+      run: |
+        mkdir -p "$RUNNER_TEMP/bluebird-data"
+        {
+          echo "BLUEBIRD_DATA_DIR=$RUNNER_TEMP/bluebird-data"
+          # `uv run` must not reinstall the dev dependencies in every job.
+          echo "UV_NO_SYNC=1"
+        } >> "$GITHUB_ENV"

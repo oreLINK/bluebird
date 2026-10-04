@@ -93,6 +93,16 @@
           },
           "title": "Filters",
           "type": "array"
+        },
+        "periods": {
+          "description": "Ids of the periods (config/periods.yaml) the KPI is computed for.",
+          "items": {
+            "pattern": "^[a-z0-9]+(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Periods",
+          "type": "array"
         }
       },
       "required": [

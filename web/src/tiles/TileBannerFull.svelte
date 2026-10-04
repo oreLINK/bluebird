@@ -7,6 +7,7 @@
 -->
 <script lang="ts">
   import BannerMedia from '../components/BannerMedia.svelte';
+  import StaleBadge from '../components/StaleBadge.svelte';
   import PhotoCredit from '../components/PhotoCredit.svelte';
   import { i18n } from '../lib/i18n/i18n.svelte';
   import { bannerModel } from './bannerModel';
@@ -20,6 +21,8 @@
 
   const model = $derived(bannerModel(tile, kpis, data));
   const title = $derived(i18n.pick(tile.title ?? model.kpi?.name));
+  /** Longer titles ("… demain après-midi") get a smaller font, on up to two lines. */
+  const LONG_TITLE = 24;
 
   let selected = $state<string | null>(null);
   let showAll = $state(false);
@@ -39,9 +42,12 @@
         showCredit={false}
       />
       <div class="shade" aria-hidden="true"></div>
+      {#if model.staleSince}
+        <StaleBadge class="corner-badge" since={model.staleSince} timezone={data.timezone} />
+      {/if}
 
       <div class="hero-content">
-        <h2 id="{tile.id}-title">{title}</h2>
+        <h2 id="{tile.id}-title" class:long={title.length > LONG_TITLE}>{title}</h2>
         {#if model.ranking.length === 0}
           <p class="sub">{i18n.t('tile.noRanking')}</p>
         {:else}
@@ -96,6 +102,12 @@
     isolation: isolate;
   }
 
+  .hero :global(.corner-badge) {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+  }
+
   .hero :global(.media) {
     z-index: -2;
   }
@@ -116,6 +128,7 @@
 
   .hero-content {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 12px;
     padding: 16px 14px 14px;
     color: #ffffff;
@@ -131,6 +144,15 @@
     line-height: 1.05;
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+
+  h2.long {
+    display: -webkit-box;
+    font-size: 1.5rem;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
   }
 

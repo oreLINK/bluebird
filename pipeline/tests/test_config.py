@@ -89,9 +89,7 @@ def test_kpi_filters_must_exist_and_every_filter_must_match_a_kpi(tmp_path: Path
 def test_method_placeholders_must_be_kpi_params(tmp_path: Path) -> None:
     config_dir = tiny_config_dir(tmp_path)
     kpis = (config_dir / "kpis.yaml").read_text(encoding="utf-8")
-    kpis = kpis.replace(
-        "donnent au moins {threshold_cm} cm.", "donnent au moins {threshold} cm.", 1
-    )
+    kpis = kpis.replace("{threshold_cm} cm.", "{threshold} cm.", 1)
     (config_dir / "kpis.yaml").write_text(kpis, encoding="utf-8")
     with pytest.raises(ConfigError, match=r"method \(fr\) uses '\{threshold\}'"):
         load_config(config_dir)
@@ -101,3 +99,52 @@ def test_short_name_is_published_with_a_fallback(repo_config: Config) -> None:
     refs = {ref.id: ref.station for ref in repo_config.station_refs()}
     assert refs["cauterets"].short_name == "Cauterets"
     assert all(len(s.short_name or s.name) <= 20 or s.short_name is None for s in refs.values())
+
+
+def _edit(config_dir: Path, name: str, old: str, new: str) -> None:
+    path = config_dir / name
+    text = path.read_text(encoding="utf-8")
+    assert old in text, old
+    path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
+def test_repository_periods_cover_the_ski_day(repo_config: Config) -> None:
+    periods = repo_config.periods
+    assert periods.errors() == []
+    assert periods.span(repo_config.period("night")) == (1080, 1440)  # 00:00-06:00
+    assert periods.span(repo_config.period("evening")) == (720, 1080)  # 18:00-00:00
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "message"),
+    [
+        ('start: "12:00"\n    end: "14:00"', 'start: "12:00"\n    end: "13:00"', "leaves a gap"),
+        ('start: "14:00"\n    end: "18:00"', 'start: "13:00"\n    end: "18:00"', "overlaps"),
+        ("      - { fr: demain soir, en: tomorrow evening }\n", "", "needs 2 labels"),
+    ],
+)
+def test_time_slots_must_tile_the_day(tmp_path: Path, old: str, new: str, message: str) -> None:
+    config_dir = tiny_config_dir(tmp_path)
+    _edit(config_dir, "periods.yaml", old, new)
+    with pytest.raises(ConfigError, match=message):
+        load_config(config_dir)
+
+
+def test_kpi_and_tile_periods_must_exist(tmp_path: Path) -> None:
+    config_dir = tiny_config_dir(tmp_path)
+    _edit(config_dir, "kpis.yaml", "periods: [morning, midday, afternoon]", "periods: [brunch]")
+    with pytest.raises(ConfigError, match="unknown period 'brunch'"):
+        load_config(config_dir)
+
+
+def test_tile_titles_need_the_period_placeholder(tmp_path: Path) -> None:
+    config_dir = tiny_config_dir(tmp_path)
+    _edit(config_dir, "tiles.yaml", '"Snow {period}"', '"Snow today"')
+    with pytest.raises(ConfigError, match=r"title \(en\) must contain '\{period\}'"):
+        load_config(config_dir)
+
+
+def test_tile_periods_default_to_those_of_its_kpis(repo_config: Config) -> None:
+    tiles = {t.id: t for t in repo_config.tiles}
+    assert repo_config.tile_periods(tiles["onpiste_powder"]) == ["morning", "midday", "afternoon"]
+    assert repo_config.tile_periods(tiles["snowfall_today"])[0] == "day"

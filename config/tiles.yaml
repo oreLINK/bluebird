@@ -9,7 +9,12 @@
 #                           whole card behind the title and odds (TileBannerFull)
 #              ranking  compact list of every station (TileRanking.svelte)
 #   kpis:    KPI ids (config/kpis.yaml) the tile reads. A ranking tile uses one.
-#   title:   optional; defaults to the first KPI's name.
+#   title:   optional; defaults to the first KPI's name followed by the period.
+#            Must contain {period}, replaced by the period label of
+#            config/periods.yaml ("Neige {period}" -> "Neige ce soir").
+#   periods: optional; the periods to show a tile for (default: every period
+#            of its KPIs). The page shows one tile per period not yet over, in
+#            chronological order, then in config/layout.yaml order.
 #   icon:    optional; one of the icons in web/src/components/Icon.svelte.
 #   options: free-form, interpreted by the tile component:
 #              banner, banner_full:
@@ -25,7 +30,7 @@ tiles:
   - id: snowfall_today
     type: banner_full
     kpis: [snowfall_chance]
-    title: { fr: Neige aujourd'hui, en: Snow today }
+    title: { fr: "Neige {period}", en: "Snow {period}" }
     icon: snowflake
     options:
       top: 3
@@ -36,7 +41,7 @@ tiles:
   - id: onpiste_powder
     type: banner
     kpis: [onpiste_powder_chance]
-    title: { fr: Poudreuse sur piste, en: Powder on piste }
+    title: { fr: "Poudreuse sur piste {period}", en: "On-piste powder {period}" }
     icon: piste
     options:
       top: 3
@@ -47,7 +52,7 @@ tiles:
   - id: offpiste_powder
     type: banner
     kpis: [offpiste_powder_chance]
-    title: { fr: Poudreuse hors-piste, en: Off-piste powder }
+    title: { fr: "Poudreuse hors-piste {period}", en: "Off-piste powder {period}" }
     icon: mountain
     options:
       top: 3
