@@ -9,4 +9,10 @@
 #   author: Jane Doe
 #   license: CC BY-SA 4.0
 #   url: https://commons.wikimedia.org/wiki/File:Example.jpg
-{}
+
+# Commons, CC BY-SA 2.5 (La Mongie village from the Pourteilh gondola, 2006).
+# Resized (1310 × 900 → 960 × 660) and converted to WebP, otherwise unchanged.
+pyrenees/grand-tourmalet/grand-tourmalet_1:
+  author: Christophe Jacquet
+  license: CC BY-SA 2.5
+  url: https://commons.wikimedia.org/wiki/File:La_Mongie_ski_resort_-_The_village.jpg
