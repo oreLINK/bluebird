@@ -13,6 +13,11 @@ Reference datasets (sources with ``schedule: reference``, e.g. pistes and lifts)
 are also serialised to committed files under ``config/reference/``: such a
 Transformer sets ``reference_suffix`` and implements :meth:`reference_file`
 and :meth:`read_reference`. See :mod:`bluebird_pipeline.reference`.
+
+Season datasets (sources with ``schedule: season``, used by Rewind) are also
+written once to committed files under ``config/rewind/``: such a Transformer
+sets ``season_suffix`` and implements :meth:`season_file` and
+:meth:`read_season`. See :mod:`bluebird_pipeline.rewind`.
 """
 
 from __future__ import annotations
@@ -42,6 +47,9 @@ class Transformer(ABC):
     #: Extension of the committed reference file (e.g. ".geojson") when this
     #: dataset is reference data; ``None`` for daily data.
     reference_suffix: ClassVar[str | None] = None
+    #: Extension of the committed season file (e.g. ".hourly.parquet") when this
+    #: dataset is a season archive (Rewind); ``None`` otherwise.
+    season_suffix: ClassVar[str | None] = None
 
     def __init__(self, source: Source) -> None:
         self.source = source
@@ -62,6 +70,19 @@ class Transformer(ABC):
     def read_reference(cls, content: bytes) -> pl.DataFrame:
         """Parse one reference file back into a table with :attr:`schema`."""
         raise NotImplementedError(f"{cls.__name__} does not produce reference data")
+
+    def season_columns(self) -> list[str]:
+        """Value columns this source fills in the season file (merged by column)."""
+        raise NotImplementedError(f"{type(self).__name__} does not produce season data")
+
+    def season_file(self, frame: pl.DataFrame, massif: Massif, ctx: RunContext) -> bytes | None:
+        """Serialise the rows of ``massif`` as a season file, or ``None`` if it has no rows."""
+        raise NotImplementedError(f"{type(self).__name__} does not produce season data")
+
+    @classmethod
+    def read_season(cls, content: bytes) -> pl.DataFrame:
+        """Parse one season file back into a table with :attr:`schema`."""
+        raise NotImplementedError(f"{cls.__name__} does not produce season data")
 
     def conform(self, frame: pl.DataFrame) -> pl.DataFrame:
         """Add missing columns as nulls, cast every column, and order them as ``schema``."""

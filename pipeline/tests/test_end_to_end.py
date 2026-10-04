@@ -35,6 +35,7 @@ def test_all_layers_produce_a_valid_diamond_payload(ctx: RunContext) -> None:
         "snowfall_chance",
         "offpiste_powder_chance",
         "onpiste_powder_chance",
+        "whiteout_chance",
     }
     periods = payload.kpis["snowfall_chance"].periods
     # Run at 05:30 local: every period of the 14th and the 15th, in time order.
@@ -120,7 +121,7 @@ def test_demo_data_covers_every_kpi(repo_config, tmp_path) -> None:
     payload = DiamondMassifDaily.model_validate_json(
         (tmp_path / "diamond" / "pyrenees" / "latest.json").read_text(encoding="utf-8")
     )
-    assert len(payload.kpis) == 3
+    assert set(payload.kpis) == {k.id for k in repo_config.enabled_kpis(kind="live")}
     morning = payload.kpis["snowfall_chance"].periods[1]
     probabilities = [e.probability for e in morning.ranking]
     assert max(probabilities) > min(probabilities)  # rankings are not flat
@@ -156,7 +157,12 @@ def test_ci_chain_one_job_per_unit(ctx: RunContext, tmp_path, capsys) -> None:
         {"source": "open_meteo_ensemble", "dataset": "ensemble_hourly"},
         {"source": "open_meteo_forecast", "dataset": "forecast_hourly"},
     ]
-    assert plan["kpis"] == ["snowfall_chance", "offpiste_powder_chance", "onpiste_powder_chance"]
+    assert plan["kpis"] == [
+        "snowfall_chance",
+        "offpiste_powder_chance",
+        "onpiste_powder_chance",
+        "whiteout_chance",
+    ]
 
     # Bronze and silver for the ensemble only: the forecast jobs "crashed".
     http = httpx.Client(transport=open_meteo_transport())

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Kpi, ResolvedTile, Tile } from './config';
 import type { MassifDaily } from './data';
+import { liveView } from './kpiView';
 import {
   addDays,
   daysBetween,
@@ -156,9 +157,22 @@ describe('periods', () => {
     ]);
     const powder = tiles[3]!;
     expect(powder.tile.title?.fr).toBe('Poudreuse demain matin');
-    expect(powder.view.kpis.powder?.stale).toBe(true); // computed at 12:07, payload at 18:07
-    expect(tiles[0]!.view.kpis.snow?.ranking).toHaveLength(1);
-    expect(tiles[0]!.view.kpis.powder).toBeUndefined();
+    const powderView = liveView(powderKpi, payload, powder.slot);
+    expect(powderView.stale).toBe(true); // computed at 12:07, payload at 18:07
+    expect(powderView.forecastDate).toBe(T);
+    expect(liveView(snowKpi, payload, tiles[0]!.slot).ranking).toHaveLength(1);
+    expect(liveView(powderKpi, payload, tiles[0]!.slot).ranking).toEqual([]);
+  });
+
+  it('shows Rewind tiles once, after the live ones, even before the forecast loads', () => {
+    const seasonKpi: Kpi = { ...snowKpi, id: 'season', kind: 'historical' };
+    const resolved = [tile('rewind_tile', seasonKpi), tile('snow_tile', snowKpi)];
+    expect(expandTiles(resolved, null, 0).map((t) => [t.id, t.slot])).toEqual([
+      ['rewind_tile', null],
+    ]);
+    const tiles = expandTiles(resolved, payload, ms(at(D, '18:30')));
+    expect(tiles.at(-1)?.id).toBe('rewind_tile');
+    expect(tiles.at(-1)?.tile.title).toBeUndefined();
   });
 
   it('wakes the page up when the next period ends', () => {

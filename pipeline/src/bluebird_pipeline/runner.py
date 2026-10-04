@@ -173,13 +173,15 @@ def run_gold_kpi(ctx: RunContext, kpi: Kpi, report: RunReport) -> None:
 
 
 def run_gold(ctx: RunContext, report: RunReport, kpi_ids: list[str] | None = None) -> None:
-    for kpi in ctx.config.enabled_kpis():
+    for kpi in ctx.config.enabled_kpis(kind="live"):
         if kpi_ids is None or kpi.id in kpi_ids:
             run_gold_kpi(ctx, kpi, report)
 
 
 def run_diamond(ctx: RunContext, report: RunReport) -> None:
     for displayer_id, displayer_cls in DISPLAYERS.items():
+        if displayer_cls.schedule != "daily":
+            continue
         try:
             written: set[str] = set()
             for artifact in displayer_cls().display(ctx):

@@ -63,6 +63,13 @@
   --prob-high: #1f7ae0;
   --track: #e4ecf5;
 
+  /* Rewind (season review): Christmas red and white. Text pairs ≥ 4.5:1. */
+  --rewind-red: #c8102e; /* band, podium, selected chip (white text on it) */
+  --on-rewind: #ffffff;
+  --rewind-ink: #b00d27; /* red text on the card surface */
+  --rewind-soft: #fde8eb; /* value pills of the list (with --rewind-ink) */
+  --rewind-line: #f5c2ca;
+
   /* Banner illustrations */
   --banner-sky-top: #0b2a5b;
   --banner-sky-bottom: #3d93e8;
@@ -78,6 +85,10 @@
   --glass-solid: #ffffff;
   --glass-border: rgba(11, 42, 91, 0.08);
   --glass-blur: 18px;
+
+  /* Full-window sheets (pages): stronger Liquid Glass over the blurred page */
+  --sheet-bg: rgba(244, 248, 253, 0.7);
+  --sheet-blur: 42px;
 
   --focus: #1f7ae0;
 
@@ -136,6 +147,12 @@
     --glass-bg: rgba(14, 29, 56, 0.86);
     --glass-solid: #0e1d38;
     --glass-border: rgba(160, 200, 255, 0.12);
+    --sheet-bg: rgba(6, 16, 36, 0.74);
+    --rewind-red: #c8102e;
+    --on-rewind: #ffffff;
+    --rewind-ink: #ff8a98;
+    --rewind-soft: #3b1420;
+    --rewind-line: #5c2030;
     --logo-a: #ffffff;
     --logo-b: #5db4ff;
     --scrim: rgba(1, 6, 16, 0.5);
@@ -190,6 +207,12 @@
   --glass-bg: rgba(14, 29, 56, 0.86);
   --glass-solid: #0e1d38;
   --glass-border: rgba(160, 200, 255, 0.12);
+  --sheet-bg: rgba(6, 16, 36, 0.74);
+  --rewind-red: #c8102e;
+  --on-rewind: #ffffff;
+  --rewind-ink: #ff8a98;
+  --rewind-soft: #3b1420;
+  --rewind-line: #5c2030;
   --logo-a: #ffffff;
   --logo-b: #5db4ff;
   --scrim: rgba(1, 6, 16, 0.5);

@@ -8,19 +8,19 @@
 <script lang="ts">
   import BannerMedia from '../components/BannerMedia.svelte';
   import StaleBadge from '../components/StaleBadge.svelte';
-  import PhotoCredit from '../components/PhotoCredit.svelte';
   import { i18n } from '../lib/i18n/i18n.svelte';
-  import { bannerModel } from './bannerModel';
   import FlipCard from './FlipCard.svelte';
   import KpiBack from './KpiBack.svelte';
   import OddsRow from './OddsRow.svelte';
   import RankingMore from './RankingMore.svelte';
   import type { TileProps } from './registry';
+  import TileBadge from './TileBadge.svelte';
+  import { tileModel } from './tileModel';
 
-  let { tile, kpis, data }: TileProps = $props();
+  let { tile, view }: TileProps = $props();
 
-  const model = $derived(bannerModel(tile, kpis, data));
-  const title = $derived(i18n.pick(tile.title ?? model.kpi?.name));
+  const model = $derived(tileModel(tile, view));
+  const title = $derived(i18n.pick(tile.title ?? view.kpi.name));
   /** Longer titles ("… demain après-midi") get a smaller font, on up to two lines. */
   const LONG_TITLE = 24;
 
@@ -32,24 +32,25 @@
   };
 </script>
 
-<FlipCard labelledby="{tile.id}-title">
+<FlipCard labelledby="{tile.id}-title" theme={model.theme}>
   {#snippet front()}
     <div class="hero">
       <BannerMedia
         scene={model.scene}
         skyline={model.skyline}
         photo={model.photo}
-        showCredit={false}
       />
       <div class="shade" aria-hidden="true"></div>
-      {#if model.staleSince}
-        <StaleBadge class="corner-badge" since={model.staleSince} timezone={data.timezone} />
+      {#if model.badge}
+        <span class="badge-slot"><TileBadge label={i18n.pick(model.badge)} icon="rewind" /></span>
+      {:else if model.staleSince}
+        <span class="badge-slot"><StaleBadge since={model.staleSince} timezone={view.timezone} /></span>
       {/if}
 
       <div class="hero-content">
         <h2 id="{tile.id}-title" class:long={title.length > LONG_TITLE}>{title}</h2>
-        {#if model.ranking.length === 0}
-          <p class="sub">{i18n.t('tile.noRanking')}</p>
+        {#if model.items.length === 0}
+          <p class="sub">{i18n.t(model.emptyMessage)}</p>
         {:else}
           <OddsRow
             tileId={tile.id}
@@ -57,13 +58,11 @@
             top={model.top}
             {selected}
             onselect={toggle}
-            stations={data.stations}
+          {view}
             showOdds={model.showOdds}
+          details={model.details}
             overlay
           />
-        {/if}
-        {#if model.photo?.credit}
-          <p class="credit"><PhotoCredit credit={model.photo.credit} /></p>
         {/if}
       </div>
     </div>
@@ -71,23 +70,22 @@
     <div class="below">
       <RankingMore
         tileId={tile.id}
-        kpi={model.kpi}
-        {data}
+        {view}
         top={model.top}
         rest={model.rest}
-        total={model.ranking.length}
         {selected}
         onselect={toggle}
         {showAll}
         ontoggleall={() => (showAll = !showAll)}
         showOdds={model.showOdds}
+        details={model.details}
         showWindow={!model.timeWindow}
       />
     </div>
   {/snippet}
 
   {#snippet back()}
-    <KpiBack {tile} kpi={model.kpi} {data} />
+    <KpiBack {tile} {view} photo={model.photo} />
   {/snippet}
 </FlipCard>
 
@@ -100,12 +98,6 @@
     height: var(--tile-front-h);
     overflow: hidden;
     isolation: isolate;
-  }
-
-  .hero :global(.corner-badge) {
-    position: absolute;
-    top: 12px;
-    left: 12px;
   }
 
   .hero :global(.media) {
@@ -126,6 +118,13 @@
     );
   }
 
+  .badge-slot {
+    position: absolute;
+    top: 14px;
+    left: 12px;
+    display: flex;
+  }
+
   .hero-content {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -144,6 +143,7 @@
     line-height: 1.05;
     white-space: nowrap;
     text-overflow: ellipsis;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
   }
 
   h2.long {
@@ -153,7 +153,6 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     line-clamp: 2;
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
   }
 
   .sub {
@@ -161,12 +160,6 @@
     font-size: 0.8125rem;
     line-height: 1.35;
     color: rgba(255, 255, 255, 0.9);
-  }
-
-  .credit {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 2px;
   }
 
   .below {

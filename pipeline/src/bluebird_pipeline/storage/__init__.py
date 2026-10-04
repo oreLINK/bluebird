@@ -7,7 +7,16 @@ can be added later by implementing the four abstract methods.
 """
 
 from .base import Storage
-from .keys import bronze_key, diamond_key, gold_key, latest_key, silver_key, status_key
+from .keys import (
+    bronze_key,
+    diamond_key,
+    gold_key,
+    latest_key,
+    rewind_gold_key,
+    rewind_key,
+    silver_key,
+    status_key,
+)
 from .local import LocalStorage
 
 __all__ = [
@@ -17,6 +26,8 @@ __all__ = [
     "diamond_key",
     "gold_key",
     "latest_key",
+    "rewind_gold_key",
+    "rewind_key",
     "silver_key",
     "status_key",
 ]

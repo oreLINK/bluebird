@@ -15,6 +15,7 @@ shows what the page looks like after the 18:00 refresh.
 from __future__ import annotations
 
 import hashlib
+import math
 import shutil
 import tempfile
 from datetime import UTC, date, datetime, timedelta
@@ -48,6 +49,9 @@ _UNITS = {
     "wind_gusts_10m": "km/h",
     "freezing_level_height": "m",
     "cloud_cover": "%",
+    "cloud_cover_low": "%",
+    "relative_humidity_2m": "%",
+    "shortwave_radiation": "W/m²",
 }
 
 
@@ -90,6 +94,12 @@ def demo_value(
         "wind_gusts_10m": round(wind * 1.6, 1),
         "freezing_level_height": round(1200 + 600 * (1 - west), 0),
         "cloud_cover": round(100 * storm, 0),
+        "cloud_cover_low": round(100 * storm * (0.4 + 0.6 * west), 0),
+        "relative_humidity_2m": round(min(100.0, 72 + 30 * storm * (0.5 + west)), 0),
+        # Daylight (~07:00-17:00 UTC in winter), dimmed by the storm.
+        "shortwave_radiation": round(
+            max(0.0, math.sin(math.pi * (when.hour - 7) / 10)) * 420 * (1 - 0.85 * storm), 1
+        ),
     }
     return values.get(variable)
 

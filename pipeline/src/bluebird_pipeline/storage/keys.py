@@ -7,8 +7,13 @@ bronze    ``bronze/{source_id}/{date}/{run_id}.json.gz``              gzip JSON
 silver    ``silver/{dataset}/date={date}/{run_id}.parquet``           Parquet
 gold      ``gold/kpis/date={date}/{kpi_id}.parquet``                  Parquet
 diamond   ``diamond/{massif_id}/latest.json`` and ``{date}.json``     JSON
-diamond   ``diamond/manifest.json``                                   JSON
+diamond   ``diamond/manifest.json``, ``diamond/status.json``          JSON
+gold      ``gold/rewind/{rewind_id}/kpis.parquet`` (Rewind)            Parquet
 ========  ==========================================================  ==========
+
+Rewind season files are committed under the configuration folder instead:
+``rewind/{rewind_id}/{massif_id}.hourly.parquet`` (silver) and
+``rewind/{rewind_id}/{massif_id}.json`` (diamond), see :func:`rewind_key`.
 
 ``run_id`` is a UTC timestamp (``20261214T053000Z``) so keys sort chronologically.
 ``date`` is the ski day of the run (see ``RunContext``). Gold and diamond keep
@@ -52,6 +57,15 @@ def diamond_key(massif_id: str | None, name: str) -> str:
 
 def status_key() -> str:
     return "diamond/status.json"
+
+
+def rewind_gold_key(rewind_id: str) -> str:
+    return f"gold/rewind/{rewind_id}/kpis.parquet"
+
+
+def rewind_key(rewind_id: str, massif_id: str, suffix: str) -> str:
+    """Committed Rewind file, relative to ``config/``: ``rewind/{id}/{massif}{suffix}``."""
+    return f"rewind/{rewind_id}/{massif_id}{suffix}"
 
 
 def latest_key(storage: Storage, prefix: str, suffix: str) -> str | None:

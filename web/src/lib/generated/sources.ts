@@ -5,9 +5,9 @@ export type Extractor = string;
 export type Transformer = string;
 export type Enabled = boolean;
 /**
- * daily: fetched by every refresh; on_demand: only with `bluebird run --source`; reference: slow-changing data refreshed with `bluebird reference` and committed under config/reference/.
+ * daily: fetched by every refresh; on_demand: only with `bluebird run --source`; reference: slow-changing data refreshed with `bluebird reference` and committed under config/reference/; season: archive of a closed season, fetched once by `bluebird rewind` and committed under config/rewind/.
  */
-export type Schedule = 'daily' | 'on_demand' | 'reference';
+export type Schedule = 'daily' | 'on_demand' | 'reference' | 'season';
 export type Name = string;
 export type Url = string;
 export type License = string | null;
@@ -35,7 +35,7 @@ export interface Params {
   [k: string]: unknown;
 }
 /**
- * Credit displayed in the site footer.
+ * Credit displayed on the tile backs and on the "about" page (config/pages.yaml).
  */
 export interface Attribution {
   name: Name;

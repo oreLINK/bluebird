@@ -82,7 +82,7 @@ def _merge(periods: list[DiamondStatusPeriod]) -> DiamondStatusPeriod:
 def kpi_status(ctx: RunContext, gold: pl.DataFrame) -> list[DiamondStatusKpi]:
     """Per-KPI, per-period state of the gold data visible at the run time."""
     out: list[DiamondStatusKpi] = []
-    for kpi in ctx.config.enabled_kpis():
+    for kpi in ctx.config.enabled_kpis(kind="live"):
         by_key: dict[str, list[DiamondStatusPeriod]] = {}
         order: list[str] = []
         for massif in ctx.massifs():
@@ -114,7 +114,7 @@ def kpi_status(ctx: RunContext, gold: pl.DataFrame) -> list[DiamondStatusKpi]:
 def _layout_tiles(ctx: RunContext, massif: Massif) -> list[Tile]:
     order = ctx.config.layout.overrides.get(massif.id, ctx.config.layout.default)
     tiles = {t.id: t for t in ctx.config.tiles}
-    enabled = {k.id for k in ctx.config.enabled_kpis()}
+    enabled = {k.id for k in ctx.config.enabled_kpis(kind="live")}
     return [
         tiles[tile_id]
         for tile_id in order
@@ -137,7 +137,7 @@ def tile_status(ctx: RunContext, massif: Massif) -> list[DiamondStatusTile]:
     """State of every tile and period visitors of ``massif`` should see now."""
     payload = read_massif_payload(ctx, massif.id)
     expected = sum(1 for ref in ctx.stations() if ref.massif.id == massif.id)
-    enabled = {k.id for k in ctx.config.enabled_kpis()}
+    enabled = {k.id for k in ctx.config.enabled_kpis(kind="live")}
     out: list[DiamondStatusTile] = []
     for tile in _layout_tiles(ctx, massif):
         for instance in ctx.period_instances(massif, ctx.config.tile_periods(tile)):
@@ -182,7 +182,7 @@ def build_status(ctx: RunContext, steps: list[StepReport]) -> DiamondStatus:
         item("silver", s.id, getattr(TRANSFORMERS.get(s.transformer), "dataset", None))
         for s in sources
     ]
-    kpis = kpi_status(ctx, read_gold(ctx, [k.id for k in ctx.config.enabled_kpis()]))
+    kpis = kpi_status(ctx, read_gold(ctx, [k.id for k in ctx.config.enabled_kpis(kind="live")]))
     tiles = {massif.id: tile_status(ctx, massif) for massif in ctx.massifs()}
     states = [
         *(i.state for i in bronze),

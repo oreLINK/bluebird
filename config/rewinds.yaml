@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=./schemas/rewinds.schema.json
+#
+# Rewinds: reviews of closed ski seasons, ranking the stations on historical
+# KPIs (config/kpis.yaml, `kind: historical`). Each Rewind is built once, after
+# its season is over, with `uv run bluebird rewind --rewind <id>`, which writes
+# config/rewind/<id>/<massif>.hourly.parquet (the season, hour by hour) and
+# config/rewind/<id>/<massif>.json (the rankings the site shows). Both files
+# are generated and committed through a pull request; never edit them by hand.
+#
+#   start, end  local days of the season, both included.
+#   filter      the exclusive filter of config/filters.yaml showing its tiles.
+#
+# To add a season: add an entry, its filter and tiles, then run the command
+# (or the "Build a Rewind" workflow) the day after `end`.
+rewinds:
+  - id: 2025-26
+    name: { fr: Rewind 25/26, en: Rewind 25/26 }
+    start: 2025-12-01
+    end: 2026-05-01
+    massifs: [pyrenees]
+    kpis:
+      - season_total_snowfall
+      - season_longest_snowfall
+      - season_domain_snowfall
+      - season_offpiste_snowfall
+      - season_deep_snow_days
+      - season_white_days
+    filter: rewind-2025-26

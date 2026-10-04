@@ -1,63 +1,81 @@
 <!--
-  The best stations of a KPI as betting-style "odds buttons": name and
-  percentage, a probability bar below each. `overlay` adapts the bars for a
-  photo or illustration background (TileBannerFull).
+  The best stations of a KPI as betting-style "odds buttons": name, value
+  ("82 %" for live KPIs, "4,43 m" for historical ones, lib/kpiView.ts) and,
+  for live KPIs, reliability dots (ConfidenceDots); a bar below each. `overlay` adapts the bars for a photo or illustration background
+  (TileBannerFull).
+  `details`: when true, each box is a button that shows the station details
+  (tile option `details`); when false (the default for now) the boxes are
+  static and a tap on them does nothing (not even a flip).
 -->
 <script lang="ts">
-  import type { RankingEntry, StationInfo } from '../lib/data';
-  import { formatOdds, formatPercent } from '../lib/format';
+  import ConfidenceDots from '../components/ConfidenceDots.svelte';
+  import { formatOdds } from '../lib/format';
   import { i18n } from '../lib/i18n/i18n.svelte';
+  import { type KpiView, type RankItem, fullName, itemLabel, shortName } from '../lib/kpiView';
+  import { itemSummary } from './summary';
 
   let {
     tileId,
     label,
+    view,
     top,
     selected,
     onselect,
-    stations,
     showOdds = false,
     overlay = false,
+    details = false,
   }: {
     tileId: string;
     label: string;
-    top: RankingEntry[];
+    view: KpiView;
+    top: RankItem[];
     selected: string | null;
     onselect: (stationId: string) => void;
-    stations: Record<string, StationInfo>;
     showOdds?: boolean;
     overlay?: boolean;
+    details?: boolean;
   } = $props();
 
-  const shortName = (id: string) => stations[id]?.short_name ?? stations[id]?.name ?? id;
-  const fullName = (id: string) => stations[id]?.name ?? id;
+  const summary = (item: RankItem, index: number) =>
+    itemSummary(view, item, index + 1, fullName(view, item.stationId), i18n);
 </script>
 
+{#snippet face(item: RankItem)}
+  <span class="odd-name" aria-hidden="true">{shortName(view, item.stationId)}</span>
+  <span class="odd-value tabular" aria-hidden="true">{itemLabel(view, item, i18n.locale)}</span>
+  {#if item.confidence}
+    <ConfidenceDots level={item.confidence} size={5} />
+  {:else}
+    <span class="odd-gap" aria-hidden="true"></span>
+  {/if}
+  {#if showOdds}
+    <span class="odd-odds tabular" aria-hidden="true">
+      {i18n.t('tile.odds', { odds: formatOdds(item.value, i18n.locale) })}
+    </span>
+  {/if}
+{/snippet}
+
 <div class="odds" class:overlay role="group" aria-label={label} style="--n: {top.length}">
-  {#each top as entry, index (entry.station_id)}
+  {#each top as item, index (item.stationId)}
     <div class="odd">
-      <button
-        type="button"
-        class="odd-button"
-        aria-pressed={selected === entry.station_id}
-        aria-controls="{tileId}-top-details"
-        aria-label={i18n.t('a11y.rowSummary', {
-          rank: index + 1,
-          station: fullName(entry.station_id),
-          percent: formatPercent(entry.probability, i18n.locale),
-        })}
-        onclick={() => onselect(entry.station_id)}
-      >
-        <span class="odd-name" aria-hidden="true">{shortName(entry.station_id)}</span>
-        <span class="odd-value tabular" aria-hidden="true">
-          {formatPercent(entry.probability, i18n.locale)}
-        </span>
-        {#if showOdds}
-          <span class="odd-odds tabular" aria-hidden="true">
-            {i18n.t('tile.odds', { odds: formatOdds(entry.probability, i18n.locale) })}
-          </span>
-        {/if}
-      </button>
-      <span class="odd-bar" aria-hidden="true"><span style="--p: {entry.probability}"></span></span>
+      {#if details && item.entry}
+        <button
+          type="button"
+          class="odd-button"
+          aria-pressed={selected === item.stationId}
+          aria-controls="{tileId}-top-details"
+          aria-label={summary(item, index)}
+          onclick={() => onselect(item.stationId)}
+        >
+          {@render face(item)}
+        </button>
+      {:else}
+        <div class="odd-button static" data-no-flip>
+          <span class="visually-hidden">{summary(item, index)}</span>
+          {@render face(item)}
+        </div>
+      {/if}
+      <span class="odd-bar" aria-hidden="true"><span style="--p: {item.share}"></span></span>
     </div>
   {/each}
 </div>
@@ -79,12 +97,12 @@
   .odd-button {
     position: relative;
     display: grid;
-    /* Fixed size: two lines of name (2 × 0.75rem × 1.2) and the percentage. */
-    grid-template-rows: 1.8rem auto;
+    /* Fixed size: two lines of name (2 × 0.75rem × 1.2), the percentage and the dots. */
+    grid-template-rows: 1.8rem auto auto;
     justify-items: center;
     align-items: center;
-    gap: 2px;
-    height: 4.75rem;
+    gap: 3px;
+    height: var(--odds-button-h);
     padding: 10px 6px 8px;
     border-radius: var(--radius-m);
     border: 1px solid var(--pill-border);
@@ -92,12 +110,19 @@
     color: var(--pill-ink);
     text-align: center;
     cursor: pointer;
+    /* Empty reliability dots in the ink colour, so they show on the light-blue button. */
+    --dot-off: color-mix(in oklch, currentColor 22%, transparent);
     transition:
       background 0.15s ease,
       color 0.15s ease;
   }
 
+  .odd-button.static {
+    cursor: default;
+  }
+
   .odd-button[aria-pressed='true'] {
+    --dot-on: currentColor;
     background: var(--pill-active-bg);
     border-color: var(--pill-active-bg);
     color: var(--pill-active-ink);
@@ -117,6 +142,10 @@
     font-weight: 600;
     line-height: 1.2;
     overflow-wrap: anywhere;
+  }
+
+  .odd-gap {
+    height: 5px;
   }
 
   .odd-value {

@@ -50,6 +50,38 @@
           "title": "Aggregator",
           "type": "string"
         },
+        "kind": {
+          "default": "live",
+          "description": "live: probability for today, computed by the daily run; historical: value over a past season, computed by `bluebird rewind` (config/rewinds.yaml).",
+          "enum": [
+            "live",
+            "historical"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ValueSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit and decimals of the value; required for historical KPIs."
+        },
+        "order": {
+          "default": "desc",
+          "description": "Ranking order: desc puts the highest value first; asc the lowest (e.g. fewest white days).",
+          "enum": [
+            "desc",
+            "asc"
+          ],
+          "title": "Order",
+          "type": "string"
+        },
         "enabled": {
           "default": true,
           "title": "Enabled",
@@ -95,7 +127,7 @@
           "type": "array"
         },
         "periods": {
-          "description": "Ids of the periods (config/periods.yaml) the KPI is computed for.",
+          "description": "Ids of the periods (config/periods.yaml) a live KPI is computed for; ignored for historical KPIs.",
           "items": {
             "pattern": "^[a-z0-9]+(?:[_-][a-z0-9]+)*$",
             "type": "string"
@@ -134,6 +166,74 @@
         "en"
       ],
       "title": "Localized",
+      "type": "object"
+    },
+    "ValueSpec": {
+      "additionalProperties": false,
+      "description": "Unit of the value of a historical KPI, as published and displayed (e.g. 4.43 m).",
+      "properties": {
+        "unit": {
+          "minLength": 1,
+          "title": "Unit",
+          "type": "string"
+        },
+        "decimals": {
+          "default": 0,
+          "maximum": 3,
+          "minimum": 0,
+          "title": "Decimals",
+          "type": "integer"
+        },
+        "scale": {
+          "default": 1.0,
+          "description": "Multiplier from the aggregator's unit (cm for snow, h for durations) to `unit`, e.g. 0.01 to publish centimetres as metres.",
+          "exclusiveMinimum": 0,
+          "title": "Scale",
+          "type": "number"
+        },
+        "unit_label": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Localized"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Unit as shown on the site when it differs by language (e.g. jours / days)."
+        },
+        "unit_label_one": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Localized"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Singular of `unit_label` (e.g. jour / day), used where the language says so."
+        },
+        "max": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Value (in `unit`) of a full bar in the tiles, e.g. 100 for a percentage. Default: the best value of the ranking.",
+          "title": "Max"
+        }
+      },
+      "required": [
+        "unit"
+      ],
+      "title": "ValueSpec",
       "type": "object"
     }
   },

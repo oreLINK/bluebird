@@ -9,6 +9,7 @@ Commands:
 - ``run``       execute pipeline layers on daily data.
 - ``status``    write ``diamond/status.json`` and the manifest from step reports.
 - ``reference`` refresh reference files (pistes, lifts…) in ``config/reference``.
+- ``rewind``    build the Rewind of a closed season in ``config/rewind``.
 - ``demo``      write synthetic demo data to ``web/public/data`` (frontend dev).
 
 The CI workflow (``.github/workflows/refresh.yml``) runs ``plan`` once, then one
@@ -52,6 +53,13 @@ def _cmd_validate(args: argparse.Namespace) -> int:
 
     for key in missing_references(config):
         print(f"warning: config/{key} is missing; run `uv run bluebird reference`")
+    for rewind in config.rewinds:
+        for massif_id in rewind.massifs:
+            if not (config.root / "rewind" / rewind.id / f"{massif_id}.json").is_file():
+                print(
+                    f"warning: config/rewind/{rewind.id}/{massif_id}.json is missing; "
+                    f"run `uv run bluebird rewind --rewind {rewind.id}`"
+                )
     return 0
 
 
@@ -111,7 +119,7 @@ def _cmd_plan(args: argparse.Namespace) -> int:
         "silver": [
             {"source": s.id, "dataset": TRANSFORMERS.get(s.transformer).dataset} for s in sources
         ],
-        "kpis": [k.id for k in config.enabled_kpis()],
+        "kpis": [k.id for k in config.enabled_kpis(kind="live")],
         "massifs": [m.id for m in ctx.massifs()],
     }
     if args.json:
@@ -141,16 +149,17 @@ def _cmd_run(args: argparse.Namespace) -> int:
     config = load_config(args.config_dir)
     layers = list(LAYERS) if args.layer == "all" else [args.layer]
     sources = config.enabled_sources(schedule="daily", only=args.source or None)
-    reference = [s.id for s in sources if s.schedule == "reference"]
-    if reference:
-        print(
-            f"{', '.join(reference)}: reference source(s); use `bluebird reference` instead.",
-            file=sys.stderr,
-        )
-        return 2
-    unknown_kpis = set(args.kpi or []) - {k.id for k in config.kpis}
+    for schedule, command in (("reference", "reference"), ("season", "rewind")):
+        refused = [s.id for s in sources if s.schedule == schedule]
+        if refused:
+            print(
+                f"{', '.join(refused)}: {schedule} source(s); use `bluebird {command}` instead.",
+                file=sys.stderr,
+            )
+            return 2
+    unknown_kpis = set(args.kpi or []) - {k.id for k in config.enabled_kpis(kind="live")}
     if unknown_kpis:
-        print(f"unknown KPI(s): {', '.join(sorted(unknown_kpis))}", file=sys.stderr)
+        print(f"unknown or not live KPI(s): {', '.join(sorted(unknown_kpis))}", file=sys.stderr)
         return 2
     data_dir = args.data_dir or default_data_dir()
     storage = LocalStorage(data_dir)
@@ -245,6 +254,43 @@ def _cmd_reference(args: argparse.Namespace) -> int:
     return 1 if report.errors else 0
 
 
+def _cmd_rewind(args: argparse.Namespace) -> int:
+    from .rewind import is_over, run_rewind
+
+    config = load_config(args.config_dir)
+    rewinds = [config.rewind(r) for r in args.rewind] if args.rewind else config.rewinds
+    rewinds = [r for r in rewinds if r.enabled]
+    if not rewinds:
+        print("No enabled rewind in config/rewinds.yaml.", file=sys.stderr)
+        return 2
+    storage = LocalStorage(args.data_dir or default_data_dir())
+    status = 0
+    for rewind in rewinds:
+        massif_ids = [m for m in rewind.massifs if not args.massif or m in args.massif]
+        if not massif_ids:
+            continue
+        ctx = RunContext.create(config, storage, massif_ids=massif_ids, rewind=rewind)
+        if not args.no_fetch and not is_over(rewind, ctx.run_date):
+            # The archive of an unfinished season is incomplete: never store it.
+            print(
+                f"rewind {rewind.id}: the season ends on {rewind.end}; "
+                "it can be fetched from the next day.",
+                file=sys.stderr,
+            )
+            status = 2
+            continue
+        report = run_rewind(ctx, fetch=not args.no_fetch, only=args.source or None)
+        written = [key for key in report.written if key.startswith("rewind/")]
+        print(f"\nRewind {rewind.id} ({ctx.run_id}): {len(written)} file(s) in {config.root}")
+        for key in written:
+            print(f"  {key}")
+        for message in report.errors:
+            print(f"  error: {message}", file=sys.stderr)
+        if report.errors:
+            status = max(status, 1)
+    return status
+
+
 def _cmd_demo(args: argparse.Namespace) -> int:
     from .demo import build_demo
     from .paths import repo_root
@@ -323,6 +369,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="rebuild from the latest stored bronze batch instead of calling the source",
     )
     ref.set_defaults(func=_cmd_reference)
+
+    rew = sub.add_parser("rewind", help="build the Rewind of a closed season in config/rewind")
+    rew.add_argument("--rewind", action="append", help="rewind id, e.g. 2025-26 (repeatable)")
+    rew.add_argument("--massif", action="append", help="restrict to a massif (repeatable)")
+    rew.add_argument(
+        "--source",
+        action="append",
+        help="fetch only this season source (repeatable); the others' rows are kept",
+    )
+    rew.add_argument("--data-dir", type=Path, help="storage root (default: <repo>/data)")
+    rew.add_argument(
+        "--no-fetch",
+        action="store_true",
+        help="recompute the KPIs from the committed hourly files, without calling the source",
+    )
+    rew.set_defaults(func=_cmd_rewind)
 
     demo = sub.add_parser("demo", help="write synthetic demo data for the frontend")
     demo.add_argument("--out", type=Path, help="default: <repo>/web/public/data")

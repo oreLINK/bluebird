@@ -16,28 +16,29 @@ from __future__ import annotations
 
 import polars as pl
 
-from ..config import Massif
+from ..config import Kpi, Massif
 from ..context import RunContext
 from ..gold.base import frame_to_results, read_gold
 from ..storage import diamond_key
+from ._payload import source_payloads, station_payloads
 from .base import DiamondArtifact, Displayer, register_displayer
 from .models import (
-    DiamondElevation,
     DiamondKpi,
     DiamondKpiPeriod,
     DiamondMassifDaily,
     DiamondRankingEntry,
-    DiamondSource,
-    DiamondStation,
 )
 
 
 @register_displayer("massif_daily")
 class DisplayerMassifDaily(Displayer):
-    """Rank stations by probability for every KPI and period of every massif."""
+    """Rank stations for every live KPI and period of every massif.
+
+    Highest probability first, or lowest for a KPI with ``order: asc``.
+    """
 
     def display(self, ctx: RunContext) -> list[DiamondArtifact]:
-        gold = read_gold(ctx, [kpi.id for kpi in ctx.config.enabled_kpis()])
+        gold = read_gold(ctx, [kpi.id for kpi in ctx.config.enabled_kpis(kind="live")])
         if gold.is_empty():
             raise FileNotFoundError(
                 f"no gold data for {ctx.run_date} or the day before; run the gold layer first"
@@ -54,11 +55,12 @@ class DisplayerMassifDaily(Displayer):
         return artifacts
 
     def _kpi_periods(
-        self, ctx: RunContext, massif: Massif, kpi_id: str, periods: list[str], gold: pl.DataFrame
+        self, ctx: RunContext, massif: Massif, kpi: Kpi, gold: pl.DataFrame
     ) -> list[DiamondKpiPeriod]:
-        rows = gold.filter((pl.col("kpi_id") == kpi_id) & (pl.col("massif_id") == massif.id))
+        rows = gold.filter((pl.col("kpi_id") == kpi.id) & (pl.col("massif_id") == massif.id))
+        sign = 1 if kpi.order == "asc" else -1
         out: list[DiamondKpiPeriod] = []
-        for instance in ctx.period_instances(massif, periods):
+        for instance in ctx.period_instances(massif, kpi.periods):
             selected = rows.filter(
                 (pl.col("period_id") == instance.period_id)
                 & (pl.col("forecast_date") == instance.ski_day)
@@ -66,7 +68,7 @@ class DisplayerMassifDaily(Displayer):
             if selected.is_empty():
                 continue
             results = sorted(
-                frame_to_results(selected), key=lambda r: (-r.probability, r.station_id)
+                frame_to_results(selected), key=lambda r: (sign * r.probability, r.station_id)
             )
             out.append(
                 DiamondKpiPeriod(
@@ -97,8 +99,8 @@ class DisplayerMassifDaily(Displayer):
     ) -> DiamondMassifDaily:
         refs = [ref for ref in ctx.stations() if ref.massif.id == massif.id]
         kpis: dict[str, DiamondKpi] = {}
-        for kpi in ctx.config.enabled_kpis():
-            periods = self._kpi_periods(ctx, massif, kpi.id, kpi.periods, gold)
+        for kpi in ctx.config.enabled_kpis(kind="live"):
+            periods = self._kpi_periods(ctx, massif, kpi, gold)
             if not periods:
                 continue
             versions = gold.filter(pl.col("kpi_id") == kpi.id)["aggregator_version"]
@@ -112,31 +114,7 @@ class DisplayerMassifDaily(Displayer):
             forecast_date=ctx.run_date,
             generated_at=ctx.generated_at,
             timezone=massif.timezone,
-            stations={
-                ref.id: DiamondStation(
-                    id=ref.id,
-                    name=ref.station.name,
-                    short_name=ref.station.short_name or ref.station.name,
-                    lat=ref.station.lat,
-                    lon=ref.station.lon,
-                    elevation=DiamondElevation(
-                        base=ref.station.elevation.at("base"),
-                        mid=ref.station.elevation.at("mid"),
-                        summit=ref.station.elevation.at("summit"),
-                    ),
-                    aspects=list(ref.station.aspects),
-                    website=ref.station.website,
-                )
-                for ref in refs
-            },
+            stations=station_payloads(refs),
             kpis=kpis,
-            sources=[
-                DiamondSource(
-                    id=source.id,
-                    name=source.attribution.name,
-                    url=source.attribution.url,
-                    license=source.attribution.license,
-                )
-                for source in ctx.config.enabled_sources(schedule="daily")
-            ],
+            sources=source_payloads(ctx.config.enabled_sources(schedule="daily")),
         )

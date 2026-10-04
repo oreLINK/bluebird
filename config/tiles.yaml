@@ -7,22 +7,36 @@
 #                           (TileBanner.svelte)
 #              banner_full  same, with the photo or illustration filling the
 #                           whole card behind the title and odds (TileBannerFull)
-#              ranking  compact list of every station (TileRanking.svelte)
-#   kpis:    KPI ids (config/kpis.yaml) the tile reads. A ranking tile uses one.
-#   title:   optional; defaults to the first KPI's name followed by the period.
-#            Must contain {period}, replaced by the period label of
-#            config/periods.yaml ("Neige {period}" -> "Neige ce soir").
-#   periods: optional; the periods to show a tile for (default: every period
-#            of its KPIs). The page shows one tile per period not yet over, in
-#            chronological order, then in config/layout.yaml order.
+#              simple       a banner tile without the banner: shorter card with
+#                           title, odds buttons and "see all", for the KPIs
+#                           lower on the page (TileSimple.svelte)
+#              ranking      compact list of every station (TileRanking.svelte)
+#   kpis:    KPI ids (config/kpis.yaml) the tile reads; tiles show the first one.
+#            Every type works for live KPIs (probabilities) and for historical
+#            KPIs (Rewind values: "4,43 m", "46 h"). A historical tile takes the
+#            theme of its Rewind's filter (Christmas red) and a "REWIND 25/26"
+#            badge; odds and details are live only.
+#   title:   optional; defaults to the first KPI's name (followed by the period
+#            for live KPIs). For live KPIs it must contain {period}, replaced by
+#            the period label of config/periods.yaml ("Neige {period}" ->
+#            "Neige ce soir"); Rewind titles have no {period}.
+#   periods: optional, live KPIs only; the periods to show a tile for (default:
+#            every period of its KPIs). The page shows one tile per period not
+#            yet over, in chronological order, then in config/layout.yaml order.
+#            Rewind tiles are shown once.
 #   icon:    optional; one of the icons in web/src/components/Icon.svelte.
 #   options: free-form, interpreted by the tile component:
+#              every type: theme (default | rewind) overrides the colour theme.
+#              every type: details (default false): tapping a station
+#                       shows its details (drivers, reliability, elevation).
+#                       Turned off for now: tiles show the probability only.
 #              banner, banner_full:
 #                       top (1-3, default 3), show_odds,
 #                       scene (snowfall | piste | offpiste | mountain; default from icon),
 #                       photo (none | leader | <path in web/src/assets/photos>);
 #                       `leader` shows the photo of the ski area ranked first and
 #                       falls back to the illustration when there is none.
+#              simple:  top (1-3, default 3), show_odds
 #              ranking: visible_rows (default 5), show_odds
 #
 # Tile order on the page is defined in config/layout.yaml, not here.
@@ -50,12 +64,76 @@ tiles:
       scene: piste
 
   - id: offpiste_powder
-    type: banner
+    type: simple
     kpis: [offpiste_powder_chance]
     title: { fr: "Poudreuse hors-piste {period}", en: "Off-piste powder {period}" }
     icon: mountain
     options:
       top: 3
       show_odds: false
+
+  # Visibility: white days today and tomorrow (live, filter "Visibilité").
+  - id: whiteout
+    type: simple
+    kpis: [whiteout_chance]
+    title: { fr: "Jour blanc {period}", en: "White day {period}" }
+    icon: fog
+    options:
+      top: 3
+
+  # Rewind 25/26: one tile per historical KPI, shown only under its filter
+  # (config/rewinds.yaml finds the Rewind of each KPI). Same tile types as the
+  # live KPIs, in the Rewind theme.
+  - id: rewind_2025_26_total_snowfall
+    type: banner_full
+    kpis: [season_total_snowfall]
+    title: { fr: Le plus de neige, en: Most snow }
+    icon: snowflake
+    options:
+      photo: leader
+      scene: snowfall
+
+  - id: rewind_2025_26_longest_snowfall
+    type: banner
+    kpis: [season_longest_snowfall]
+    title: { fr: La plus longue chute de neige, en: Longest snowfall }
+    icon: snowflake
+    options:
+      photo: leader
+      scene: snowfall
+
+  - id: rewind_2025_26_domain_snowfall
+    type: banner
+    kpis: [season_domain_snowfall]
+    title: { fr: Le plus de neige sur le domaine, en: Most snow on the slopes }
+    icon: piste
+    options:
+      photo: leader
+      scene: piste
+
+  - id: rewind_2025_26_offpiste_snowfall
+    type: banner
+    kpis: [season_offpiste_snowfall]
+    title: { fr: Le plus de neige hors-piste, en: Most off-piste snow }
+    icon: mountain
+    options:
       photo: leader
       scene: offpiste
+
+  - id: rewind_2025_26_deep_snow_days
+    type: banner
+    kpis: [season_deep_snow_days]
+    title: { fr: L'enneigement idéal, en: Ideal snow cover }
+    icon: piste
+    options:
+      photo: leader
+      scene: piste
+
+  - id: rewind_2025_26_white_days
+    type: banner
+    kpis: [season_white_days]
+    title: { fr: Le moins de jours blancs, en: Fewest white days }
+    icon: fog
+    options:
+      photo: leader
+      scene: mountain

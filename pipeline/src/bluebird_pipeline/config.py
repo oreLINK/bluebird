@@ -13,7 +13,7 @@ from __future__ import annotations
 import re
 from collections import Counter
 from dataclasses import dataclass
-from datetime import time
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from typing import Annotated, Any, Literal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -43,6 +43,12 @@ Band = Literal["base", "mid", "summit"]
 """Elevation band of a station at which weather is sampled."""
 
 Aspect = Literal["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+
+KpiKind = Literal["live", "historical"]
+"""live: a probability for today (daily run); historical: a value over a past season (Rewind)."""
+
+HttpUrl = Annotated[str, StringConstraints(pattern=r"^https://\S+$")]
+"""Absolute https:// URL."""
 
 
 _PLACEHOLDER = re.compile(r"\{(\w+)\}")
@@ -197,11 +203,59 @@ class DriverSpec(StrictModel):
     decimals: int = Field(default=0, ge=0, le=3)
 
 
+class ValueSpec(StrictModel):
+    """Unit of the value of a historical KPI, as published and displayed (e.g. 4.43 m)."""
+
+    unit: str = Field(min_length=1)
+    decimals: int = Field(default=0, ge=0, le=3)
+    scale: float = Field(
+        default=1.0,
+        gt=0,
+        description=(
+            "Multiplier from the aggregator's unit (cm for snow, h for durations) to `unit`, "
+            "e.g. 0.01 to publish centimetres as metres."
+        ),
+    )
+    unit_label: Localized | None = Field(
+        default=None,
+        description="Unit as shown on the site when it differs by language (e.g. jours / days).",
+    )
+    unit_label_one: Localized | None = Field(
+        default=None,
+        description="Singular of `unit_label` (e.g. jour / day), used where the language says so.",
+    )
+    max: float | None = Field(
+        default=None,
+        gt=0,
+        description=(
+            "Value (in `unit`) of a full bar in the tiles, e.g. 100 for a percentage. "
+            "Default: the best value of the ranking."
+        ),
+    )
+
+
 class Kpi(StrictModel):
     """A KPI computed by a gold-layer Aggregator."""
 
     id: Slug
     aggregator: Slug = Field(description="Id of a registered gold Aggregator.")
+    kind: KpiKind = Field(
+        default="live",
+        description=(
+            "live: probability for today, computed by the daily run; historical: value over "
+            "a past season, computed by `bluebird rewind` (config/rewinds.yaml)."
+        ),
+    )
+    value: ValueSpec | None = Field(
+        default=None, description="Unit and decimals of the value; required for historical KPIs."
+    )
+    order: Literal["desc", "asc"] = Field(
+        default="desc",
+        description=(
+            "Ranking order: desc puts the highest value first; asc the lowest "
+            "(e.g. fewest white days)."
+        ),
+    )
     enabled: bool = True
     name: Localized
     description: Localized
@@ -221,8 +275,17 @@ class Kpi(StrictModel):
     periods: list[Slug] = Field(
         default_factory=lambda: ["day"],
         min_length=1,
-        description="Ids of the periods (config/periods.yaml) the KPI is computed for.",
+        description=(
+            "Ids of the periods (config/periods.yaml) a live KPI is computed for; "
+            "ignored for historical KPIs."
+        ),
     )
+
+    @model_validator(mode="after")
+    def _value_for_historical(self) -> Kpi:
+        if self.kind == "historical" and self.value is None:
+            raise ValueError(f"historical KPI '{self.id}' needs `value` (unit, decimals)")
+        return self
 
 
 class KpisFile(StrictModel):
@@ -315,14 +378,17 @@ class Tile(StrictModel):
     title: Localized | None = Field(
         default=None,
         description=(
-            "Defaults to the first KPI's name. Must contain `{period}`, replaced by the "
-            "period label (e.g. 'Neige {period}' -> 'Neige ce soir')."
+            "Defaults to the first KPI's name. A tile of live KPIs must contain `{period}`, "
+            "replaced by the period label (e.g. 'Neige {period}' -> 'Neige ce soir'); a "
+            "tile of historical KPIs (Rewind) must not."
         ),
     )
     icon: str | None = None
     periods: list[Slug] | None = Field(
         default=None,
-        description="Periods to show a tile for; defaults to every period of its KPIs.",
+        description=(
+            "Periods to show a tile of live KPIs for; defaults to every period of its KPIs."
+        ),
     )
     options: dict[str, Any] = Field(default_factory=dict)
 
@@ -339,7 +405,16 @@ class Filter(StrictModel):
     id: Slug
     name: Localized
     icon: str | None = None
-    all: bool = Field(default=False, description="Show every tile, whatever its KPIs.")
+    all: bool = Field(
+        default=False, description="Show every tile, except those of exclusive filters."
+    )
+    exclusive: bool = Field(
+        default=False,
+        description="Its tiles appear only under this filter, never under an `all` filter.",
+    )
+    theme: Literal["default", "rewind"] = Field(
+        default="default", description="Colour of the chip (rewind: Christmas red)."
+    )
 
 
 class FiltersFile(StrictModel):
@@ -359,7 +434,7 @@ class LayoutFile(StrictModel):
 
 
 class Attribution(StrictModel):
-    """Credit displayed in the site footer."""
+    """Credit displayed on the tile backs and on the "about" page (config/pages.yaml)."""
 
     name: str
     url: str
@@ -373,12 +448,13 @@ class Source(StrictModel):
     extractor: Slug
     transformer: Slug
     enabled: bool = True
-    schedule: Literal["daily", "on_demand", "reference"] = Field(
+    schedule: Literal["daily", "on_demand", "reference", "season"] = Field(
         default="daily",
         description=(
             "daily: fetched by every refresh; on_demand: only with `bluebird run --source`; "
             "reference: slow-changing data refreshed with `bluebird reference` and "
-            "committed under config/reference/."
+            "committed under config/reference/; season: archive of a closed season, "
+            "fetched once by `bluebird rewind` and committed under config/rewind/."
         ),
     )
     params: dict[str, Any] = Field(default_factory=dict)
@@ -389,6 +465,95 @@ class SourcesFile(StrictModel):
     """Schema of ``config/sources.yaml``."""
 
     sources: list[Source]
+
+
+# ------------------------------------------------------------------------ rewinds
+
+
+class Rewind(StrictModel):
+    """A Rewind: the review of a closed ski season, ranked on historical KPIs."""
+
+    id: Slug = Field(description="Season id, e.g. 2025-26; also the folder in config/rewind/.")
+    name: Localized
+    start: date = Field(description="First day of the season (local), included.")
+    end: date = Field(description="Last day of the season (local), included.")
+    massifs: list[Slug] = Field(min_length=1)
+    kpis: list[Slug] = Field(min_length=1, description="Historical KPIs of this Rewind.")
+    filter: Slug = Field(description="Exclusive filter (config/filters.yaml) showing its tiles.")
+    enabled: bool = True
+
+    @model_validator(mode="after")
+    def _ordered(self) -> Rewind:
+        if self.end <= self.start:
+            raise ValueError(f"rewind '{self.id}': end must be after start")
+        return self
+
+    def window(self, tz: ZoneInfo) -> tuple[datetime, datetime]:
+        """``(start, end]`` of the season as aware datetimes: local midnights."""
+        start = datetime.combine(self.start, time(0), tzinfo=tz)
+        end = datetime.combine(self.end + timedelta(days=1), time(0), tzinfo=tz)
+        return start, end
+
+
+class RewindsFile(StrictModel):
+    """Schema of ``config/rewinds.yaml``."""
+
+    rewinds: list[Rewind] = Field(default_factory=list)
+
+
+# -------------------------------------------------------------------------- pages
+
+
+class PageLink(StrictModel):
+    """An external link listed in a page section."""
+
+    label: Localized
+    url: HttpUrl
+
+
+class PageSection(StrictModel):
+    """A titled section of a page: paragraphs, links and/or a built-in block."""
+
+    id: Slug
+    title: Localized
+    paragraphs: list[Localized] = Field(default_factory=list)
+    links: list[PageLink] = Field(default_factory=list)
+    block: Literal["data_sources", "photo_credits"] | None = Field(
+        default=None,
+        description=(
+            "Content generated by the site after the paragraphs: data_sources lists the "
+            "attribution of every enabled source (config/sources.yaml); photo_credits "
+            "lists every banner photo credit (web/src/assets/photos/credits.yaml)."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def _not_empty(self) -> PageSection:
+        if not (self.paragraphs or self.links or self.block):
+            raise ValueError(f"section '{self.id}' needs paragraphs, links or a block")
+        return self
+
+
+class Page(StrictModel):
+    """A full-window page opened over the site (about, legal notice…)."""
+
+    id: Slug = Field(description="Also the URL hash that opens the page (#<id>).")
+    title: Localized
+    sections: list[PageSection] = Field(min_length=1)
+
+
+class Footer(StrictModel):
+    """Site footer: link to the source repository, then links to pages."""
+
+    repository: HttpUrl
+    pages: list[Slug] = Field(description="Ids of the pages linked from the footer, in order.")
+
+
+class PagesFile(StrictModel):
+    """Schema of ``config/pages.yaml``: footer and full-window pages."""
+
+    footer: Footer
+    pages: list[Page]
 
 
 # ------------------------------------------------------------------------- config
@@ -407,6 +572,8 @@ class Config:
     layout: LayoutFile
     sources: list[Source]
     periods: PeriodsFile
+    pages: PagesFile
+    rewinds: list[Rewind]
 
     # -- lookups ---------------------------------------------------------------
 
@@ -444,8 +611,15 @@ class Config:
                 )
         return refs
 
-    def enabled_kpis(self) -> list[Kpi]:
-        return [k for k in self.kpis if k.enabled]
+    def enabled_kpis(self, kind: KpiKind | None = None) -> list[Kpi]:
+        """Enabled KPIs, optionally of one kind (``live`` for the daily run)."""
+        return [k for k in self.kpis if k.enabled and (kind is None or k.kind == kind)]
+
+    def rewind(self, rewind_id: str) -> Rewind:
+        for rewind in self.rewinds:
+            if rewind.id == rewind_id:
+                return rewind
+        raise ConfigError(f"unknown rewind '{rewind_id}'")
 
     def kpi(self, kpi_id: str) -> Kpi:
         for kpi in self.kpis:
@@ -459,8 +633,15 @@ class Config:
                 return period
         raise ConfigError(f"unknown period '{period_id}'")
 
+    def is_live_tile(self, tile: Tile) -> bool:
+        """Whether a tile shows live KPIs (one tile per period) rather than a Rewind."""
+        kinds = {k.kind for k in self.kpis if k.id in tile.kpis}
+        return "live" in kinds or not kinds
+
     def tile_periods(self, tile: Tile) -> list[str]:
-        """Period ids a tile is shown for, in ``periods.yaml`` order."""
+        """Period ids a tile is shown for, in ``periods.yaml`` order (none for a Rewind)."""
+        if not self.is_live_tile(tile):
+            return []
         wanted = set(tile.periods or [])
         if not wanted:
             for kpi_id in tile.kpis:
@@ -509,6 +690,12 @@ class Config:
             errors.append(f"config/stations/{file_id}.yaml does not match any massif id")
 
         for kpi in self.kpis:
+            for language, text in kpi.description.model_dump().items():
+                if _PLACEHOLDER.search(text):
+                    errors.append(
+                        f"KPI '{kpi.id}' description ({language}) has a placeholder; "
+                        "only `method` is filled with params: write the value"
+                    )
             if kpi.method is None:
                 continue
             for language, text in kpi.method.model_dump().items():
@@ -540,12 +727,19 @@ class Config:
             for kpi_id in tile.kpis:
                 if kpi_id not in kpi_ids:
                     errors.append(f"tile '{tile.id}' references unknown KPI '{kpi_id}'")
+            live = self.is_live_tile(tile)
             if tile.title is not None:
                 for language, text in tile.title.model_dump().items():
-                    if "{period}" not in text:
+                    if live and "{period}" not in text:
                         errors.append(
                             f"tile '{tile.id}' title ({language}) must contain '{{period}}'"
                         )
+                    elif not live and "{period}" in text:
+                        errors.append(
+                            f"Rewind tile '{tile.id}' title ({language}) cannot use '{{period}}'"
+                        )
+            if not live and tile.periods:
+                errors.append(f"Rewind tile '{tile.id}' cannot list periods")
             kpi_periods = {p for k in self.kpis if k.id in tile.kpis for p in k.periods}
             for period_id in tile.periods or []:
                 if period_id not in kpi_periods:
@@ -564,6 +758,40 @@ class Config:
         for massif_id in self.layout.overrides:
             if massif_id not in massif_ids:
                 errors.append(f"layout override for unknown massif '{massif_id}'")
+
+        kpis_by_id = {k.id: k for k in self.kpis}
+        filters_by_id = {f.id: f for f in self.filters}
+        duplicates("rewind", [r.id for r in self.rewinds])
+        for flt in self.filters:
+            if flt.all and flt.exclusive:
+                errors.append(f"filter '{flt.id}' cannot be both `all` and `exclusive`")
+        for rewind in self.rewinds:
+            for massif_id in rewind.massifs:
+                if massif_id not in massif_ids:
+                    errors.append(f"rewind '{rewind.id}' references unknown massif '{massif_id}'")
+            for kpi_id in rewind.kpis:
+                kpi = kpis_by_id.get(kpi_id)
+                if kpi is None:
+                    errors.append(f"rewind '{rewind.id}' references unknown KPI '{kpi_id}'")
+                elif kpi.kind != "historical":
+                    errors.append(f"rewind '{rewind.id}': KPI '{kpi_id}' is not historical")
+            flt = filters_by_id.get(rewind.filter)
+            if flt is None:
+                errors.append(f"rewind '{rewind.id}' references unknown filter '{rewind.filter}'")
+            elif not flt.exclusive:
+                errors.append(f"rewind '{rewind.id}': filter '{rewind.filter}' must be exclusive")
+        in_rewinds = {kpi_id for r in self.rewinds for kpi_id in r.kpis}
+        for kpi in self.kpis:
+            if kpi.kind == "historical" and kpi.id not in in_rewinds:
+                errors.append(f"historical KPI '{kpi.id}' is not part of any rewind")
+
+        page_ids = {p.id for p in self.pages.pages}
+        duplicates("page", [p.id for p in self.pages.pages])
+        for page in self.pages.pages:
+            duplicates(f"page '{page.id}' section", [s.id for s in page.sections])
+        for page_id in self.pages.footer.pages:
+            if page_id not in page_ids:
+                errors.append(f"footer references unknown page '{page_id}'")
 
         return errors
 
@@ -601,6 +829,8 @@ def load_config(config_dir: Path | None = None) -> Config:
         layout=_read_model(root / "layout.yaml", LayoutFile),
         sources=_read_model(root / "sources.yaml", SourcesFile).sources,
         periods=_read_model(root / "periods.yaml", PeriodsFile),
+        pages=_read_model(root / "pages.yaml", PagesFile),
+        rewinds=_read_model(root / "rewinds.yaml", RewindsFile).rewinds,
     )
     errors = config.reference_errors()
     if errors:

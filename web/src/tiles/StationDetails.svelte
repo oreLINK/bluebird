@@ -4,6 +4,7 @@
   elevation. Shared by every tile type.
 -->
 <script lang="ts">
+  import ConfidenceDots from '../components/ConfidenceDots.svelte';
   import type { Kpi } from '../lib/config';
   import type { RankingEntry, StationInfo } from '../lib/data';
   import { formatDriver, formatWindow } from '../lib/format';
@@ -51,9 +52,7 @@
   <div>
     <dt>{i18n.t('tile.confidence')}</dt>
     <dd>
-      <span class="confidence" data-level={entry.confidence} aria-hidden="true">
-        <i></i><i></i><i></i>
-      </span>
+      <ConfidenceDots level={entry.confidence} />
       {i18n.t(`confidence.${entry.confidence}`)}
     </dd>
   </div>
@@ -87,23 +86,7 @@
     font-weight: 600;
   }
 
-  .confidence {
-    display: inline-flex;
-    gap: 3px;
+  dd :global(.dots) {
     margin-right: 6px;
-    vertical-align: middle;
-  }
-
-  .confidence i {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--track);
-  }
-
-  .confidence[data-level='low'] i:nth-child(-n + 1),
-  .confidence[data-level='medium'] i:nth-child(-n + 2),
-  .confidence[data-level='high'] i {
-    background: var(--prob-high);
   }
 </style>

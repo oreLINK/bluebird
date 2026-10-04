@@ -1,6 +1,7 @@
 /**
- * Periods (config/periods.yaml): one tile per configured tile and period, shown
- * until the period is over.
+ * Periods (config/periods.yaml): one tile per configured tile of live KPIs and
+ * period, shown until the period is over. Tiles of historical KPIs (Rewinds)
+ * are shown once, after them.
  *
  * The payload lists, for each KPI, the periods computed by the last refresh
  * (morning, evening… of today and tomorrow). The page turns every configured
@@ -12,7 +13,7 @@
  */
 import periodsYaml from '@config/periods.yaml';
 import type { Kpi, ResolvedTile, Tile } from './config';
-import type { KpiPeriod, MassifDaily, RankingEntry } from './data';
+import type { MassifDaily } from './data';
 import type { Localized, Period, PeriodsFile } from './generated/periods';
 
 export type { Period };
@@ -29,32 +30,20 @@ export interface Slot {
   end: string;
 }
 
-/** A KPI seen through one period: the shape tile components read. */
-export interface KpiView {
-  kpi_id: string;
-  aggregator_version: string;
-  ranking: RankingEntry[];
-  /** When these values were computed. */
-  generated_at: string;
-  /** Computed by an earlier refresh than the payload (the KPI failed since). */
-  stale: boolean;
-}
-
-/** The payload of a massif narrowed to one period. */
-export type MassifView = Omit<MassifDaily, 'kpis'> & {
-  kpis: Record<string, KpiView>;
-  slot: Slot;
-};
-
-/** A configured tile expanded for one period. */
+/** A configured tile expanded for one period (or shown once, for a Rewind). */
 export interface TileInstance {
   /** Unique DOM-safe id, e.g. `snowfall_today--evening-2026-12-14`. */
   id: string;
   /** The configured tile with `id` and `title` resolved for the period. */
   tile: Tile;
   kpis: Kpi[];
-  slot: Slot;
-  view: MassifView;
+  /** The period shown; `null` for a tile of historical KPIs. */
+  slot: Slot | null;
+}
+
+/** Whether a tile shows live KPIs (expanded per period) rather than a Rewind. */
+export function isLiveTile({ kpis }: Pick<ResolvedTile, 'kpis'>): boolean {
+  return (kpis[0]?.kind ?? 'live') === 'live';
 }
 
 const DAY_MS = 86_400_000;
@@ -163,52 +152,40 @@ export function instanceTitle(tile: Tile, kpis: Kpi[], label: Localized): Locali
   };
 }
 
-/** The payload narrowed to one slot: `kpis[id].ranking` is that period's ranking. */
-export function massifView(data: MassifDaily, slot: Slot): MassifView {
-  const kpis: Record<string, KpiView> = {};
-  for (const [id, kpi] of Object.entries(data.kpis)) {
-    const period: KpiPeriod | undefined = kpi.periods.find((p) => p.key === slot.key);
-    if (!period) continue;
-    kpis[id] = {
-      kpi_id: kpi.kpi_id,
-      aggregator_version: kpi.aggregator_version,
-      ranking: period.ranking,
-      generated_at: period.generated_at,
-      stale: Date.parse(period.generated_at) < Date.parse(data.generated_at),
-    };
-  }
-  return { ...data, kpis, slot };
-}
-
 /**
- * One tile per configured tile and period not over at `now`, in time order,
- * then in layout order. A tile whose KPI has no value for a period still
+ * One tile per configured tile of live KPIs and period not over at `now`, in
+ * time order, then in layout order; then the tiles of historical KPIs, once
+ * each, in layout order. A tile whose KPI has no value for a period still
  * appears (it says the data is unavailable) as long as another KPI has it.
+ * Without `data` (not loaded yet) only the historical tiles are returned.
  */
 export function expandTiles(
   resolved: ResolvedTile[],
-  data: MassifDaily,
+  data: MassifDaily | null,
   now: number,
   periods: Period[] = periodsFile.periods,
 ): TileInstance[] {
-  const slots = payloadSlots(data, now, periods);
-  const refDay = referenceDay(data, now);
+  const live = resolved.filter(isLiveTile);
   const instances: TileInstance[] = [];
-  for (const slot of slots) {
-    const label = slotLabel(slot, refDay, periods);
-    if (!label) continue;
-    const view = massifView(data, slot);
-    for (const { tile, kpis } of resolved) {
-      if (!tilePeriods(tile, kpis).includes(slot.periodId)) continue;
-      const id = `${tile.id}--${slot.periodId}-${slot.skiDay}`;
-      instances.push({
-        id,
-        tile: { ...tile, id, title: instanceTitle(tile, kpis, label) },
-        kpis,
-        slot,
-        view,
-      });
+  if (data) {
+    const refDay = referenceDay(data, now);
+    for (const slot of payloadSlots(data, now, periods)) {
+      const label = slotLabel(slot, refDay, periods);
+      if (!label) continue;
+      for (const { tile, kpis } of live) {
+        if (!tilePeriods(tile, kpis).includes(slot.periodId)) continue;
+        const id = `${tile.id}--${slot.periodId}-${slot.skiDay}`;
+        instances.push({
+          id,
+          tile: { ...tile, id, title: instanceTitle(tile, kpis, label) },
+          kpis,
+          slot,
+        });
+      }
     }
+  }
+  for (const { tile, kpis } of resolved.filter((r) => !isLiveTile(r))) {
+    instances.push({ id: tile.id, tile, kpis, slot: null });
   }
   return instances;
 }

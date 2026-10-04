@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 
 import polars as pl
 
-from .config import Config, Massif, Period, StationRef, parse_local_time
+from .config import Config, Massif, Period, Rewind, StationRef, parse_local_time
 from .storage import Storage, latest_key
 from .storage.keys import silver_prefix
 
@@ -82,6 +82,8 @@ class RunContext:
     run_id: str
     generated_at: datetime
     massif_ids: list[str] | None = None
+    #: The season being reviewed, for `bluebird rewind` runs (None for daily runs).
+    rewind: Rewind | None = None
     _silver_cache: dict[str, pl.DataFrame | None] = field(default_factory=dict, repr=False)
     _reference_cache: dict[str, pl.DataFrame | None] = field(default_factory=dict, repr=False)
 
@@ -94,6 +96,7 @@ class RunContext:
         massif_ids: list[str] | None = None,
         now: datetime | None = None,
         run_id: str | None = None,
+        rewind: Rewind | None = None,
     ) -> RunContext:
         """Context of a run starting ``now``.
 
@@ -114,6 +117,7 @@ class RunContext:
             run_id=make_run_id(now),
             generated_at=now.astimezone(UTC).replace(microsecond=0),
             massif_ids=massif_ids,
+            rewind=rewind,
         )
 
     # -- configuration shortcuts ----------------------------------------------

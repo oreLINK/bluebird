@@ -31,6 +31,12 @@ VARIABLES: dict[str, tuple[str, str]] = {
     "wind_gusts_10m": ("wind_gusts_kmh", "km/h"),
     "freezing_level_height": ("freezing_level_m", "m"),
     "cloud_cover": ("cloud_cover_pct", "%"),
+    "sunshine_duration": ("sunshine_s", "s"),
+    "weather_code": ("weather_code", "wmo code"),
+    "snow_depth": ("snow_depth_m", "m"),
+    "relative_humidity_2m": ("relative_humidity_pct", "%"),
+    "cloud_cover_low": ("cloud_cover_low_pct", "%"),
+    "shortwave_radiation": ("shortwave_wm2", "W/m²"),
 }
 
 # Units Open-Meteo reports for series it has no data for.

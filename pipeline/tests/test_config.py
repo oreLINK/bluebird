@@ -115,6 +115,15 @@ def test_repository_periods_cover_the_ski_day(repo_config: Config) -> None:
     assert periods.span(repo_config.period("evening")) == (720, 1080)  # 18:00-00:00
 
 
+def test_footer_pages_must_exist(tmp_path: Path) -> None:
+    config_dir = tiny_config_dir(tmp_path)
+    pages = (config_dir / "pages.yaml").read_text(encoding="utf-8")
+    pages = pages.replace("pages: [about, legal, privacy]", "pages: [about, nope]")
+    (config_dir / "pages.yaml").write_text(pages, encoding="utf-8")
+    with pytest.raises(ConfigError, match="footer references unknown page 'nope'"):
+        load_config(config_dir)
+
+
 @pytest.mark.parametrize(
     ("old", "new", "message"),
     [
@@ -126,6 +135,23 @@ def test_repository_periods_cover_the_ski_day(repo_config: Config) -> None:
 def test_time_slots_must_tile_the_day(tmp_path: Path, old: str, new: str, message: str) -> None:
     config_dir = tiny_config_dir(tmp_path)
     _edit(config_dir, "periods.yaml", old, new)
+    with pytest.raises(ConfigError, match=message):
+        load_config(config_dir)
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "message"),
+    [
+        ("        block: data_sources\n", "", "needs paragraphs, links or a block"),
+        ("  repository: https://", "  repository: http://", "String should match"),
+        ("  - id: legal\n", "  - id: about\n", "duplicate page id 'about'"),
+    ],
+)
+def test_invalid_pages_are_rejected(tmp_path: Path, old: str, new: str, message: str) -> None:
+    config_dir = tiny_config_dir(tmp_path)
+    pages = (config_dir / "pages.yaml").read_text(encoding="utf-8")
+    assert old in pages
+    (config_dir / "pages.yaml").write_text(pages.replace(old, new, 1), encoding="utf-8")
     with pytest.raises(ConfigError, match=message):
         load_config(config_dir)
 
@@ -148,3 +174,48 @@ def test_tile_periods_default_to_those_of_its_kpis(repo_config: Config) -> None:
     tiles = {t.id: t for t in repo_config.tiles}
     assert repo_config.tile_periods(tiles["onpiste_powder"]) == ["morning", "midday", "afternoon"]
     assert repo_config.tile_periods(tiles["snowfall_today"])[0] == "day"
+
+
+@pytest.mark.parametrize(
+    ("file", "old", "new", "message"),
+    [
+        (
+            "rewinds.yaml",
+            "      - season_total_snowfall\n",
+            "      - snowfall_chance\n",
+            "KPI 'snowfall_chance' is not historical",
+        ),
+        ("filters.yaml", "    exclusive: true\n", "", "filter 'rewind-2025-26' must be exclusive"),
+        ("rewinds.yaml", "    end: 2026-05-01", "    end: 2025-11-01", "end must be after start"),
+        ("kpis.yaml", "    value: { unit: h, decimals: 0 }\n", "", "needs `value`"),
+    ],
+)
+def test_invalid_rewinds_are_rejected(
+    tmp_path: Path, file: str, old: str, new: str, message: str
+) -> None:
+    config_dir = tiny_config_dir(tmp_path)
+    text = (config_dir / file).read_text(encoding="utf-8")
+    assert old in text
+    (config_dir / file).write_text(text.replace(old, new, 1), encoding="utf-8")
+    with pytest.raises(ConfigError, match=message):
+        load_config(config_dir)
+
+
+def test_historical_kpis_need_a_season_aggregator(tmp_path: Path) -> None:
+    config_dir = tiny_config_dir(tmp_path)
+    kpis = (config_dir / "kpis.yaml").read_text(encoding="utf-8")
+    kpis = kpis.replace("aggregator: season_total_snowfall", "aggregator: snowfall_chance", 1)
+    (config_dir / "kpis.yaml").write_text(kpis, encoding="utf-8")
+    errors = plugin_errors(load_config(config_dir))
+    assert any("is historical but aggregator 'snowfall_chance'" in e for e in errors)
+
+
+def test_kpi_descriptions_have_no_placeholders(tmp_path: Path) -> None:
+    config_dir = tiny_config_dir(tmp_path)
+    kpis = (config_dir / "kpis.yaml").read_text(encoding="utf-8")
+    kpis = kpis.replace(
+        "le manteau neigeux dépasse 70 cm", "le manteau neigeux dépasse {threshold_cm} cm", 1
+    )
+    (config_dir / "kpis.yaml").write_text(kpis, encoding="utf-8")
+    with pytest.raises(ConfigError, match=r"description \(fr\) has a placeholder"):
+        load_config(config_dir)

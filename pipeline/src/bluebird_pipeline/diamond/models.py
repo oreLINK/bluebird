@@ -5,7 +5,7 @@ and the frontend generates its TypeScript types from them. Any breaking change
 must bump the file's ``schema_version`` and update the frontend in the same
 pull request.
 
-Versions: massif payload 2 (rankings per period), manifest 1, status 1.
+Versions: massif payload 2 (rankings per period), manifest 1, status 1, rewind 1.
 """
 
 from __future__ import annotations
@@ -20,6 +20,7 @@ from ..report import State
 MASSIF_SCHEMA_VERSION = 2
 MANIFEST_SCHEMA_VERSION = 1
 STATUS_SCHEMA_VERSION = 1
+REWIND_SCHEMA_VERSION = 1
 
 
 class DiamondModel(BaseModel):
@@ -157,3 +158,37 @@ class DiamondStatus(DiamondModel):
     transforms: list[DiamondStatusItem]
     kpis: list[DiamondStatusKpi]
     tiles: dict[str, list[DiamondStatusTile]] = Field(description="Per massif id.")
+
+
+class DiamondRewindEntry(DiamondModel):
+    station_id: str
+    value: float
+    drivers: dict[str, float | int | str | None]
+
+
+class DiamondRewindKpi(DiamondModel):
+    kpi_id: str
+    aggregator_version: str
+    unit: str
+    ranking: list[DiamondRewindEntry] = Field(
+        description="Best first: by value, descending unless the KPI `order` is asc."
+    )
+
+
+class DiamondRewind(DiamondModel):
+    """``config/rewind/{rewind_id}/{massif_id}.json``: a closed season, ranked.
+
+    Generated once by ``bluebird rewind`` and committed (the site bundles it at
+    build time); never edited by hand.
+    """
+
+    schema_version: Literal[1] = REWIND_SCHEMA_VERSION
+    rewind_id: str
+    massif_id: str
+    start: date = Field(description="First day of the season (local), included.")
+    end: date = Field(description="Last day of the season (local), included.")
+    generated_at: datetime
+    timezone: str
+    stations: dict[str, DiamondStation]
+    kpis: dict[str, DiamondRewindKpi]
+    sources: list[DiamondSource]
