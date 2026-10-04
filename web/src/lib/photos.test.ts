@@ -1,7 +1,7 @@
 import { readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { buildPhotoIndex, isStationPhotoKey, photoKeys, pickPhoto, stationPhotoKeys } from './photos';
+import { buildPhotoIndex, isStationPhotoKey, listCredits, photoKeys, pickPhoto, stationPhotoKeys } from './photos';
 
 const index = buildPhotoIndex({
   '../assets/photos/pyrenees/cauterets/cauterets_2.webp': '/assets/cauterets-2.webp',
@@ -68,5 +68,21 @@ describe('photo folders', () => {
     for (const key of photoKeys()) {
       if (key.split('/').length === 3) expect(isStationPhotoKey(key), key).toBe(true);
     }
+  });
+});
+
+describe('listCredits', () => {
+  it('keeps the credits of existing photos, sorted by key', () => {
+    const index = new Map([
+      ['pyrenees/b/b_1', '/b.webp'],
+      ['pyrenees/a/a_1', '/a.webp'],
+    ]);
+    const credit = { author: 'X' };
+    const list = listCredits(index, {
+      'pyrenees/b/b_1': credit,
+      'pyrenees/a/a_1': credit,
+      'pyrenees/gone/gone_1': credit,
+    });
+    expect(list.map((c) => c.key)).toEqual(['pyrenees/a/a_1', 'pyrenees/b/b_1']);
   });
 });

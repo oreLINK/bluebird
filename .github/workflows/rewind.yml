@@ -1,0 +1,76 @@
+# Build a Rewind (the review of a closed season) once its season is over.
+# Fetches the season archive of every `schedule: season` source, writes
+# config/rewind/<id>/ (hourly Parquet + rankings JSON) on a new branch and
+# opens a pull request to `main` for review. Nothing is pushed to main directly.
+name: Build a Rewind
+
+on:
+  workflow_dispatch:
+    inputs:
+      rewind:
+        description: 'Rewind id in config/rewinds.yaml (e.g. 2025-26)'
+        required: true
+      no_fetch:
+        description: 'Recompute the KPIs from the committed hourly files (no API call)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: rewind-${{ inputs.rewind }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Fetch, compute and open a pull request
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Use a storage folder outside the checkout
+        run: echo "BLUEBIRD_DATA_DIR=$RUNNER_TEMP/bluebird-data" >> "$GITHUB_ENV"
+      - name: Build the Rewind
+        working-directory: pipeline
+        env:
+          REWIND: ${{ inputs.rewind }}
+          NO_FETCH: ${{ inputs.no_fetch }}
+        run: |
+          uv sync --locked --no-dev
+          args=(--rewind "$REWIND")
+          if [ "$NO_FETCH" = "true" ]; then args+=(--no-fetch); fi
+          uv run bluebird rewind "${args[@]}"
+      - name: Keep the raw responses for 7 days
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rewind-bronze-${{ github.run_id }}
+          path: ${{ env.BLUEBIRD_DATA_DIR }}/bronze
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Open a pull request to main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REWIND: ${{ inputs.rewind }}
+        run: |
+          git add config/rewind
+          if git diff --cached --quiet; then
+            echo "Rewind unchanged."
+            exit 0
+          fi
+          branch="rewind/${REWIND}-$(date -u +%Y%m%d-%H%M%S)"
+          git switch -c "$branch"
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit --quiet -m "Build Rewind ${REWIND}"
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "Build Rewind ${REWIND}" \
+            --body "Automated build of \`config/rewind/${REWIND}/\` by the *Build a Rewind* workflow. Check the rankings in the JSON files (values should be plausible season totals in cm and durations in hours) before merging."

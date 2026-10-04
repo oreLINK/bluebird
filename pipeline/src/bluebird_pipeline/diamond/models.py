@@ -85,3 +85,37 @@ class DiamondManifest(DiamondModel):
     schema_version: Literal[1] = SCHEMA_VERSION
     generated_at: datetime
     massifs: dict[str, DiamondManifestEntry]
+
+
+class DiamondRewindEntry(DiamondModel):
+    station_id: str
+    value: float
+    drivers: dict[str, float | int | str | None]
+
+
+class DiamondRewindKpi(DiamondModel):
+    kpi_id: str
+    aggregator_version: str
+    unit: str
+    ranking: list[DiamondRewindEntry] = Field(
+        description="Best first: by value, descending unless the KPI `order` is asc."
+    )
+
+
+class DiamondRewind(DiamondModel):
+    """``config/rewind/{rewind_id}/{massif_id}.json``: a closed season, ranked.
+
+    Generated once by ``bluebird rewind`` and committed (the site bundles it at
+    build time); never edited by hand.
+    """
+
+    schema_version: Literal[1] = SCHEMA_VERSION
+    rewind_id: str
+    massif_id: str
+    start: date = Field(description="First day of the season (local), included.")
+    end: date = Field(description="Last day of the season (local), included.")
+    generated_at: datetime
+    timezone: str
+    stations: dict[str, DiamondStation]
+    kpis: dict[str, DiamondRewindKpi]
+    sources: list[DiamondSource]

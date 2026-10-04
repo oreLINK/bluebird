@@ -54,6 +54,25 @@ export function formatLongDate(isoDate: string, locale: Locale): string {
   }).format(date);
 }
 
+/** "1 déc. 2025" / "1 Dec 2025" for a YYYY-MM-DD date. */
+export function formatDate(isoDate: string, locale: Locale): string {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  const date = new Date(Date.UTC(year ?? 1970, (month ?? 1) - 1, day ?? 1, 12));
+  return new Intl.DateTimeFormat(INTL_LOCALE[locale], {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(date);
+}
+
+/** "2025/2026" for a season from two YYYY-MM-DD dates (one year if both match). */
+export function formatSeason(startIso: string, endIso: string): string {
+  const start = startIso.slice(0, 4);
+  const end = endIso.slice(0, 4);
+  return start === end ? start : `${start}/${end}`;
+}
+
 /** "06:32" for an ISO datetime, in the given IANA timezone. */
 export function formatTime(isoDateTime: string, locale: Locale, timeZone: string): string {
   return new Intl.DateTimeFormat(INTL_LOCALE[locale], {
@@ -69,15 +88,19 @@ export function formatWindow(
   endIso: string,
   locale: Locale,
   timeZone: string,
+  /** YYYY-MM-DD of the data: a window on another day shows its weekday (e.g. tomorrow). */
+  referenceDay?: string,
 ): string {
   const start = new Date(startIso);
   const end = new Date(endIso);
-  const sameDay =
-    new Intl.DateTimeFormat('en-CA', { timeZone }).format(start) ===
-    new Intl.DateTimeFormat('en-CA', { timeZone }).format(end);
+  const isoDay = (date: Date) => new Intl.DateTimeFormat('en-CA', { timeZone }).format(date);
+  const sameDay = isoDay(start) === isoDay(end);
   const time = (date: Date) => formatTime(date.toISOString(), locale, timeZone);
-  if (sameDay) return `${time(start)} → ${time(end)}`;
   const day = new Intl.DateTimeFormat(INTL_LOCALE[locale], { weekday: 'short', timeZone });
+  if (sameDay && referenceDay && isoDay(start) !== referenceDay) {
+    return `${day.format(start)} ${time(start)} → ${time(end)}`;
+  }
+  if (sameDay) return `${time(start)} → ${time(end)}`;
   return `${day.format(start)} ${time(start)} → ${day.format(end)} ${time(end)}`;
 }
 

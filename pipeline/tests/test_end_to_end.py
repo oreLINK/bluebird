@@ -34,6 +34,8 @@ def test_all_layers_produce_a_valid_diamond_payload(ctx: RunContext) -> None:
         "snowfall_chance",
         "offpiste_powder_chance",
         "onpiste_powder_chance",
+        "whiteout_chance_today",
+        "whiteout_chance_tomorrow",
     }
     snowfall = payload.kpis["snowfall_chance"].ranking
     # Default synthetic weather: 0.4 cm/h all day in every member -> certain snowfall.
@@ -84,7 +86,7 @@ def test_demo_data_covers_every_kpi(repo_config, tmp_path) -> None:
     payload = DiamondMassifDaily.model_validate_json(
         (tmp_path / "diamond" / "pyrenees" / "latest.json").read_text(encoding="utf-8")
     )
-    assert len(payload.kpis) == 3
+    assert set(payload.kpis) == {k.id for k in repo_config.enabled_kpis(kind="live")}
     probabilities = [e.probability for e in payload.kpis["snowfall_chance"].ranking]
     assert max(probabilities) > min(probabilities)  # rankings are not flat
 

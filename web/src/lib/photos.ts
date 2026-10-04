@@ -61,6 +61,17 @@ export function stationPhotoKeys(
     .sort((a, b) => Number(a.slice(prefix.length)) - Number(b.slice(prefix.length)));
 }
 
+/** Credits of the photos that exist, sorted by key (for the legal page). */
+export function listCredits(
+  index: Map<string, string>,
+  credits: Record<string, PhotoCredit>,
+): { key: string; credit: PhotoCredit }[] {
+  return Object.keys(credits)
+    .filter((key) => index.has(key))
+    .sort()
+    .map((key) => ({ key, credit: credits[key]! }));
+}
+
 /** Resolve the `photo` option of a tile against the available photos. */
 export function pickPhoto(
   option: string,
@@ -91,6 +102,9 @@ const files = import.meta.glob('../assets/photos/**/*.{webp,jpg,jpeg,png,avif,WE
 
 const index = buildPhotoIndex(files);
 const credits = (creditsYaml ?? {}) as Record<string, PhotoCredit>;
+
+/** Every bundled photo with its credit. */
+export const photoCredits = listCredits(index, credits);
 
 /** Photo drawn for each station in this page load, so re-renders keep it. */
 const drawn = new Map<string, Photo | undefined>();

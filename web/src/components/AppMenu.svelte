@@ -1,32 +1,19 @@
 <!--
-  Side menu (opened from the header button): massif and language choices.
+  Side menu (opened from the header button): language choice. The massif is
+  chosen in the massif bar of the header.
   While open, the page behind is blurred, cannot scroll (lib/scrollLock.ts)
   and is made inert by App.svelte, so keyboard focus stays in the menu.
-  Closes with Escape, the close button, a tap on the backdrop, or after
-  choosing a massif. Focus returns to the element that opened it.
+  Closes with Escape, the close button or a tap on the backdrop. Focus returns to the element that opened it.
 -->
 <script lang="ts">
   import { prefersReducedMotion } from 'svelte/motion';
   import { fade, fly } from 'svelte/transition';
-  import type { Massif } from '../lib/config';
   import { LOCALES, LOCALE_NAMES } from '../lib/i18n/core';
   import { i18n } from '../lib/i18n/i18n.svelte';
   import { lockScroll, unlockScroll } from '../lib/scrollLock';
   import Icon from './Icon.svelte';
 
-  let {
-    open,
-    onclose,
-    massifs,
-    selectedMassif,
-    onselectmassif,
-  }: {
-    open: boolean;
-    onclose: () => void;
-    massifs: Massif[];
-    selectedMassif: string;
-    onselectmassif: (id: string) => void;
-  } = $props();
+  let { open, onclose }: { open: boolean; onclose: () => void } = $props();
 
   let closeButton = $state<HTMLButtonElement>();
   const duration = $derived(prefersReducedMotion.current ? 0 : 220);
@@ -73,25 +60,6 @@
         <Icon name="close" size={22} />
       </button>
     </header>
-
-    <section aria-labelledby="menu-massif">
-      <h3 id="menu-massif"><Icon name="mountain" size={16} />{i18n.t('menu.massif')}</h3>
-      <ul>
-        {#each massifs as massif (massif.id)}
-          <li>
-            <button
-              type="button"
-              class="option"
-              aria-pressed={massif.id === selectedMassif}
-              onclick={() => onselectmassif(massif.id)}
-            >
-              <span>{i18n.pick(massif.name)}</span>
-              {#if massif.id === selectedMassif}<Icon name="check" size={18} />{/if}
-            </button>
-          </li>
-        {/each}
-      </ul>
-    </section>
 
     <section aria-labelledby="menu-language">
       <h3 id="menu-language"><Icon name="globe" size={16} />{i18n.t('menu.language')}</h3>

@@ -1,21 +1,28 @@
 <!--
   Sticky app bar on frosted white: logo and title on the left, menu button on
-  the right, filter bar below.
+  the right; below, the massif bar (large chips, no "all" choice), then the
+  filter bar (small chips).
 -->
 <script lang="ts">
-  import type { Filter } from '../lib/config';
+  import type { Filter, Massif } from '../lib/config';
   import { i18n } from '../lib/i18n/i18n.svelte';
   import FilterBar from './FilterBar.svelte';
   import Icon from './Icon.svelte';
   import Logo from './Logo.svelte';
 
   let {
+    massifs,
+    selectedMassif,
+    onselectmassif,
     filters,
     selectedFilter,
     onselectfilter,
     menuOpen,
     onmenu,
   }: {
+    massifs: Massif[];
+    selectedMassif: string;
+    onselectmassif: (id: string) => void;
     filters: Filter[];
     selectedFilter: string;
     onselectfilter: (id: string) => void;
@@ -39,9 +46,25 @@
         <Icon name="menu" size={24} />
       </button>
     </div>
-    {#if filters.length > 1}
-      <FilterBar {filters} selected={selectedFilter} onselect={onselectfilter} />
-    {/if}
+    <div class="bars">
+      {#if massifs.length > 0}
+        <FilterBar
+          size="large"
+          options={massifs}
+          selected={selectedMassif}
+          onselect={onselectmassif}
+          label={i18n.t('massifs.label')}
+        />
+      {/if}
+      {#if filters.length > 1}
+        <FilterBar
+          options={filters}
+          selected={selectedFilter}
+          onselect={onselectfilter}
+          label={i18n.t('filters.label')}
+        />
+      {/if}
+    </div>
   </div>
 </header>
 
@@ -58,6 +81,11 @@
     gap: 10px;
     padding-top: 10px;
     padding-bottom: 10px;
+  }
+
+  .bars {
+    display: grid;
+    gap: 6px;
   }
 
   .top {
