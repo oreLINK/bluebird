@@ -57,7 +57,7 @@ export type WindowStart = string;
 export type WindowEnd = string;
 export type Members = number;
 /**
- * Sorted by probability, descending.
+ * Best first: by probability, or by the shown value for a KPI with a `value` display (config/kpis.yaml `display`, `order`).
  */
 export type Ranking = DiamondRankingEntry[];
 /**

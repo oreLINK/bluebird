@@ -82,8 +82,14 @@ def demo_value(
 
     snowfall = (0.1 + 1.0 * west) * storm * spread * altitude + showers * spread
     wind = 8 + 55 * (1 - west) * _noise(model, member, lon, "wind") * (0.6 + 0.4 * storm)
+    # Day/night cycle: up to +7 °C in the early afternoon (13:00 UTC), -2 °C at night,
+    # so the thaw, refreeze and mild-day KPIs have something to show.
+    daytime = math.sin(math.pi * (when.hour - 8) / 10)
     temperature = (
-        -2.0 - (elevation - 1500) / 170 + 4 * (1 - west) * _noise(model, member, lon, "temp")
+        -2.0
+        - (elevation - 1500) / 170
+        + 4 * (1 - west) * _noise(model, member, lon, "temp")
+        + (7.0 * daytime if daytime > 0 else -2.0)
     )
     values: dict[str, float | None] = {
         "snowfall": round(snowfall, 2),

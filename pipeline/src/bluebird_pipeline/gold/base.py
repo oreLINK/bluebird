@@ -73,6 +73,20 @@ def confidence_level(probability: float, members: int) -> Confidence:
     return "low"
 
 
+def spread_confidence(
+    low: DriverValue, high: DriverValue, tolerance: float, members: int
+) -> Confidence:
+    """Reliability of a median value: how close the p10 and p90 scenarios are."""
+    if members < 10 or not isinstance(low, int | float) or not isinstance(high, int | float):
+        return "low"
+    spread = abs(high - low)
+    if spread <= tolerance:
+        return "high"
+    if spread <= 2 * tolerance:
+        return "medium"
+    return "low"
+
+
 class AggregatorParams(BaseModel):
     """Base class of every Aggregator ``Params`` model (unknown keys rejected)."""
 
@@ -143,8 +157,18 @@ class Aggregator(ABC):
         window_end: datetime,
         drivers: dict[str, DriverValue],
     ) -> KpiResult:
-        """Build a :class:`KpiResult` with the standard fields filled in."""
+        """Build a :class:`KpiResult` with the standard fields filled in.
+
+        Reliability is the agreement of the scenarios on the probability, or,
+        for a KPI shown as a value, the spread of its ``range`` drivers.
+        """
         probability = min(1.0, max(0.0, float(probability)))
+        display = self.kpi.display
+        if display.kind == "value" and display.range and display.tolerance:
+            low, high = (drivers.get(name) for name in display.range)
+            confidence = spread_confidence(low, high, display.tolerance, members)
+        else:
+            confidence = confidence_level(probability, members)
         return KpiResult(
             kpi_id=self.kpi.id,
             station_id=ref.station.id,
@@ -154,7 +178,7 @@ class Aggregator(ABC):
             period_start=period.start,
             period_end=period.end,
             probability=round(probability, 4),
-            confidence=confidence_level(probability, members),
+            confidence=confidence,
             window_start=window_start,
             window_end=window_end,
             members=members,

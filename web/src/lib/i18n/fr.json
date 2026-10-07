@@ -37,7 +37,7 @@
   "back.breakdown": "Stations : {high} fiabilité élevée, {medium} moyenne, {low} faible.",
   "back.scenarios": "{members} scénarios de prévision analysés par station.",
   "back.updated": "Valeurs calculées le {date} à {time}.",
-  "back.reliabilityHelp": "L'indice mesure l'accord entre les scénarios : plus ils convergent, plus la probabilité est fiable.",
+  "back.reliabilityHelp": "L'indice mesure l'accord entre les scénarios : plus ils convergent, plus le résultat affiché est fiable.",
   "back.windowVaries": "Selon la station (voir le détail de chaque station).",
   "back.what": "Ce que ça mesure",
   "back.updateTitle": "Mise à jour",

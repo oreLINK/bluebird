@@ -37,6 +37,16 @@ periods:
       - { fr: aujourd'hui, en: today }
       - { fr: demain, en: tomorrow }
 
+  # The sunset of the day (sunset_chance KPI): its own window, computed for each
+  # resort; shown until 22:00 since spring sunsets come after 18:00.
+  - id: sunset
+    start: "06:00"
+    end: "22:00"
+    native_window: true
+    labels:
+      - { fr: ce soir, en: tonight }
+      - { fr: demain soir, en: tomorrow evening }
+
   - id: morning
     start: "06:00"
     end: "12:00"

@@ -4,7 +4,7 @@
  */
 import { type Filter, type Tile, filters as configFilters, massifs } from '../lib/config';
 import type { Localized } from '../lib/generated/kpis';
-import type { KpiView, RankItem } from '../lib/kpiView';
+import { type KpiView, type RankItem, showsPercent } from '../lib/kpiView';
 import { type Photo, tilePhoto } from '../lib/photos';
 import { type TimeWindow, sharedWindow, splitTop } from '../lib/ranking';
 import { type BannerScene, bannerScene, booleanOption, numberOption, stringOption } from './options';
@@ -18,7 +18,7 @@ export interface TileModel {
   items: RankItem[];
   top: RankItem[];
   rest: RankItem[];
-  /** Decimal odds next to probabilities (live only). */
+  /** Decimal odds next to probabilities (live KPIs shown as a percent only). */
   showOdds: boolean;
   /** Tapping a station shows its details (live only; option `details`, off for now). */
   details: boolean;
@@ -59,7 +59,7 @@ export function tileModel(tile: Tile, view: KpiView, filters: Filter[] = configF
     items: view.items,
     top,
     rest,
-    showOdds: live && booleanOption(tile.options, 'show_odds', false),
+    showOdds: showsPercent(view) && booleanOption(tile.options, 'show_odds', false),
     details: live && booleanOption(tile.options, 'details', false),
     scene: bannerScene(tile),
     skyline: massifs.find((m) => m.id === view.massifId)?.skyline ?? [],

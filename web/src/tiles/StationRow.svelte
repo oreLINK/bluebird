@@ -11,7 +11,7 @@
   import ValuePill from '../components/ValuePill.svelte';
   import { formatOdds } from '../lib/format';
   import { i18n } from '../lib/i18n/i18n.svelte';
-  import { type KpiView, type RankItem, fullName, itemLabel, shortName } from '../lib/kpiView';
+  import { type KpiView, type RankItem, fullName, itemLabel, itemNote, shortName } from '../lib/kpiView';
   import StationDetails from './StationDetails.svelte';
   import { itemSummary } from './summary';
 
@@ -53,7 +53,8 @@
   <span aria-hidden="true">
     <ValuePill
       label={itemLabel(view, item, i18n.locale)}
-      odds={showOdds ? i18n.t('tile.odds', { odds: formatOdds(item.value, i18n.locale) }) : ''}
+      odds={itemNote(item, i18n.locale) ||
+        (showOdds ? i18n.t('tile.odds', { odds: formatOdds(item.value, i18n.locale) }) : '')}
     />
   </span>
 {/snippet}

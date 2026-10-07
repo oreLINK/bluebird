@@ -6,7 +6,7 @@
   import Icon from './components/Icon.svelte';
   import InfoPage from './components/InfoPage.svelte';
   import MessageCard from './components/MessageCard.svelte';
-  import { filters, massifs, pages, rewindPayload, rewinds, tilesForMassif } from './lib/config';
+  import { filters, layout, massifs, pages, rewindPayload, rewinds, tilesForMassif } from './lib/config';
   import { type MassifDaily, type ServiceStatus, loadMassif, loadStatus } from './lib/data';
   import { i18n } from './lib/i18n/i18n.svelte';
   import { readPref, writePref } from './lib/prefs';
@@ -40,8 +40,10 @@
   const resolvedTiles = $derived(tilesForMassif(massifId));
   /** A full-window page is open (`#<page id>` in the URL): the page behind is inert. */
   const sheetOpen = $derived(pages.some((p) => p.id === sheets.current));
-  /** Chips of the filter bar and tiles of the page for the chosen filters (home: overview tiles). */
-  const filtered = $derived(filterState(filterPath, filters, resolvedTiles, payload, now));
+  /** Chips of the filter bar and tiles of the page for the chosen filters (home: layout.yaml `home`). */
+  const filtered = $derived(
+    filterState(filterPath, filters, resolvedTiles, payload, now, layout.home ?? []),
+  );
   const visibleTiles = $derived(filtered.tiles);
   /** The Rewind of the chosen filter: its tiles do not depend on the live forecasts. */
   const activeRewind = $derived(filtered.rewind);

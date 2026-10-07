@@ -24,6 +24,7 @@ def _result(
     station_id: str,
     probability: float,
     period: str = "day@2026-12-14",
+    snow_cm: float = 3.5,
 ) -> KpiResult:
     instance = _instance(ctx, period)
     return KpiResult(
@@ -39,7 +40,7 @@ def _result(
         window_start=datetime(2026, 12, 14, 7, tzinfo=UTC),
         window_end=datetime(2026, 12, 14, 16, tzinfo=UTC),
         members=91,
-        drivers={"snow_cm_p50": 3.5},
+        drivers={"snow_cm_p50": snow_cm},
         aggregator=kpi_id,
         aggregator_version="2",
     )
@@ -62,10 +63,14 @@ def test_rankings_are_sorted_per_period_and_times_are_local(ctx: RunContext) -> 
     _write_gold(
         ctx,
         [
-            _result(ctx, "snowfall_chance", "alpha", 0.2),
-            _result(ctx, "snowfall_chance", "beta", 0.8),
+            # Snowfall is shown as a value: ranked by the median snow, not the probability.
+            _result(ctx, "snowfall_chance", "alpha", 0.9, snow_cm=2.0),
+            _result(ctx, "snowfall_chance", "beta", 0.6, snow_cm=6.0),
             _result(ctx, "snowfall_chance", "alpha", 0.6, "evening@2026-12-14"),
             _result(ctx, "onpiste_powder_chance", "alpha", 0.5, "morning@2026-12-14"),
+            # White days are shown as a percent: ranked by probability.
+            _result(ctx, "whiteout_chance", "alpha", 0.2),
+            _result(ctx, "whiteout_chance", "beta", 0.7),
         ],
     )
     artifacts = DISPLAYERS.get("massif_daily")().display(ctx)
@@ -81,6 +86,8 @@ def test_rankings_are_sorted_per_period_and_times_are_local(ctx: RunContext) -> 
     assert [p.key for p in snowfall] == ["day@2026-12-14", "evening@2026-12-14"]
     ranking = snowfall[0].ranking
     assert [r.station_id for r in ranking] == ["beta", "alpha"]
+    white = payload.kpis["whiteout_chance"].periods[0].ranking
+    assert [r.station_id for r in white] == ["beta", "alpha"]
     assert ranking[0].window_start.isoformat() == "2026-12-14T08:00:00+01:00"
     assert snowfall[1].start.isoformat() == "2026-12-14T18:00:00+01:00"
     assert snowfall[1].generated_at == ctx.generated_at

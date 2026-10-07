@@ -18,7 +18,7 @@ import polars as pl
 
 from ..config import Kpi, Massif
 from ..context import RunContext
-from ..gold.base import frame_to_results, read_gold
+from ..gold.base import KpiResult, frame_to_results, read_gold
 from ..storage import diamond_key
 from ._payload import source_payloads, station_payloads
 from .base import DiamondArtifact, Displayer, register_displayer
@@ -67,9 +67,7 @@ class DisplayerMassifDaily(Displayer):
             )
             if selected.is_empty():
                 continue
-            results = sorted(
-                frame_to_results(selected), key=lambda r: (sign * r.probability, r.station_id)
-            )
+            results = sorted(frame_to_results(selected), key=lambda r: _rank_key(kpi, sign, r))
             out.append(
                 DiamondKpiPeriod(
                     key=instance.key,
@@ -118,3 +116,16 @@ class DisplayerMassifDaily(Displayer):
             kpis=kpis,
             sources=source_payloads(ctx.config.enabled_sources(schedule="daily")),
         )
+
+
+def _rank_key(kpi: Kpi, sign: int, result: KpiResult) -> tuple[bool, float, str]:
+    """Ranking order: by the shown value for a `value` display, else by probability.
+
+    Stations without the value come last.
+    """
+    if kpi.display.kind == "value" and kpi.display.driver:
+        value = result.drivers.get(kpi.display.driver)
+        if not isinstance(value, int | float):
+            return (True, 0.0, result.station_id)
+        return (False, sign * float(value), result.station_id)
+    return (False, sign * result.probability, result.station_id)

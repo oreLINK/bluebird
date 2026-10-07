@@ -154,12 +154,11 @@ describe('rewinds', () => {
     expect(rewind?.end).toBe('2026-05-01');
   });
 
-  it('bundles the Rewind 25/26 behind the first level-1 filter, without levels or overview', () => {
+  it('bundles the Rewind 25/26 behind the first level-1 filter, without levels', () => {
     const rewind = rewinds.find((r) => r.id === '2025-26');
     expect(rewind).toBeDefined();
     expect(rewindOfFilter(rewind!.filter)).toBe(rewind);
     expect(filters[0]?.id).toBe(rewind!.filter);
     expect(filters[0]?.levels ?? []).toEqual([]);
-    expect(filters[0]?.overview ?? null).toBeNull();
   });
 });

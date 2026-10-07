@@ -81,10 +81,13 @@ tidy; switching filter brings the matching tiles in with a short animation.
 
 The filters work like those of a music app on the phone, one level at a time:
 
-1. **Home page** (no filter chosen): one tile per kind of indicator, for a
-   quick overview — snow today, on-piste powder this morning, white day
-   today (tomorrow's once today's slot is over). The filter row shows
-   **Rewind 25/26**, **Snow**, **Powder** and **Visibility**.
+1. **Home page** (no filter chosen): a quick overview, always led by the
+   **bluebird day** of today, then snow today, on-piste powder this morning
+   and white day today (each switches to tomorrow once today's slot is
+   over). The filter row shows
+   **Rewind 25/26** and the six categories **Snow**, **Snow quality**,
+   **Sky**, **Comfort**, **Getting there** and **Safety** (see
+   [Categories](#categories)).
 2. Tap a filter, for example **Snow**: its button fills in, moves to the
    left with a small **×**, the other filters of that row disappear, and the
    page shows every snow tile. Next to it appear **Today** and **Tomorrow**.
@@ -95,8 +98,10 @@ The filters work like those of a music app on the phone, one level at a time:
 4. Tap a slot to keep only its tiles.
 
 Tap a chosen filter (the one with the **×**) to remove it and the ones after
-it. **Visibility** stops at Today/Tomorrow (white days are computed for the
-whole day), and **Rewind 25/26** has no further level. The first-level filter
+it. **Safety** stops at Today/Tomorrow (wind-blown snow is computed for the
+whole day), and **Rewind 25/26** has no further level. Whole-day tiles (white
+day, bluebird day, sunset, mild day, chains…) appear under Today or Tomorrow,
+not under a time slot. The first-level filter
 you chose is remembered on your device.
 
 If an update is late, a line under the date above the tiles says so.
@@ -156,25 +161,54 @@ simple question, whatever your level or activity:
 | 🚗 **Getting there** | Can you drive up, will the lifts run, will it be crowded? |
 | ⚠️ **Safety** | Which mountain hazards to watch? (Always read the official avalanche bulletin too.) |
 
-They replace the first topics of the site (Snow, Powder, Visibility): powder
-is one kind of snow quality, and a white day is about light and sky. The
-season reviews (Rewinds) keep their own filter.
+They are the filters of the site (in French **Neige**, **Glisse**,
+**Ciel**, **Confort**, **Accès**, **Sécurité**). They replaced the first topics (Snow,
+Powder, Visibility): powder is one kind of snow quality, and a white day is
+about light and sky. The season reviews (Rewinds) keep their own filter.
 
 ### Every 6 hours (live)
 
 Probabilities for each time slot of today and tomorrow (see [Time
 slots](#time-slots)), refreshed every 6 hours, with reliability dots.
 
-Indicators are grouped by **category** (see [Categories](#categories)). The
-filters of the site are still **Snow**, **Powder** and **Visibility**; they
-will follow these categories once more indicators fill them.
+Indicators are grouped by **category**, which is also their filter on the
+site (see [Categories](#categories)). Each one is shown in the most telling
+way:
 
-| Category | Indicator | Filter on the site | Slots | Question | How to read a high percentage |
+- **an amount** (centimetres, hours, °C, km/h) when the quantity itself
+  speaks: it is the **median** of the 91 scenarios (half give more, half
+  less), and the dots say how close the scenarios are. Some come with a word
+  that places the value on a scale (the official wind chill risk, light /
+  strong wind…);
+- **Yes / Possible / No** when you have a decision to take: Yes from a 60 %
+  chance, Possible from 25 %;
+- **a percentage** for uncertain events or combinations of conditions: the
+  share of the 91 scenarios in which it happens.
+
+The word or time next to a value (risk, sunset time) shows in the full list
+of resorts ("See all").
+
+| Category | Indicator | Shown as | Slots | Question | How to read it |
 |---|---|---|---|---|---|
-| ❄️ Snow | **Snow** | Snow | whole day, morning, lunchtime, afternoon, evening, night | Will at least 1 cm of snow fall during the slot (for the whole day: between 08:00 and 17:00), at mid-mountain? | Bring goggles for flat light; fresh snow may build up. |
-| 🎿 Snow quality | **Powder on piste** | Powder | morning, lunchtime, afternoon | Has at least 5 cm fallen since the grooming machines finished, by the start of the slot (at lift opening for the morning)? | The pistes will be covered with fresh, ungroomed snow. |
-| 🎿 Snow quality | **Off-piste powder** | Powder | morning, lunchtime, afternoon | Has at least 15 cm fallen in the 36 hours before the start of the slot near the summit, without strong wind or a thaw spoiling it? | Good chances of light, untracked powder off-piste. Always check the avalanche bulletin first. |
-| ☀️ Sky | **White day** | Visibility | today, tomorrow (whole day) | Will the ski day (09:00–17:00) be a white day at mid-mountain? | Expect no relief and poor contrast: stay near trees and markers, take tinted goggles. |
+| ❄️ Snow | **Snow** | cm of snow (median) | whole day, morning, lunchtime, afternoon, evening, night | How much snow will fall during the slot (for the whole day: between 08:00 and 17:00), at mid-mountain? | Bring goggles for flat light; fresh snow may build up. |
+| ❄️ Snow | **Snow alert** | cm in 36 h (median), with light / good / alert | today, tomorrow (whole day) | How much snow will fall at mid-mountain within 36 hours from 06:00? "Alert" from 30 cm. | A big dump is coming: plan a powder day, and check the roads. |
+| ❄️ Snow | **Snow cannons** | hours of snowmaking weather (median) | tonight, tomorrow night | How many hours of the night (20:00–06:00) will be cold and dry enough to make snow at mid-mountain (wet-bulb temperature of −2.5 °C or less)? A useful night has 6 or more. | The resort can make snow overnight: better-covered pistes in the morning, especially early season. |
+| 🎿 Snow quality | **Powder on piste** | cm since grooming (median) | morning, lunchtime, afternoon | How much snow will have fallen on the pistes since the grooming machines finished, by the start of the slot (at lift opening for the morning)? Powder from 5 cm. | The pistes will be covered with fresh, ungroomed snow. |
+| 🎿 Snow quality | **Off-piste powder** | % | morning, lunchtime, afternoon | Has at least 15 cm fallen in the 36 hours before the start of the slot near the summit, without strong wind or a thaw spoiling it? | Good chances of light, untracked powder off-piste. Always check the avalanche bulletin first. |
+| 🎿 Snow quality | **Spring snow** | % | morning, lunchtime, afternoon | After a night freeze (−1 °C or less between 00:00 and 08:00), does the snow soften during the slot (+1 °C or more), without 5 cm of fresh snow on top? | Smooth "corn" snow: the best time to ski in spring. |
+| 🎿 Snow quality | **Hard snow** | Yes / Possible / No | morning | After a thaw the day before (+2 °C or more) and a night freeze (−2 °C or less), does the snow stay frozen during the slot (0 °C or less), without fresh snow on top? | Hard, icy pistes: sharp edges, and wait for the sun to soften them. |
+| 🎿 Snow quality | **Heavy snow** | % | lunchtime, afternoon | Will the slot be warm (+4 °C or more) or bring wet snow (1 cm or more at +0.5 °C or more)? | Heavy, sticky snow: tiring legs, ski earlier in the day. |
+| 🎿 Snow quality | **Easy conditions** | % | morning, lunchtime, afternoon | Will the slot stay calm (wind under 25 km/h), not too cold (above −10 °C), visible (at most a quarter of white hours) and without a snowstorm (under 2 cm)? | A good time for beginners and children. |
+| ☀️ Sky | **White day** | % | today, tomorrow (whole day) | Will the ski day (09:00–17:00) be a white day at mid-mountain? | Expect no relief and poor contrast: stay near trees and markers, take tinted goggles. |
+| ☀️ Sky | **Bluebird day** | % | today, tomorrow (whole day) | Will at least 15 cm of fresh snow have fallen at mid-mountain in the 36 hours before 09:00, followed by a sunny ski day (09:00–17:00)? | The dream day: fresh snow under a deep blue sky. Sunscreen and dark goggles; powder goes fast. |
+| ☀️ Sky | **Sunset** | % and the sunset time | tonight, tomorrow evening | Will the sky be mostly clear (40 % of cloud or less) near the summit around sunset, from the hour before to the hour after? The tile gives the sunset time. | A sunset to watch from the top (the time assumes a flat horizon: ridges to the west hide it earlier). |
+| ☀️ Sky | **Starry night** | % | this evening | Will the evening (18:00–00:00) have at least 4 clear hours (20 % of cloud or less) near the summit? | A starry sky for a night walk or stargazing. |
+| ☀️ Sky | **Full sun** | hours of sun (median) | morning, lunchtime, afternoon | How many hours of the slot will be sunny at mid-mountain (little cloud, strong sunlight; daylight hours only)? | Sunglasses and sunscreen: the light is at its best. |
+| 🧣 Comfort | **Mild day** | % | today, tomorrow (whole day) | Will the ski day (09:00–17:00) reach +5 °C at mid-mountain, with wind under 20 km/h and at least 5 sunny hours? | Picnic weather on the slopes. |
+| 🧣 Comfort | **Wind chill** | felt °C (median), with the wind chill risk | morning, lunchtime, afternoon | How cold will it feel near the summit at the coldest of the slot (wind chill: temperature and wind together)? With Environment Canada's risk: moderate from −10 °C, high from −28 °C (frostbite in 10 to 30 minutes)… | Cover every bit of skin: frostbite comes fast in the wind. |
+| 🚗 Getting there | **Chains needed** | Yes / Possible / No | today, tomorrow (whole day) | Will at least 2 cm of snow fall on the access road, at the bottom of the resort, from 20:00 the evening before to 10:00? | Fit chains or snow socks; leave earlier. Winter equipment is compulsory in the mountains anyway. |
+| 🚗 Getting there | **Lifts in the wind** | km/h of wind (median), with light / strong / closures likely | morning, lunchtime, afternoon | How strong will the mean wind be near the summit at the windiest of the slot? Gusts are often 1.5 to 2 times stronger: closures likely from 45 km/h. | Top lifts may slow down or close: plan for the lower slopes. |
+| ⚠️ Safety | **Wind-blown snow** | Yes / Possible / No | today, tomorrow (whole day) | Has at least 10 cm of snow fallen near the summit in the 48 hours before 09:00, with wind reaching 30 km/h since? | Wind slabs likely off-piste. Always read the avalanche bulletin first. |
 
 A **white day** ("jour blanc") is a day without visible relief. Hour by hour
 over the ski day (09:00–17:00), Bluebird counts an hour as white when the
@@ -182,6 +216,20 @@ resort is inside the cloud (humidity of at least 98 % and low cloud of at
 least 90 %), when at least 0.5 cm of snow falls per hour, or in flat light
 (sunlight below 30 % of what a clear sky would give at that hour). A day with
 at least 6 white hours out of 8 is a white day.
+
+A **bluebird day** is the opposite: fresh snow and a clear sky. An hour of
+the ski day is sunny when clouds cover at most 30 % of the sky and sunlight
+reaches at least 60 % of what a clear sky would give at that hour (early and
+late hours, when the sun is very low, only need the clear sky). It takes at
+least 6 sunny hours out of 8, after at least 15 cm of snow in the 36 hours
+before 09:00.
+
+Some indicators work around missing data, so read them as estimates:
+**Chains needed** places the road at the bottom of the resort and brings
+the mid-mountain temperature down to it (0.65 °C warmer per 100 m lower);
+**Lifts in the wind** uses the mean wind, as the scenarios have no gusts;
+**Sunset** and **Starry night** use the cloud cover of the whole air column,
+so a sea of clouds below the summit counts as cloud.
 
 ### Rewind 25/26 (season review)
 
@@ -215,11 +263,9 @@ before it is built.
 
 | Indicator | When | For | Question |
 |---|---|---|---|
-| **Powder alert (3 days)** ⭐ | 6 h | Everyone | Chance of 30 cm or more over the next three days, and the best day to go. |
 | **Rain at the resort** ⭐ | 6 h | Everyone | Chance of rain up to the summit, making a wet day and heavy snow. |
 | **Snow on the ground** ⭐ | 6 h | Everyone | How deep the snow is on the slopes today, and whether it is building up or melting. |
 | **Snow in the village** | 6 h | Village | Chance that the resort village wakes up white tomorrow (sledging, postcard views). |
-| **Snow cannons tonight** | 6 h | Alpine skiing | Whether the night is cold and dry enough for resorts to make snow (early season). |
 | **Powder days** ⭐ | Season | Alpine skiing, snowshoeing | Days with 20 cm or more of new snow in 24 hours. |
 | **Biggest storm** | Season | Everyone | The largest snowfall over 72 hours, with its dates. |
 | **Natural snow season** | Season | Everyone | First and last day with at least 30 cm of snow on the ground, and the number of days in between. |
@@ -241,10 +287,6 @@ before it is built.
 
 | Indicator | When | For | Question |
 |---|---|---|---|
-| **Easy conditions** ⭐ | 6 h | Alpine skiing (beginners) | Chance of an easy day on green and blue pistes: no ice, little wind, good visibility, not too cold. |
-| **Spring snow window** | 6 h | Alpine skiing, snowshoeing | Hours when the snow softens into "corn" after a night freeze, or a warning of rock-hard snow. |
-| **Ice and crust** | 6 h | Everyone on snow | Risk of hard, icy snow tomorrow morning after rain or melting followed by a night freeze. |
-| **Heavy snow** | 6 h | Alpine skiing | Chance of wet, heavy "soup" in the afternoon after a warm morning. |
 | **Wax of the day** | 6 h | Cross-country skiing | Snow temperature and humidity on the tracks, to choose the right wax. |
 | **Coldest morning and freeze-thaw days** | Season | Everyone | The season's coldest morning and the number of spring-snow days. |
 
@@ -252,10 +294,7 @@ before it is built.
 
 | Indicator | When | For | Question |
 |---|---|---|---|
-| **Bluebird day** ⭐ | 6 h | Everyone | Chance of a "bluebird day": fresh snow (15 cm or more in 36 hours) followed by a clear, sunny ski day. |
-| **Sunset over the ski area** ⭐ | 6 h | Everyone | Chance of a visible sunset from the top of the ski area (clear sky to the west at sunset time), with the sunset time. |
 | **Sea of clouds** ⭐ | 6 h | Everyone | Chance that the top of the resort is in the sun above a sea of clouds while the valley stays grey. |
-| **Starry night** | 6 h | Village | Chance of a clear night sky for stargazing or a night outing. |
 | **Best time slot** | 6 h | Everyone | The best hours of the day per resort, combining visibility, sun and wind. |
 | **Sunniest resort** ⭐ | Season | Everyone | Which resort got the most sunshine over the season (the sunlight is already stored)? |
 | **Bluebird days** ⭐ | Season | Everyone | How many bluebird days each resort had. |
@@ -267,17 +306,13 @@ before it is built.
 
 | Indicator | When | For | Question |
 |---|---|---|---|
-| **Wind chill** | 6 h | Everyone | Felt temperature at the summit in the morning, with a frostbite warning. |
 | **UV and sunburn** | 6 h | Everyone | Peak UV at altitude, made stronger by the snow's reflection. |
-| **Mild spring day** | 6 h | Everyone | Chance of a mild, sunny, windless day: picnic on the slopes. |
 | **Village weather tonight** | 6 h | Village | Rain, snow and temperature in the resort village this evening. |
 
 #### 🚗 Getting there
 
 | Indicator | When | For | Question |
 |---|---|---|---|
-| **Chains needed tomorrow** ⭐ | 6 h | Everyone | Chance of snow or ice on the access road between 07:00 and 10:00 tomorrow, so that chains or snow socks are needed. This is not the legal duty to carry winter equipment (1 November to 31 March in mountain areas), which applies anyway. |
-| **Lifts stopped by wind** ⭐ | 6 h | Alpine skiing | Chance that the top chairlifts close because of strong gusts during the ski day. |
 | **Expected crowds** | 6 h | Everyone | Crowd index from school holidays by zone, weekends and good weather. |
 | **Lifts stopped by wind** | Season | Alpine skiing | Days when the wind would have closed the top lifts. |
 | **Chain days** | Season | Everyone | Mornings when chains would have been needed on the access road. |
@@ -291,7 +326,6 @@ Never a replacement for the official avalanche bulletin (BERA).
 | Indicator | When | For | Question |
 |---|---|---|---|
 | **Avalanche risk** | 6 h | Off-piste, touring, snowshoeing | Danger level (1 to 5) of the Météo-France avalanche bulletin, and whether it rises tomorrow. |
-| **Wind-blown snow** | 6 h | Off-piste, touring, snowshoeing | Fresh snow moved by the wind, a warning sign off-piste (always alongside the avalanche bulletin, never instead of it). |
 | **Ski touring and snowshoe start time** | 6 h | Touring, snowshoeing | Best start and return times for an outing (night freeze, warming, avalanche risk). |
 | **High avalanche risk days** | Season | Off-piste, touring, snowshoeing | Days with an avalanche danger level of 4 or 5. |
 
@@ -343,9 +377,13 @@ archive does not include it), on a coarser grid of about 7 km.
 ### Available now
 
 - Pyrenees: 18 French resorts, from La Pierre Saint-Martin to Formiguères.
-- Three probabilities: snow, powder on piste, powder off-piste, for each
-  time slot of today and tomorrow (morning, lunchtime, afternoon, evening,
-  night, whole day for snow).
+- 19 indicators in six categories, for each time slot or day of today and
+  tomorrow (see [Available indicators](#available-indicators)), each shown
+  as an amount (cm, hours, °C, km/h), a Yes / Possible / No or a
+  percentage: snow, snow alert, snow cannons; powder on piste and
+  off-piste, spring snow, hard snow, heavy snow, easy conditions; white day,
+  bluebird day, sunset, starry night, full sun; mild day, wind chill; chains
+  needed, lifts in the wind; wind-blown snow.
 - Updated every 6 hours; tiles of slots that are over disappear on their own.
 - A service status page (linked from the footer), and the last valid values kept (and flagged)
   when an update fails.
@@ -353,10 +391,9 @@ archive does not include it), on a coarser grid of about 7 km.
   reliability dots, full ranking on demand, optional odds.
   Compact tiles without a picture for the indicators lower on the page.
 - Two-sided tiles: the back explains the indicator and the reliability for its slot.
-- Filters in levels, like a music app: kind of indicator (Snow, Powder,
-  Visibility, Rewind), then day (Today, Tomorrow), then time slot; a home
-  page with one overview tile per kind of indicator.
-- White day chances for today and tomorrow, under the **Visibility** filter.
+- Filters in levels, like a music app: category of indicator (Snow, Snow
+  quality, Sky, Comfort, Getting there, Safety) or the Rewind, then day (Today, Tomorrow), then time slot; a home
+  page led by the bluebird day, then snow, powder and white day.
 - **Rewind 25/26**: the review of the 2025/26 season in the Pyrenees (most
   snow, longest snowfall, most snow on the slopes, most off-piste snow, ideal
   snow cover days, fewest white days), behind its own red filter.
@@ -394,8 +431,8 @@ archive does not include it), on a coarser grid of about 7 km.
      cross-country need their own sites (nordic areas and trails), which
      will be added to the resort list first.
   2. **Category**: Snow, Snow quality, Sky, Comfort, Getting there, Safety
-     (see [Categories](#categories)), only those with indicators for the
-     activity.
+     (see [Categories](#categories); the level-1 filters until the activity
+     filter arrives), only those with indicators for the activity.
   3. **Terrain**, for alpine skiing: easy pistes (green and blue), steeper
      pistes (red and black), off-piste.
   4. **Day**: today, tomorrow (and later the weekend).
@@ -414,7 +451,11 @@ archive does not include it), on a coarser grid of about 7 km.
 
 - **Bluebird is a planning aid, not an avalanche bulletin.** Before any
   off-piste outing, read the official Météo-France avalanche bulletin (BERA),
-  carry avalanche safety equipment and know how to use it.
+  carry avalanche safety equipment and know how to use it. The **Wind-blown
+  snow** tile is a warning sign, never a danger level.
+- **Chains needed** estimates the road from the resort's own forecast; it
+  does not know snow clearing nor the road's real elevation. Mountain winter
+  equipment rules apply whatever it says.
 - Forecasts are uncertain, mountain weather even more so. Local effects
   (wind-loaded slopes, sun, sheltered forests) are not captured.
 - White days are estimated from humidity, cloud, snowfall and sunlight: the
@@ -437,7 +478,7 @@ The forecast models disagree with reality sometimes, and the tile only counts
 snow inside its time window and above its threshold (for example 5 cm since
 grooming).
 
-**Why don't the three tiles agree?**
+**Why don't the tiles agree?**
 They answer different questions, at different elevations and time windows.
 Heavy snow overnight with strong wind can give a high "powder on piste" and
 a low "off-piste powder".

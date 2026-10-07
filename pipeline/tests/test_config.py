@@ -76,6 +76,15 @@ def test_committed_reference_files_cover_every_station(repo_config: Config) -> N
     assert set(domains["station_id"]) == stations, "a station has no piste or lift"
 
 
+def test_duplicate_yaml_keys_are_rejected(tmp_path: Path) -> None:
+    config_dir = tiny_config_dir(tmp_path)
+    kpis = (config_dir / "kpis.yaml").read_text(encoding="utf-8")
+    line = "    aggregator: snowfall_chance\n"
+    (config_dir / "kpis.yaml").write_text(kpis.replace(line, line + line, 1), encoding="utf-8")
+    with pytest.raises(ConfigError, match="duplicate key 'aggregator'"):
+        load_config(config_dir)
+
+
 def test_kpi_filters_must_exist_and_every_filter_must_match_a_kpi(tmp_path: Path) -> None:
     config_dir = tiny_config_dir(tmp_path)
     kpis = (config_dir / "kpis.yaml").read_text(encoding="utf-8")
@@ -90,22 +99,28 @@ def test_kpi_filters_must_exist_and_every_filter_must_match_a_kpi(tmp_path: Path
     ("file", "old", "new", "message"),
     [
         (
-            "filters.yaml",
-            "overview: { tile: whiteout, period: day }",
-            "overview: { tile: nope, period: day }",
-            "filter 'visibility' overview: unknown tile 'nope'",
+            "layout.yaml",
+            "{ tile: whiteout, period: day }",
+            "{ tile: nope, period: day }",
+            "layout 'home' references unknown tile 'nope'",
         ),
         (
-            "filters.yaml",
-            "overview: { tile: whiteout, period: day }",
-            "overview: { tile: snowfall_today, period: day }",
-            "tile 'snowfall_today' has no KPI of this filter",
-        ),
-        (
-            "filters.yaml",
-            "overview: { tile: onpiste_powder, period: morning }",
-            "overview: { tile: onpiste_powder, period: evening }",
+            "layout.yaml",
+            "{ tile: onpiste_powder, period: morning }",
+            "{ tile: onpiste_powder, period: evening }",
             "tile 'onpiste_powder' is not shown for period 'evening'",
+        ),
+        (
+            "layout.yaml",
+            "{ tile: whiteout, period: day }",
+            "{ tile: rewind_2025_26_white_days, period: day }",
+            "Rewind tile 'rewind_2025_26_white_days' cannot be on the home page",
+        ),
+        (
+            "layout.yaml",
+            "{ tile: whiteout, period: day }",
+            "{ tile: bluebird_day, period: day }",
+            "duplicate layout 'home' entry id 'bluebird_day@day'",
         ),
         ("filters.yaml", "levels: [day]\n", "levels: [day, day]\n", "only appear once"),
         ("filters.yaml", "levels: [day]\n", "levels: [day, week]\n", "Input should be"),
@@ -113,7 +128,7 @@ def test_kpi_filters_must_exist_and_every_filter_must_match_a_kpi(tmp_path: Path
         ("periods.yaml", "  - { fr: Demain, en: Tomorrow }\n", "", "`days` needs 2 chip labels"),
     ],
 )
-def test_invalid_filter_levels_are_rejected(
+def test_invalid_filter_levels_and_home_tiles_are_rejected(
     tmp_path: Path, file: str, old: str, new: str, message: str
 ) -> None:
     config_dir = tiny_config_dir(tmp_path)
@@ -132,6 +147,11 @@ def test_filters_have_at_most_four_levels(repo_config: Config) -> None:
             {"id": "x", "name": {"fr": "x", "en": "x"}, "levels": ["day", "slot", "day", "slot"]}
         )
     assert all(1 + len(f.levels) <= MAX_FILTER_LEVELS for f in repo_config.filters)
+
+
+def test_bluebird_today_leads_the_home_page(repo_config: Config) -> None:
+    first = repo_config.layout.home[0]
+    assert (first.tile, first.period) == ("bluebird_day", "day")
 
 
 def test_method_placeholders_must_be_kpi_params(tmp_path: Path) -> None:
@@ -238,7 +258,7 @@ def test_tile_periods_default_to_those_of_its_kpis(repo_config: Config) -> None:
             "filters.yaml",
             "    theme: rewind\n",
             "    theme: rewind\n    levels: [day]\n",
-            "filter 'rewind-2025-26' cannot have levels or an overview",
+            "filter 'rewind-2025-26' cannot have levels",
         ),
         ("rewinds.yaml", "    end: 2026-05-01", "    end: 2025-11-01", "end must be after start"),
         ("kpis.yaml", "    value: { unit: h, decimals: 0 }\n", "", "needs `value`"),
@@ -286,3 +306,49 @@ def test_service_status_page_is_linked_from_the_footer(repo_config: Config) -> N
         "service_kpis",
         "service_tiles",
     ]
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "message"),
+    [
+        (
+            "range: [snow_cm_p10, snow_cm_p90], tolerance: 3 }",
+            "range: [snow_cm_p10, snow_cm_p90] }",
+            "needs `driver`, `range` and `tolerance`",
+        ),
+        (
+            "driver: snow_cm_p50, range: [snow_cm_p10, snow_cm_p90], tolerance: 3",
+            "driver: snow_cm_p75, range: [snow_cm_p10, snow_cm_p90], tolerance: 3",
+            "display driver 'snow_cm_p75' is not in `drivers`",
+        ),
+        (
+            '        - { min: 0, label: { fr: Non, en: "No" } }\n',
+            '        - { min: 0.1, label: { fr: Non, en: "No" } }\n',
+            "the last at 0",
+        ),
+        (
+            "        - { max: -48, label: { fr: risque grave, en: severe risk } }\n",
+            "        - { max: -60, label: { fr: risque grave, en: severe risk } }\n",
+            "increasing `max`",
+        ),
+    ],
+)
+def test_invalid_kpi_displays_are_rejected(
+    tmp_path: Path, old: str, new: str, message: str
+) -> None:
+    config_dir = tiny_config_dir(tmp_path)
+    text = (config_dir / "kpis.yaml").read_text(encoding="utf-8")
+    assert old in text
+    (config_dir / "kpis.yaml").write_text(text.replace(old, new, 1), encoding="utf-8")
+    with pytest.raises(ConfigError, match=message):
+        load_config(config_dir)
+
+
+def test_value_displays_rank_by_value_and_rate_the_spread() -> None:
+    from bluebird_pipeline.gold.base import spread_confidence
+
+    assert spread_confidence(1.0, 3.5, 3, 91) == "high"
+    assert spread_confidence(1.0, 6.0, 3, 91) == "medium"
+    assert spread_confidence(0.0, 9.0, 3, 91) == "low"
+    assert spread_confidence(1.0, 2.0, 3, 5) == "low"  # too few scenarios
+    assert spread_confidence(None, 2.0, 3, 91) == "low"

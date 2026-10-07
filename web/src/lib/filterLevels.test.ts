@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Filter, Kpi, ResolvedTile, Tile } from './config';
+import { type Filter, type Kpi, type ResolvedTile, type Tile, layout } from './config';
 import type { MassifDaily } from './data';
 import { filterState, nextPath } from './filterLevels';
 
@@ -14,13 +14,19 @@ const kpi = (id: string, filter: string, periods?: Kpi['periods'], kind?: 'histo
   ...(kind ? { kind } : {}),
 });
 const snowKpi = kpi('snow_k', 'snow', ['day', 'morning', 'evening']);
-const whiteKpi = kpi('white_k', 'visibility', ['day']);
+const whiteKpi = kpi('white_k', 'sky', ['day']);
 const seasonKpi = kpi('season_k', 'rewind', undefined, 'historical');
 const tile = (id: string, k: Kpi): ResolvedTile => ({
   tile: { id, type: 'banner', kpis: [k.id] } as Tile,
   kpis: [k],
 });
 const resolved = [tile('snow_t', snowKpi), tile('white_t', whiteKpi), tile('season_t', seasonKpi)];
+/** Home page in priority order: the white day first, then snow; `gone_t` is not in the layout. */
+const home = [
+  { tile: 'white_t', period: 'day' },
+  { tile: 'gone_t', period: 'day' },
+  { tile: 'snow_t', period: 'day' },
+];
 
 const filters: Filter[] = [
   { id: 'rewind', name: { fr: 'Rewind', en: 'Rewind' }, theme: 'rewind' },
@@ -28,13 +34,11 @@ const filters: Filter[] = [
     id: 'snow',
     name: { fr: 'Neige', en: 'Snow' },
     levels: ['day', 'slot'],
-    overview: { tile: 'snow_t', period: 'day' },
   },
   {
-    id: 'visibility',
-    name: { fr: 'Visibilité', en: 'Visibility' },
+    id: 'sky',
+    name: { fr: 'Ciel', en: 'Sky' },
     levels: ['day'],
-    overview: { tile: 'white_t', period: 'day' },
   },
   { id: 'unused', name },
 ];
@@ -84,20 +88,24 @@ const keys = (state: ReturnType<typeof filterState>) => state.chips.map((c) => `
 const ids = (state: ReturnType<typeof filterState>) => state.instances.map((i) => i.id);
 
 describe('filterState', () => {
-  it('shows every usable level-1 filter and one overview tile each on the home page', () => {
-    const state = filterState([], filters, resolved, payload, morning);
-    expect(keys(state)).toEqual(['1:rewind', '1:snow', '1:visibility']);
-    expect(ids(state)).toEqual(['snow_t--day-2026-12-14', 'white_t--day-2026-12-14']);
-    expect(state.tiles.map((t) => t.tile.id)).toEqual(['snow_t', 'white_t']);
+  it('shows every usable level-1 filter and the home tiles in priority order', () => {
+    const state = filterState([], filters, resolved, payload, morning, home);
+    expect(keys(state)).toEqual(['1:rewind', '1:snow', '1:sky']);
+    expect(ids(state)).toEqual(['white_t--day-2026-12-14', 'snow_t--day-2026-12-14']);
+    expect(state.tiles.map((t) => t.tile.id)).toEqual(['white_t', 'snow_t']);
     expect(state.rewind).toBeUndefined();
   });
 
-  it("shows tomorrow's overview once today's period is over", () => {
+  it("shows tomorrow's home tile once today's period is over", () => {
     const evening = Date.parse(at(D, '19:00'));
-    expect(ids(filterState([], filters, resolved, payload, evening))).toEqual([
-      'snow_t--day-2026-12-15',
+    expect(ids(filterState([], filters, resolved, payload, evening, home))).toEqual([
       'white_t--day-2026-12-15',
+      'snow_t--day-2026-12-15',
     ]);
+  });
+
+  it('puts the bluebird day of today first on the repository home page', () => {
+    expect(layout.home?.[0]).toEqual({ tile: 'bluebird_day', period: 'day' });
   });
 
   it('narrows a topic by day then by time slot, the chosen chips first', () => {
@@ -130,8 +138,8 @@ describe('filterState', () => {
     const stale = filterState(['snow', 'd0', 'morning'], filters, resolved, payload, Date.parse(at(D, '13:00')));
     expect(stale.path).toEqual(['snow', 'd0']);
     expect(filterState(['nope', 'd0'], filters, resolved, payload, morning).path).toEqual([]);
-    const white = filterState(['visibility', 'd1'], filters, resolved, payload, morning);
-    expect(keys(white)).toEqual(['1:visibility*', '2:d1*']);
+    const white = filterState(['sky', 'd1'], filters, resolved, payload, morning);
+    expect(keys(white)).toEqual(['1:sky*', '2:d1*']);
     expect(ids(white)).toEqual(['white_t--day-2026-12-15']);
   });
 

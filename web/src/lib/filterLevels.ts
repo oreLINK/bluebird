@@ -10,7 +10,8 @@
  *         labels); whole-day tiles are under no slot.
  * The bar shows the chosen chips (pressed, removable), then the options of the
  * next level, only those that still have tiles. With nothing chosen it shows
- * every level-1 filter and the page shows each filter's `overview` tile.
+ * every level-1 filter and the page shows the `home` tiles of
+ * config/layout.yaml, in their priority order (the first one at the top).
  *
  * A new kind of level is one entry of LEVEL_KINDS plus its value in
  * `FilterLevel` (pipeline config.py).
@@ -25,6 +26,7 @@ import {
 } from './config';
 import type { MassifDaily } from './data';
 import type { Localized } from './generated/filters';
+import type { HomeTile } from './generated/layout';
 import {
   type Period,
   type TileInstance,
@@ -112,6 +114,31 @@ const chip = (filter: Filter, pressed: boolean): FilterChip => ({
   pressed,
 });
 
+/**
+ * The home page: each `home` tile for its period (today's, or tomorrow's once
+ * today's is over), in priority order. Tiles missing from the layout are skipped.
+ */
+export function homeTiles(
+  home: HomeTile[],
+  resolved: ResolvedTile[],
+  payload: MassifDaily | null,
+  now: number,
+  periods: Period[] = periodsFile.periods,
+): Pick<FilterState, 'tiles' | 'instances'> {
+  const tiles: ResolvedTile[] = [];
+  const instances: TileInstance[] = [];
+  for (const entry of home) {
+    const tile = resolved.find((r) => r.tile.id === entry.tile);
+    if (!tile) continue;
+    if (!tiles.includes(tile)) tiles.push(tile);
+    const instance = expandTiles([tile], payload, now, periods).find(
+      (i) => i.slot?.periodId === entry.period,
+    );
+    if (instance) instances.push(instance);
+  }
+  return { tiles, instances };
+}
+
 /** What the filter bar and the page show for a selection path. */
 export function filterState(
   path: string[],
@@ -119,6 +146,7 @@ export function filterState(
   resolved: ResolvedTile[],
   payload: MassifDaily | null,
   now: number,
+  home: HomeTile[] = [],
   periods: Period[] = periodsFile.periods,
   days: Localized[] = periodsFile.days ?? [],
 ): FilterState {
@@ -126,18 +154,8 @@ export function filterState(
   const topic = bar.find((f) => f.id === path[0]);
 
   if (!topic) {
-    const tiles: ResolvedTile[] = [];
-    const instances: TileInstance[] = [];
-    for (const { overview } of bar) {
-      const tile = resolved.find((r) => r.tile.id === overview?.tile);
-      if (!overview || !tile) continue;
-      tiles.push(tile);
-      const instance = expandTiles([tile], payload, now, periods).find(
-        (i) => i.slot?.periodId === overview.period,
-      );
-      if (instance) instances.push(instance);
-    }
-    return { path: [], chips: bar.map((f) => chip(f, false)), tiles, instances };
+    const chips = bar.map((f) => chip(f, false));
+    return { path: [], chips, ...homeTiles(home, resolved, payload, now, periods) };
   }
 
   const tiles = filterTiles(resolved, topic);

@@ -37,7 +37,7 @@
   "back.breakdown": "Resorts: {high} high reliability, {medium} medium, {low} low.",
   "back.scenarios": "{members} forecast scenarios analysed per resort.",
   "back.updated": "Values computed on {date} at {time}.",
-  "back.reliabilityHelp": "The index measures how much the scenarios agree: the more they converge, the more reliable the probability.",
+  "back.reliabilityHelp": "The index measures how much the scenarios agree: the more they converge, the more reliable the result shown.",
   "back.windowVaries": "Depends on the resort (see each resort's details).",
   "back.what": "What it measures",
   "back.updateTitle": "Last update",

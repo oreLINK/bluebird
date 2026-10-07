@@ -246,8 +246,8 @@ Why these formats:
   so any later layer can be rebuilt without calling the API again.
 - **Parquet for silver and gold**: typed, columnar and compressed; readable by
   polars, pandas or DuckDB (`duckdb -c "select * from 'gold/**/*.parquet'"`).
-- **JSON for diamond**: the browser reads it directly (≈120 KB per massif
-  with 24 KPI periods, ≈15 KB gzipped by Pages).
+- **JSON for diamond**: the browser reads it directly (≈360 KB per massif
+  with 78 KPI periods, ≈16 KB gzipped by Pages).
 - **YAML for configuration**: comfortable to edit, validated by strict schemas.
 - **GeoJSON for reference geography**: standard, readable by any GIS tool,
   and rendered as a map by GitHub, which makes refresh pull requests easy to review.
@@ -288,6 +288,46 @@ the clear-sky radiation from the sun position, Haurwitz model); a day is
 white from `min_white_hours` white hours. All thresholds are KPI `params`.
 The ensemble source fetches today and tomorrow (`forecast_days: 2`) with
 humidity, cloud cover, low cloud and radiation for this.
+
+**Bluebird days.** `gold/aggregator_bluebird_day_chance.py` (whole-day
+period only) counts, per ensemble scenario at `band`, the snow of the
+`lookback_hours` before `ski_start` (≥ `threshold_cm`) and the sunny ski
+hours: total cloud ≤ `cloud_max_pct` and radiation ≥ `clear_sky_index_min` ×
+the clear-sky radiation (hours with the sun too low only need the cloud
+test); a day needs `min_sunny_hours`. It reuses `SkiHours`,
+`clear_sky_expr` and `sunny_hour_expr` of `gold/_whiteout.py`, never
+`sunshine_duration`.
+
+**How live KPIs are shown** (`display` in `kpis.yaml`). The probability is
+always computed, but a tile shows what speaks best:
+
+- `percent` (default): the probability; `note` names a driver shown in
+  small type in the ranking rows (the sunset time).
+- `value`: the median of the scenarios, from `driver`, in the KPI `value`
+  unit (`cm`, `h`, `°C`, `km/h`); the diamond ranking follows that value
+  (`order`, `asc` for the coldest first) and the reliability dots come from
+  the p10–p90 spread of `range` (high within `tolerance`, medium within
+  twice it, `spread_confidence` in `gold/base.py`); `bands` name the value's
+  range (Environment Canada wind chill risk, light / strong wind).
+- `levels`: Oui / Possible / Non from the probability (`min` thresholds).
+
+The site reads the display in `lib/kpiView.ts` (`displayOf`, `itemLabel`,
+`itemNote`); decimal odds only exist for `percent`. Values: Snow, Snow alert,
+Snow cannons, Powder on piste, Full sun, Wind chill, Lifts in the wind;
+levels: Chains, Hard snow, Wind-blown snow; the others are percentages.
+
+**Condition KPIs.** Fourteen more live KPIs use only the ensemble already
+fetched (`ensemble_hourly`, bands mid and summit): each reduces its hourly
+window per scenario with `member_table` (`gold/_ensemble.py`: several
+reductions at once, members missing an hour dropped) and the probability is
+`share()` of the scenarios meeting a condition. Physics helpers are in
+`gold/_conditions.py`: wet-bulb temperature (Stull, snowmaking), wind chill
+index, lapse-rate temperature at another elevation (chains: the road at the
+resort's base elevation) and the sunset time (NOAA). Approximations, stated
+on the tile backs: no gusts in the ensemble (lifts in the wind uses the mean
+wind), no base band (chains), cloud cover of the whole air column (sunset,
+starry night). The `sunset` period of `periods.yaml` is a native window
+shown from 06:00 to 22:00, since spring sunsets come after 18:00.
 
 **Rewind sampling.** For each station the season source asks for the station
 point (mid elevation, like the live KPIs), `domain_points` points spread at
@@ -378,13 +418,13 @@ Red Hat YAML extension) validates and autocompletes them from `config/schemas/`.
 |---|---|---|
 | `massifs.yaml` | Mountain ranges of the massif bar | `id`, `name {fr,en}`, `timezone`, `enabled`, `order`, `bbox`, `skyline` |
 | `stations/<massif>.yaml` | Resorts of one massif | `defaults {grooming_end, lifts_open}`, `stations[]`: `id`, `name`, `short_name?` (≤ 20 chars, shown in tiles), `lat`, `lon`, `elevation {base, summit, mid?}`, `aspects`, `grooming_end?`, `lifts_open?`, `website?`, `enabled` |
-| `kpis.yaml` | KPI registry | `id`, `aggregator`, `kind` (`live` / `historical`), `order` (`desc` / `asc`: lowest value first, e.g. fewest white days), `value {unit, unit_label, unit_label_one, decimals, scale, max}` (`unit_label {fr,en}` when the unit depends on the language, e.g. jours / days, and `unit_label_one` its singular, chosen with the language's plural rules) (historical; `scale` converts the aggregator's unit, e.g. `0.01` for cm → m; `max` is the value of a full bar, e.g. `100` for a percentage, default the best value), `name`, `description`, `method?` (`{param}` placeholders, shown on the tile back), `params`, `drivers {key: {label, unit, decimals}}`, `filters[]`, `periods[]` (live KPIs; default `[day]`), `enabled` |
+| `kpis.yaml` | KPI registry | `id`, `aggregator`, `kind` (`live` / `historical`), `display` (live: `percent` default, optional `note` driver; `value` with `driver`, `range` [p10, p90], `tolerance`, `bands`; `levels` by probability), `order` (`desc` / `asc`: lowest value first, e.g. fewest white days, coldest felt temperature), `value {unit, unit_label, unit_label_one, decimals, scale, max}` (`unit_label {fr,en}` when the unit depends on the language, e.g. jours / days, and `unit_label_one` its singular, chosen with the language's plural rules) (historical; `scale` converts the aggregator's unit, e.g. `0.01` for cm → m; `max` is the value of a full bar, e.g. `100` for a percentage, default the best value), `name`, `description`, `method?` (`{param}` placeholders, shown on the tile back), `params`, `drivers {key: {label, unit, decimals}}`, `filters[]`, `periods[]` (live KPIs; default `[day]`), `enabled` |
 | `periods.yaml` | Time slots of the ski day | `day_start`, `horizon_days`, `days[]` (`{fr,en}` chips of the `day` filter level: Aujourd'hui, Demain), `periods[]`: `id`, `start`, `end`, `native_window?`, `labels[]` (`{fr,en}` per day: today, tomorrow), `chip` (`{fr,en}` chip of the `slot` filter level, required for time slots) |
-| `filters.yaml` | Level-1 chips of the filter bar, in order | `id`, `name {fr,en}`, `icon?`, `theme?` (`default` / `rewind`), `levels?[]` (next levels, at most 3: `day`, `slot`; live KPIs only), `overview? {tile, period}` (its tile on the home page) |
+| `filters.yaml` | Level-1 chips of the filter bar, in order | `id`, `name {fr,en}`, `icon?`, `theme?` (`default` / `rewind`), `levels?[]` (next levels, at most 3: `day`, `slot`; live KPIs only) |
 | `tiles.yaml` | KPI containers; a live tile is shown once per period | `id`, `type`, `kpis[]`, `title?` (live: must contain `{period}`; Rewind: must not), `periods?[]` (live), `icon?`, `options` (`details` turns station details on, off by default) |
-| `layout.yaml` | Tile order | `default[]`, `overrides {massif: [tiles]}` |
+| `layout.yaml` | Home page and tile order | `home[] {tile, period}` (home page tiles in priority order, live only; first = top), `default[]`, `overrides {massif: [tiles]}` |
 | `sources.yaml` | Data sources | `id`, `extractor`, `transformer`, `schedule (daily/on_demand/reference/season)`, `params`, `attribution` |
-| `rewinds.yaml` | Rewinds (closed seasons) | `id` (e.g. `2025-26`), `name`, `start`, `end` (local days, included), `massifs[]`, `kpis[]` (historical), `filter` (level-1 filter without levels or overview) |
+| `rewinds.yaml` | Rewinds (closed seasons) | `id` (e.g. `2025-26`), `name`, `start`, `end` (local days, included), `massifs[]`, `kpis[]` (historical), `filter` (level-1 filter without levels) |
 | `pages.yaml` | Footer and full-window pages | `footer {repository, pages[]}`, `pages[]`: `id` (URL hash), `title`, `sections[]`: `id`, `title`, `paragraphs[]`, `links[] {label, url}`, `block?` (`data_sources` / `photo_credits` / `service_summary` / `service_sources` / `service_transforms` / `service_kpis` / `service_tiles`) |
 
 Validation is strict: unknown keys, wrong types, duplicate ids, dangling
@@ -502,8 +542,8 @@ No frontend change is needed for a KPI shown in a `banner`, `banner_full`,
 
 1. Add an entry to `config/rewinds.yaml` (`id`, `name`, `start`, `end`,
    `massifs`, `kpis`, `filter`).
-2. Add its filter to `config/filters.yaml` (`theme: rewind`, no `levels`, no
-   `overview`), first in the list, and tag its historical KPIs with it.
+2. Add its filter to `config/filters.yaml` (`theme: rewind`, no `levels`),
+   first in the list, and tag its historical KPIs with it.
 3. Add one tile per KPI in `config/tiles.yaml`, of any type (`banner_full`,
    `banner`, `simple`, `ranking`, with `photo: leader` for a banner), and list
    them in `config/layout.yaml`. The tile finds its Rewind from the KPI and
@@ -554,15 +594,14 @@ The site creates its tiles from the payload; no frontend change is needed.
 ### Add a filter (filter bar)
 
 1. Add an entry to `config/filters.yaml` (`id`, `name {fr, en}`, `icon`),
-   with its next `levels` (`[day, slot]`, `[day]` or none) and, to show it on
-   the home page, `overview: {tile, period}` (a live tile of this filter and
-   one of its periods).
+   with its next `levels` (`[day, slot]`, `[day]` or none).
 2. Tag the KPIs it should show with its id: `filters: [<id>]` in `config/kpis.yaml`.
-3. `uv run bluebird validate` (a filter matching no enabled KPI, an unknown
-   overview tile or period, levels on historical KPIs are errors).
+3. `uv run bluebird validate` (a filter matching no enabled KPI or levels on
+   historical KPIs are errors).
 
-Nothing is selected by default: the home page shows the overview tiles.
-Filters matching no tile of the current layout are hidden.
+Nothing is selected by default: the home page shows the `home` tiles of
+`config/layout.yaml` (see "Reorder tiles"). Filters matching no tile of the
+current layout are hidden.
 
 ### Add a kind of filter level
 
@@ -606,8 +645,19 @@ rendering in `InfoPage.svelte`.
 
 ### Reorder tiles
 
-Edit `config/layout.yaml`. `default` applies to every massif; `overrides`
-replaces it for one massif. Merging the change into `main` redeploys the site.
+Edit `config/layout.yaml`:
+
+- `home`: the tiles of the home page (no filter selected) in priority order,
+  the first one at the top. Each entry is a live tile id and one of its
+  periods (`- { tile: bluebird_day, period: day }`): the tile shows today's
+  period, or tomorrow's once today's is over. `bluebird validate` refuses
+  unknown tiles, Rewind tiles, periods the tile is not shown for and
+  duplicates. Today: bluebird day, snow, on-piste powder (morning), white
+  day.
+- `default`: the order under a filter, after the time order of the periods;
+  `overrides` replaces it for one massif.
+
+Merging the change into `main` redeploys the site.
 
 ### Add a UI language
 
@@ -683,9 +733,9 @@ Implement `write_bytes`, `read_bytes`, `exists` and `list` of
   (`filterState`, `nextPath`, unit-tested) turns the chosen path (`[]`,
   `['snow']`, `['snow', 'd0']`, `['snow', 'd0', 'morning']`) into chips and
   tiles. With nothing chosen, the bar shows the level-1 filters of
-  `config/filters.yaml` and the page one `overview` tile per filter (its
-  fixed period, today's or tomorrow's once today's is over; the Rewind has
-  none). Choosing a filter fills its chip with a × and keeps only it, then
+  `config/filters.yaml` and the page the `home` tiles of
+  `config/layout.yaml` in priority order (`homeTiles`; each for its period,
+  today's or tomorrow's once today's is over; never Rewind tiles). Choosing a filter fills its chip with a × and keeps only it, then
   offers its `levels`: `day` (Aujourd'hui, Demain: `days` of `periods.yaml`)
   then `slot` (Matin…Nuit: `chip` of the time slots; whole-day tiles are
   under no slot), only those that still have tiles. Each choice joins the row
@@ -822,9 +872,24 @@ Keep this table in sync when a tile is added, removed or changed.
 | Tile id | Type | KPI (kind) | Filter | Title (fr / en) | Options |
 |---|---|---|---|---|---|
 | `snowfall_today` | `banner_full` | `snowfall_chance` (live: day, morning, midday, afternoon, evening, night) | Snow | Neige {period} / Snow {period} | `photo: leader`, `scene: snowfall` |
-| `onpiste_powder` | `banner` | `onpiste_powder_chance` (live: morning, midday, afternoon) | Powder | Poudreuse sur piste {period} / On-piste powder {period} | `photo: leader`, `scene: piste` |
-| `offpiste_powder` | `simple` | `offpiste_powder_chance` (live: morning, midday, afternoon) | Powder | Poudreuse hors-piste {period} / Off-piste powder {period} | — |
-| `whiteout` | `simple` | `whiteout_chance` (live: day) | Visibility | Jour blanc {period} / White day {period} ("aujourd'hui", "demain") | `top: 3` |
+| `onpiste_powder` | `banner` | `onpiste_powder_chance` (live: morning, midday, afternoon) | Snow quality | Poudreuse sur piste {period} / On-piste powder {period} | `photo: leader`, `scene: piste` |
+| `offpiste_powder` | `simple` | `offpiste_powder_chance` (live: morning, midday, afternoon) | Snow quality | Poudreuse hors-piste {period} / Off-piste powder {period} | — |
+| `bluebird_day` | `banner` | `bluebird_day_chance` (live: day) | Sky | Journée bluebird {period} / Bluebird day {period} | `photo: leader`, `scene: mountain`, icon `sun` |
+| `whiteout` | `simple` | `whiteout_chance` (live: day) | Sky | Jour blanc {period} / White day {period} ("aujourd'hui", "demain") | `top: 3` |
+| `powder_alert` | `simple` | `powder_alert_chance` (live: day) | Snow | Alerte neige {period} / Snow alert {period} | `top: 3` |
+| `snowmaking` | `simple` | `snowmaking_chance` (live: night) | Snow | Canons à neige {period} / Snow cannons {period} | `top: 3` |
+| `spring_snow` | `simple` | `spring_snow_chance` (live: morning, midday, afternoon) | Snow quality | Neige de printemps {period} / Spring snow {period} | `top: 3` |
+| `hard_snow` | `simple` | `hard_snow_chance` (live: morning) | Snow quality | Neige dure {period} / Hard snow {period} | `top: 3` |
+| `heavy_snow` | `simple` | `heavy_snow_chance` (live: midday, afternoon) | Snow quality | Neige lourde {period} / Heavy snow {period} | `top: 3` |
+| `easy_conditions` | `simple` | `easy_conditions_chance` (live: morning, midday, afternoon) | Snow quality | Conditions faciles {period} / Easy conditions {period} | `top: 3` |
+| `sunset` | `banner` | `sunset_chance` (live: sunset) | Sky | Coucher de soleil {period} / Sunset {period} | `photo: leader`, `scene: mountain`, icon `sunset` |
+| `starry_night` | `simple` | `starry_night_chance` (live: evening) | Sky | Nuit étoilée {period} / Starry night {period} | `top: 3` |
+| `sunny_slot` | `simple` | `sunny_slot_chance` (live: morning, midday, afternoon) | Sky | Grand soleil {period} / Full sun {period} | `top: 3` |
+| `wind_chill` | `simple` | `wind_chill_chance` (live: morning, midday, afternoon) | Comfort | Froid ressenti {period} / Wind chill {period} | `top: 3` |
+| `mild_day` | `simple` | `mild_day_chance` (live: day) | Comfort | Journée douce {period} / Mild day {period} | `top: 3` |
+| `chains` | `simple` | `chains_chance` (live: day) | Getting there | Chaînes nécessaires {period} / Chains needed {period} | `top: 3` |
+| `lift_wind` | `simple` | `lift_wind_chance` (live: morning, midday, afternoon) | Getting there | Remontées au vent {period} / Lifts in the wind {period} | `top: 3` |
+| `wind_slab` | `simple` | `wind_slab_chance` (live: day) | Safety | Neige ventée {period} / Wind-blown snow {period} | `top: 3` |
 | `rewind_2025_26_total_snowfall` | `banner_full` | `season_total_snowfall` (historical, m) | Rewind 25/26 | Le plus de neige / Most snow | `photo: leader`, `scene: snowfall` |
 | `rewind_2025_26_longest_snowfall` | `banner` | `season_longest_snowfall` (historical, h) | Rewind 25/26 | La plus longue chute de neige / Longest snowfall | `photo: leader`, `scene: snowfall` |
 | `rewind_2025_26_domain_snowfall` | `banner` | `season_domain_snowfall` (historical, m) | Rewind 25/26 | Le plus de neige sur le domaine / Most snow on the slopes | `photo: leader`, `scene: piste` |
@@ -832,9 +897,9 @@ Keep this table in sync when a tile is added, removed or changed.
 | `rewind_2025_26_deep_snow_days` | `banner` | `season_deep_snow_days` (historical, %, bars 0–100 %) | Rewind 25/26 | L'enneigement idéal / Ideal snow cover | `photo: leader`, `scene: piste` |
 | `rewind_2025_26_white_days` | `banner` | `season_white_days` (historical, days, fewest first) | Rewind 25/26 | Le moins de jours blancs / Fewest white days | `photo: leader`, `scene: mountain` |
 
-The home page (no filter) shows one overview tile per filter
-(`config/filters.yaml` `overview`): `snowfall_today` (day), `onpiste_powder`
-(morning), `whiteout` (day). Under a filter, live tiles show once per period of
+The home page (no filter) shows the `home` tiles of `config/layout.yaml`, in
+priority order: `bluebird_day` (day, always first), `snowfall_today` (day),
+`onpiste_powder` (morning), `whiteout` (day). Under a filter, live tiles show once per period of
 today and tomorrow not over yet (`{period}` becomes "ce soir", "demain
 matin"…), narrowed by the day and slot chips; Rewind tiles only under their
 Rewind filter, once, in the Rewind theme with a "REWIND 25/26" badge.
@@ -861,7 +926,7 @@ AGENTS.md §4; scraping must respect the site's terms).
 | Avalanche bulletin (BRA) | Danger level per massif, archive for Rewind/All Time | Météo-France API (key) or public XML/PDF archive | 🔴 |
 | School holidays | Crowd index, "holiday luck" Rewind | Open data school calendar (education.gouv) | 🟡 |
 | Probability calibration | "Our success rate" (Brier score, reliability diagram) | Gold history on `gh-pages` vs observed snow | 🟢/🟡 |
-| Indicator categories | Six level-2 categories (Snow, Snow quality, Sky, Comfort, Getting there, Safety; PROJECT.md "Categories") replacing the Snow / Powder / Visibility topics | KPI tags and a `category` filter level kind in `lib/filterLevels.ts` | 🟢 |
+| Indicator categories as level 2 | The categories (PROJECT.md "Categories"; today the six level-1 filters `snow`, `snow-quality`, `sky`, `comfort`, `access`, `safety`) move under the activity filter | KPI tags and a `category` filter level kind in `lib/filterLevels.ts` | 🟢 |
 | Activity filter (level 1) | Alpine skiing, snowshoeing, cross-country, village, next to the Rewind filter | Activity tags on KPIs; nordic and snowshoe sites (OSM `piste:type=nordic` / `hike`, today only `downhill` is fetched) as a new kind of station | 🟡 |
 | Terrain filter level | Easy pistes (green/blue), steeper pistes (red/black), off-piste, for alpine skiing; replaces a skier-level filter | Piste difficulty already in `domain_features` (`piste_km_by_difficulty`); KPIs sampled along pistes of each difficulty; `terrain` level kind, `MAX_FILTER_LEVELS` 4 → 5 | 🟢 |
 | Skip single-choice levels | A filter level with one option is applied automatically | `filterState` in `lib/filterLevels.ts` | 🟢 |

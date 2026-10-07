@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { Kpi, Rewind } from './config';
-import { historicalView, itemLabel, liveView, rewindOfKpi, viewFor } from './kpiView';
+import {
+  historicalView,
+  itemLabel,
+  itemNote,
+  liveView,
+  rewindOfKpi,
+  showsPercent,
+  viewFor,
+} from './kpiView';
 
 const name = { fr: 'x', en: 'x' };
 const nbsp = (s: string) => s.replace(/[  ]/g, ' ');
@@ -130,5 +138,106 @@ describe('kpi views', () => {
     expect(viewFor(liveKpi, 'm', null, [rewind], () => payload)).toBeNull();
     expect(viewFor(historical, 'm', null, [rewind], () => payload)?.kind).toBe('historical');
     expect(viewFor(undefined, 'm', null, [rewind], () => payload)).toBeNull();
+  });
+});
+
+describe('live displays', () => {
+  const entry = (station: string, probability: number, drivers: Record<string, number | string | null>) => ({
+    station_id: station,
+    probability,
+    confidence: 'medium' as const,
+    window_start: '2026-10-04T06:00:00+02:00',
+    window_end: '2026-10-04T12:00:00+02:00',
+    members: 91,
+    drivers,
+  });
+  const slot = {
+    key: 'morning@2026-10-04',
+    periodId: 'morning',
+    skiDay: '2026-10-04',
+    start: '2026-10-04T06:00:00+02:00',
+    end: '2026-10-04T12:00:00+02:00',
+  };
+  const daily = (ranking: ReturnType<typeof entry>[]) =>
+    ({
+      massif_id: 'm',
+      forecast_date: '2026-10-04',
+      timezone: 'Europe/Paris',
+      generated_at: '2026-10-04T04:30:00Z',
+      stations: {},
+      sources: [],
+      kpis: {
+        k: {
+          periods: [{ key: slot.key, period_id: 'morning', ski_day: slot.skiDay, start: slot.start, end: slot.end, generated_at: '2026-10-04T04:30:00Z', ranking }],
+        },
+      },
+    }) as never;
+  const kpi = (display: Kpi['display'], extra: Partial<Kpi> = {}): Kpi => ({
+    id: 'k',
+    aggregator: 'a',
+    name,
+    description: name,
+    display,
+    ...extra,
+  });
+
+  it('shows the median of a value display, with bars relative to the best value', () => {
+    const snow = kpi(
+      { kind: 'value', driver: 'snow_p50', range: ['snow_p10', 'snow_p90'], tolerance: 3 },
+      { value: { unit: 'cm', decimals: 0 } },
+    );
+    const view = liveView(snow, daily([entry('a', 0.9, { snow_p50: 8 }), entry('b', 0.4, { snow_p50: 2 }), entry('c', 0.1, { snow_p50: null })]), slot);
+    expect(view.items.map((i) => [i.stationId, i.share])).toEqual([
+      ['a', 1],
+      ['b', 0.25],
+      ['c', 0],
+    ]);
+    expect(nbsp(itemLabel(view, view.items[0]!, 'fr'))).toBe('8 cm');
+    expect(itemLabel(view, view.items[2]!, 'fr')).toBe('—');
+    expect(showsPercent(view)).toBe(false);
+  });
+
+  it('names the band of a value, coldest first for an ascending ranking', () => {
+    const chill = kpi(
+      {
+        kind: 'value',
+        driver: 'chill_p50',
+        range: ['chill_p10', 'chill_p90'],
+        tolerance: 6,
+        bands: [
+          { max: -28, label: { fr: 'risque élevé', en: 'high risk' } },
+          { max: -10, label: { fr: 'risque modéré', en: 'moderate risk' } },
+          { label: { fr: 'risque faible', en: 'low risk' } },
+        ],
+      },
+      { value: { unit: '°C', decimals: 0 }, order: 'asc' },
+    );
+    const view = liveView(chill, daily([entry('a', 0.8, { chill_p50: -30 }), entry('b', 0.2, { chill_p50: -9.6 })]), slot);
+    expect(view.items.map((i) => itemNote(i, 'fr'))).toEqual(['risque élevé', 'risque modéré']);
+    expect(view.items[0]!.share).toBe(1);
+    expect(view.items[1]!.share).toBeCloseTo(0.32);
+    expect(nbsp(itemLabel(view, view.items[0]!, 'en'))).toBe('-30 °C');
+  });
+
+  it('turns probabilities into levels', () => {
+    const chains = kpi({
+      kind: 'levels',
+      levels: [
+        { min: 0.6, label: { fr: 'Oui', en: 'Yes' } },
+        { min: 0.25, label: { fr: 'Possible', en: 'Possible' } },
+        { min: 0, label: { fr: 'Non', en: 'No' } },
+      ],
+    });
+    const view = liveView(chains, daily([entry('a', 0.7, {}), entry('b', 0.3, {}), entry('c', 0.1, {})]), slot);
+    expect(view.items.map((i) => itemLabel(view, i, 'fr'))).toEqual(['Oui', 'Possible', 'Non']);
+    expect(view.items[0]!.share).toBe(0.7);
+  });
+
+  it('adds the note driver of a percent display', () => {
+    const sunset = kpi({ kind: 'percent', note: 'sunset_time' });
+    const view = liveView(sunset, daily([entry('a', 0.8, { sunset_time: '17:41' })]), slot);
+    expect(nbsp(itemLabel(view, view.items[0]!, 'fr'))).toBe('80 %');
+    expect(itemNote(view.items[0]!, 'fr')).toBe('17:41');
+    expect(showsPercent(view)).toBe(true);
   });
 });

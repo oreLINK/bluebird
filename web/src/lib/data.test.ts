@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { kpis } from './config';
 import {
   DataError,
   type MassifDaily,
@@ -45,13 +46,17 @@ describe('data', () => {
     ).rejects.toThrow('unsupported schema_version');
   });
 
-  it('demo payload rankings are sorted by probability, periods by start', () => {
-    for (const kpi of Object.values(demo.kpis)) {
+  it('demo payload rankings follow the KPI display, periods by start', () => {
+    for (const [id, kpi] of Object.entries(demo.kpis)) {
       const starts = kpi.periods.map((p) => Date.parse(p.start));
       expect(starts).toEqual([...starts].sort((a, b) => a - b));
+      const config = kpis.find((k) => k.id === id);
+      const driver = config?.display?.kind === 'value' ? config.display.driver : undefined;
+      const sign = config?.order === 'asc' ? 1 : -1;
       for (const period of kpi.periods) {
-        const probabilities = period.ranking.map((r) => r.probability);
-        expect(probabilities).toEqual([...probabilities].sort((a, b) => b - a));
+        // A value display ranks by the shown value (`order`), the others by probability.
+        const keys = period.ranking.map((r) => (driver ? Number(r.drivers[driver]) : r.probability));
+        expect(keys).toEqual([...keys].sort((a, b) => sign * (a - b)));
       }
     }
   });

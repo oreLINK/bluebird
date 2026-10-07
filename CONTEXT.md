@@ -17,10 +17,21 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
   tomorrow (morning, lunchtime, afternoon, evening, night, whole day).
 - A **Python data pipeline** that fetches weather forecasts, computes the
   probabilities, and writes small JSON files the website reads.
-- First massif: Pyrenees, 18 stations. Four **live** KPIs (probabilities per
-  period): `snowfall_chance`, `onpiste_powder_chance`, `offpiste_powder_chance`
-  and, under the **Visibility** filter, `whiteout_chance` (period `day` only:
-  white day today and tomorrow).
+- First massif: Pyrenees, 18 stations. 19 **live** KPIs (probabilities per
+  period), one category filter each (the indicator categories of
+  PROJECT.md): `snow` (Neige: `snowfall_chance`, `powder_alert_chance`,
+  `snowmaking_chance`), `snow-quality` (Glisse: `onpiste_powder_chance`,
+  `offpiste_powder_chance`, `spring_snow_chance`, `hard_snow_chance`,
+  `heavy_snow_chance`, `easy_conditions_chance`), `sky` (Ciel:
+  `whiteout_chance`, `bluebird_day_chance`, `sunset_chance`,
+  `starry_night_chance`, `sunny_slot_chance`), `comfort` (Confort:
+  `mild_day_chance`, `wind_chill_chance`), `access` (Accès: `chains_chance`,
+  `lift_wind_chance`), `safety` (Sécurité: `wind_slab_chance`). All use only
+  the data already fetched (ensemble mid/summit). Each is shown after its
+  `display` (`kpis.yaml`): `value` (median of a driver: snow, snow alert,
+  snowmaking, on-piste powder, full sun, wind chill, lift wind), `levels`
+  (Oui / Possible / Non: chains, hard snow, wind slab) or `percent` (the
+  others; sunset with its time as `note`).
 - **Rewinds** review a closed season with **historical** KPIs (values, not
   probabilities), built once by `bluebird rewind`. First instance: *Rewind
   25/26* (2025-12-01 → 2026-05-01, Pyrenees): `season_total_snowfall`,
@@ -28,7 +39,7 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
   `season_deep_snow_days` (% of days with > 70 cm on average over the slopes,
   ICON snow depth), `season_white_days` (fewest first, `order: asc`). The info
   line above the tiles reads "Saison 2025/2026". Shown only under its
-  Christmas-red filter, the first level-1 chip (no levels, no overview tile). Rewind tiles are not split by period.
+  Christmas-red filter, the first level-1 chip (no levels, never on the home page). Rewind tiles are not split by period.
 - The UI mimics a sports-betting page: one tile per live KPI and period (tile
   templates in `tiles.yaml` are expanded per period, "Neige {period}"),
   stations ranked by descending probability. A tile disappears when its
@@ -40,7 +51,8 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
   topics of `filters.yaml`; a chosen chip is filled with a ×, leads the row
   and hides its siblings, then the next level appears: `day` (Aujourd'hui,
   Demain) then `slot` (Matin…Nuit), at most 4 levels; no "All": with nothing
-  chosen the home page shows one `overview` tile per filter). Above the tiles, plain text (no card): data date (day of
+  chosen the home page shows the `home` tiles of `layout.yaml`, in priority
+  order: bluebird day today first). Above the tiles, plain text (no card): data date (day of
   `generated_at`) and update time. Station details on tap are off for now
   (tile option `details`, default false): the tiles show the probability only.
 - UI languages: French (default) and English. **All code, comments, docs and
@@ -54,9 +66,9 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 |---|---|
 | `AGENTS.md` | Mandatory rules for AI agents, applied on every prompt. |
 | `CLAUDE.md` | Imports `AGENTS.md` and `CONTEXT.md` for Claude Code. |
-| `config/filters.yaml` | Level-1 chips of the filter bar, their `levels` (`day`, `slot`) and home `overview {tile, period}`; KPIs opt in with `filters: [id]` in `kpis.yaml`. Chip labels of the levels: `days` and period `chip` in `periods.yaml`. |
+| `config/filters.yaml` | Level-1 chips of the filter bar, their `levels` (`day`, `slot`); KPIs opt in with `filters: [id]` in `kpis.yaml`. Chip labels of the levels: `days` and period `chip` in `periods.yaml`. |
 | `config/periods.yaml` | `day_start` (06:00), `horizon_days`, periods (time slots covering the ski day + `day` with `native_window`) and their labels per day. |
-| `config/rewinds.yaml` | Rewinds: season `start`/`end` (local days, included), massifs, historical KPIs, its level-1 filter (no levels, no overview). |
+| `config/rewinds.yaml` | Rewinds: season `start`/`end` (local days, included), massifs, historical KPIs, its level-1 filter (no levels). |
 | `config/rewind/<id>/<massif>.hourly.parquet`, `.json` | **Generated** by `bluebird rewind`, committed via PR: the season hour by hour (silver `season_hourly`) and the ranked payload the site bundles. Never edit by hand. |
 | `config/pages.yaml` | Footer (GitHub repository link, page links) and full-window pages (about, legal notice, privacy) with `{fr, en}` sections and built-in blocks. |
 | `config/*.yaml`, `config/stations/*.yaml` | Single source of truth for massifs, stations, KPIs, tiles, layout, sources. Human-edited. |
@@ -76,7 +88,9 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 | `pipeline/src/bluebird_pipeline/rewind.py` | Rewinds: `run_rewind()` (bronze → committed hourly file → gold → committed payload), `load_season()`, `is_over()`. |
 | `pipeline/src/bluebird_pipeline/geo.py` | `distance_m`, `path_length_m`, `offset` on `[lon, lat]` points (shared by layers). |
 | `pipeline/src/bluebird_pipeline/bronze/_season_points.py`, `extractor_open_meteo_historical.py` | Deterministic Rewind sampling points (station, domain along pistes, off-piste ring) and the season archive extractor (2 requests per station). |
-| `pipeline/src/bluebird_pipeline/gold/_whiteout.py`, `aggregator_whiteout_chance.py`, `aggregator_season_white_days.py` | White days: `WhiteoutRule` (params shared by both KPIs), clear-sky radiation (`clear_sky_expr`), white hour rule; live probability (period `day`: today and tomorrow) and season count. |
+| `pipeline/src/bluebird_pipeline/gold/_whiteout.py`, `aggregator_whiteout_chance.py`, `aggregator_season_white_days.py` | White days: `SkiHours` (ski hours params), `WhiteoutRule` (params shared by both KPIs), clear-sky radiation (`clear_sky_expr`), white hour rule; live probability (period `day`: today and tomorrow) and season count. |
+| `pipeline/src/bluebird_pipeline/gold/_conditions.py`, `aggregator_{powder_alert,snowmaking,spring_snow,hard_snow,heavy_snow,easy_conditions,sunset,starry_night,sunny_slot,wind_chill,mild_day,chains,lift_wind,wind_slab}_chance.py` | Condition KPIs from the fetched ensemble: `member_table` + `share` (`_ensemble.py`); helpers wet bulb (snowmaking), wind chill, lapse-rate temperature (chains: road at the base elevation), `sunset_utc` (period `sunset`, native window 06:00–22:00). Tested in `tests/gold/test_live_conditions.py`. |
+| `pipeline/src/bluebird_pipeline/gold/aggregator_bluebird_day_chance.py` | Bluebird day: fresh snow over `lookback_hours` before `ski_start`, then ≥ `min_sunny_hours` sunny ski hours (`sunny_hour_expr`: total cloud and radiation vs clear sky). Period `day` only. |
 | `pipeline/src/bluebird_pipeline/gold/aggregator_season_snow_depth_days.py` | Share of days whose daily mean snow depth over `points` exceeds `threshold_cm` (needs `snow_depth_m` from the ICON season source). |
 | `pipeline/src/bluebird_pipeline/gold/_season.py`, `aggregator_season_*.py` | `SeasonAggregator`s (base in `gold/base.py`): season window, point totals, `longest_episode`. |
 | `pipeline/src/bluebird_pipeline/diamond/displayer_rewind.py` | `DisplayerRewind` (`schedule = "season"`): `DiamondRewind` payload per massif. |
@@ -93,7 +107,7 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 | `web/src/tiles/TileBanner.svelte` | Type `banner`: banner (photo or illustration), top stations as odds buttons, "see all". |
 | `web/src/tiles/TileBannerFull.svelte` | Type `banner_full`: photo or illustration fills the card behind title and odds. |
 | `web/src/tiles/TileSimple.svelte` | Type `simple`: banner tile without banner (title without icon, compact odds, "see all"), half a banner tile (`--tile-simple-h`), so two stack beside a banner tile on wide screens. |
-| `web/src/lib/kpiView.ts` | **One view of a KPI for every tile**: `liveView` (probabilities, confidence, details) / `historicalView` (Rewind values, bars vs best), `viewFor()` (App), `itemLabel`, `rewindOfKpi`. Tiles never read payloads directly. |
+| `web/src/lib/kpiView.ts` | **One view of a KPI for every tile**: `liveView` (after the KPI `display`: percent, median value with band note, or levels; confidence, details) / `historicalView` (Rewind values, bars vs best), `viewFor()` (App), `itemLabel`, `rewindOfKpi`. Tiles never read payloads directly. |
 | `web/src/tiles/tileModel.ts`, `OddsRow.svelte`, `RankingMore.svelte`, `StationRow.svelte`, `summary.ts` | Shared by every tile type and both kinds: top/rest, photo, odds/details (live only), empty message, badge, theme (`TILE_THEMES`, from the Rewind's filter). Odds buttons show reliability dots for live KPIs; the open list has a "see less" button at its top and bottom. |
 | `web/src/tiles/TileBadge.svelte`, `web/src/components/ValuePill.svelte` | Corner badge ("REWIND 25/26") and the value pill of ranking rows ("82 %", "4,43 m"). |
 | `web/src/components/ConfidenceDots.svelte` | Three reliability dots for a `confidence` level; colours via `--dot-on` / `--dot-off`. Used by odds buttons, station rows, station details, tile back. |
@@ -101,7 +115,7 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 | `web/src/lib/transitions.ts` | `arrive` / `leave` tile transitions, `rise` for sheets, and `motion()` (reduced-motion aware). |
 | `web/src/lib/photos.ts`, `web/src/assets/photos/` | Banner photos `<massif>/<station_id>/<station_id>_<n>.*` (`photo: leader` draws one at random per page load; also `none` / `<path>`) and `credits.yaml`. |
 | `web/src/components/AppMenu.svelte`, `FilterBar.svelte`, `Logo.svelte` | Side menu (language; blur, scroll lock, inert page), scrollable chip bar (`size` `large` = massif bar, `small` = filter bar; options with `pressed`/`removable` (×), `resetScroll`, chips grow in and slide with `animate:flip`), text-only wordmark. |
-| `web/src/lib/filterLevels.ts` | Pure, tested: `filterState(path, …)` → chips, tiles and tile instances of the filter path (home = overview tiles), `LEVEL_KINDS` (`day`, `slot`: options + match), `nextPath` (tap = choose, tap a chosen chip = remove it and the levels after). Only level 1 is stored in `localStorage`. |
+| `web/src/lib/filterLevels.ts` | Pure, tested: `filterState(path, …)` → chips, tiles and tile instances of the filter path (home = `homeTiles`: `layout.yaml` `home` in priority order), `LEVEL_KINDS` (`day`, `slot`: options + match), `nextPath` (tap = choose, tap a chosen chip = remove it and the levels after). Only level 1 is stored in `localStorage`. |
 | `web/src/components/Sheet.svelte`, `web/src/lib/sheets.svelte.ts` | Generic full-window sheet (Liquid Glass, close ×, rises from the bottom) and its router (`#<id>` in the URL, back gesture closes). Reuse them for any future over-page. |
 | `web/src/components/InfoPage.svelte`, `AppFooter.svelte` | A `pages.yaml` page in a `Sheet` (blocks `data_sources`, `photo_credits`); footer with the GitHub logo and page links. |
 | `web/src/components/ForecastStatus.svelte` | Plain text above the tiles: data date (day of `generated_at` in the massif timezone) and update time; with a Rewind filter, the season period. |
@@ -164,7 +178,10 @@ with `scripts/ci/fetch-gh-pages-data.sh` before computing (fallback).
 5. **Times.** Station times in YAML are local `HH:MM` in the massif timezone.
    Convert with `RunContext.local_datetime`; do timedelta arithmetic in UTC.
    `grooming_end > lifts_open` means the previous evening.
-6. **Probabilities** are floats in [0, 1]; build results with
+6. **Probabilities** are floats in [0, 1], always computed, even for KPIs
+   shown as a value or levels (`display`); a `value` display needs its
+   `driver` and `range` drivers declared in `kpis.yaml` (validated), ranks
+   by the value and rates reliability by the spread. Build results with
    `Aggregator.result()` so confidence and metadata are consistent. Bump an
    aggregator's `version` when its maths change.
 7. **The diamond contract** is `diamond/models.py`. After changing it (or any
@@ -218,7 +235,7 @@ with `scripts/ci/fetch-gh-pages-data.sh` before computing (fallback).
     and are only computed by `bluebird rewind`, which refuses a season that is
     not over. `config/rewind/` is generated and committed, never hand-edited.
     Rewind tiles only show under their Rewind filter (never on the home
-    page, whose tiles are the filters' `overview`). On the site, tiles
+    page, whose tiles are the live `home` entries of `layout.yaml`). On the site, tiles
     only read a `KpiView` (`lib/kpiView.ts`) and colours only change through
     tile themes (token overrides, `[data-tile-theme]`): no tile type, prop or
     CSS is specific to one kind of KPI or one Rewind.
@@ -298,17 +315,17 @@ npm run dev
 | Add a massif | `config/massifs.yaml`, new `config/stations/<id>.yaml`, optional `layout.yaml` override | `bluebird reference --massif <id>`, `bluebird validate`, `bluebird demo` |
 | Add reference data | `bronze/extractor_<x>.py`, `silver/transformer_<x>.py` with `reference_suffix`, `reference_file`, `read_reference`; source with `schedule: reference` | `bluebird reference`, `pytest`, commit `config/reference/` |
 | Add a source | `bronze/extractor_<x>.py` (one grouped request if the API allows), `silver/transformer_<x>.py`, `config/sources.yaml` (+ attribution), tests | `bluebird validate`, `pytest` |
-| Add a KPI | `gold/aggregator_<x>.py` (live: `compute(ctx, ref, period)`), PROJECT.md "Available indicators", README.md "Tiles on the site", `config/kpis.yaml` (name, description, `method` with `{param}` placeholders, params, drivers, filters, `periods` for live KPIs), `config/tiles.yaml` (live: title with `{period}`), `config/layout.yaml`, tests | `bluebird validate`, `pytest`, `bluebird demo` |
+| Add a KPI | `gold/aggregator_<x>.py` (live: `compute(ctx, ref, period)`), PROJECT.md "Available indicators", README.md "Tiles on the site", `config/kpis.yaml` (name, description, `method` with `{param}` placeholders, params, drivers, filters, `periods` for live KPIs, `display`: percent / value / levels), `config/tiles.yaml` (live: title with `{period}`), `config/layout.yaml`, tests | `bluebird validate`, `pytest`, `bluebird demo` |
 | Add a period | `config/periods.yaml` (slot + labels per day; keep slots tiling the day), `periods` of the KPIs | `bluebird validate`, `pytest`, `bluebird demo` |
 | Add a tile type | README.md "Tiles on the site" when used, `web/src/tiles/Tile<Xyz>.svelte`, `web/src/tiles/registry.ts` (id `xyz` + `skeletonVariant`), `config/tiles.yaml` | `npm run check`, `npm test`, 390 px screenshots |
 | Change the diamond shape | `diamond/models.py`, displayer, frontend usage | `bluebird schemas`, `npm run gen:types`, `bluebird demo`, all tests |
-| Reorder tiles | `config/layout.yaml`, README.md "Tiles on the site" | `bluebird validate`, `npm test` |
-| Add a filter | `config/filters.yaml` (`levels`, `overview`), `filters: [id]` on KPIs in `config/kpis.yaml` | `bluebird validate`, `npm test` |
+| Reorder tiles | `config/layout.yaml` (`home` = home page in priority order, `default`/`overrides` = order under a filter), README.md "Tiles on the site" | `bluebird validate`, `npm test` |
+| Add a filter | `config/filters.yaml` (`levels`), `filters: [id]` on KPIs in `config/kpis.yaml` | `bluebird validate`, `npm test` |
 | Add a kind of filter level | `FilterLevel` in `config.py`, `LEVEL_KINDS` in `web/src/lib/filterLevels.ts`, its `{fr, en}` chip labels in config, tests (max 4 levels: `MAX_FILTER_LEVELS`) | `bluebird schemas`, `npm run gen:types`, `pytest`, `npm test` |
 | Add a banner photo | `web/src/assets/photos/<path>.webp`, `credits.yaml`, tile `photo` option | `npm run build`, 390 px screenshots |
 | Add a page | `config/pages.yaml` (`pages[]`, optional `footer.pages`) | `bluebird validate`, `npm test`, 390 px screenshots |
 | Add another kind of over-page | content inside `components/Sheet.svelte`, opened with `sheets.open(id)` (`lib/sheets.svelte.ts`) | `npm run check`, `npm test` |
-| Add a Rewind | `config/rewinds.yaml`, its filter (`theme: rewind`, no levels/overview) first in `filters.yaml`, KPI tags, tiles of any type + layout (Rewind and theme come from the KPI) | after the season: `bluebird rewind --rewind <id>`, review and commit `config/rewind/<id>/` |
+| Add a Rewind | `config/rewinds.yaml`, its filter (`theme: rewind`, no levels) first in `filters.yaml`, KPI tags, tiles of any type + layout (Rewind and theme come from the KPI) | after the season: `bluebird rewind --rewind <id>`, review and commit `config/rewind/<id>/` |
 | Add a historical KPI | `gold/aggregator_season_<x>.py` (`SeasonAggregator`, value in its native unit), `kpis.yaml` (`kind: historical`, `value {unit, decimals, scale, max}` — snow totals use `m` with `scale: 0.01`, percentages `%` with `scale: 100, max: 100`; method, drivers, filter), PROJECT.md "Available indicators", README.md "Tiles on the site", Rewind `kpis`, tile + layout, tests | `bluebird validate`, `pytest`, `bluebird rewind --no-fetch` |
 | Add a UI string | `web/src/lib/i18n/fr.json` **and** `en.json` | `npm test` |
 
@@ -331,6 +348,8 @@ npm run dev
   features and big domains are under-counted (Saint-Lary ≈ 12 km found). Do not
   show these totals as official figures; selecting by `landuse=winter_sports`
   areas is the planned fix.
+- **Colon in a plain YAML value.** `fr: Vent … créneau : les remontées…`
+  is invalid YAML (`: ` starts a mapping); quote such values.
 - **YAML flow mappings.** `{ fr: Neige, scénario haut }` splits on the comma.
   Quote such values or use a dash.
 - **SVG and CSS variables.** `var()` does not work in SVG presentation
@@ -385,6 +404,17 @@ npm run dev
 - **Aware datetimes in polars filters.** Comparing a `Datetime(UTC)` column
   with a Europe/Paris datetime raises a `SchemaError`: convert bounds with
   `.astimezone(UTC)` first (see `gold/_season.in_window`).
+- **Synthetic demo weather needs a day/night cycle.** With a constant
+  temperature per member, every thaw/refreeze KPI showed 0 % in the demo;
+  `demo.py` adds a daily temperature cycle. Keep it when editing the demo.
+- **Windows of the 00:00 refresh.** That run belongs to the previous ski day
+  and requests data from the previous UTC date: check that a new KPI's
+  lookback still fits `past_days` and its look-ahead `forecast_days`
+  (e.g. 48 h before 09:00, 36 h after 06:00 tomorrow).
+- **Duplicate YAML keys.** PyYAML keeps the last value of a repeated key, the
+  site's YAML plugin refuses it: a KPI inserted in the middle of another
+  one's `drivers` passed `bluebird validate` but broke `npm test`. The config
+  loader now rejects duplicate keys (`_StrictLoader` in `config.py`).
 - **Variable named `window`** in a component shadows the global object; use
   another name (`timeWindow`).
 - **Scrolling a bar whose chips are about to change.** `scrollTo` in the
@@ -445,10 +475,12 @@ this file when behaviour, commands or conventions change.
 
 ## 10. Roadmap context
 
-Indicators are grouped into six planned categories (Snow, Snow quality,
-Sky, Comfort, Getting there, Safety; PROJECT.md "Categories" and "Future
-indicators"), not yet the site filters (Snow, Powder, Visibility stay until
-more KPIs exist). Planned filter levels (PROJECT.md "Coming next", README.md
+Indicators are grouped into six categories (Snow, Snow quality, Sky,
+Comfort, Getting there, Safety; PROJECT.md "Categories" and "Future
+indicators"), the level-1 filters today. Every live KPI feasible with the
+fetched data is built; the remaining future ones need new data (UV index,
+live snow depth, a base band in the ensemble, gusts, avalanche bulletin,
+school holidays, nordic sites). Planned filter levels (PROJECT.md "Coming next", README.md
 "Future features"): activity (level 1, next to the Rewind) → category →
 terrain (piste difficulty from `domain_features`, instead of a skier level)
 → day → time slot, `MAX_FILTER_LEVELS` 5, single-choice levels skipped.
