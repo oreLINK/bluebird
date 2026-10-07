@@ -61,7 +61,7 @@ kpis:
   - id: offpiste_powder_chance
     aggregator: offpiste_powder_chance
     filters: [snow-quality]
-    periods: [morning, midday, afternoon]
+    periods: [day, morning, midday, afternoon]
     name: { fr: Poudreuse hors-piste, en: Off-piste powder }
     description:
       fr: Probabilité de trouver de la poudreuse fraîche hors-piste au début du créneau, au sommet.
@@ -101,7 +101,7 @@ kpis:
   - id: onpiste_powder_chance
     aggregator: onpiste_powder_chance
     filters: [snow-quality]
-    periods: [morning, midday, afternoon]
+    periods: [day, morning, midday, afternoon]
     name: { fr: Poudreuse sur piste, en: On-piste powder }
     description:
       fr: Neige tombée sur les pistes depuis la fin du damage, au début du créneau, à mi-altitude.
@@ -261,7 +261,7 @@ kpis:
   - id: snowmaking_chance
     aggregator: snowmaking_chance
     filters: [snow]
-    periods: [night]
+    periods: [overnight, night]
     name: { fr: Canons à neige, en: Snow cannons }
     description:
       fr: Heures de la nuit assez froides et sèches pour fabriquer de la neige sur les pistes.
@@ -301,7 +301,7 @@ kpis:
   - id: spring_snow_chance
     aggregator: spring_snow_chance
     filters: [snow-quality]
-    periods: [morning, midday, afternoon]
+    periods: [day, morning, midday, afternoon]
     name: { fr: Neige de printemps, en: Spring snow }
     description:
       fr: Probabilité d'une neige transformée qui ramollit pendant le créneau après avoir regelé la nuit.
@@ -313,13 +313,17 @@ kpis:
         créneau (au moins {soften_min_c} °C) et moins de {fresh_snow_max_cm} cm de neige
         fraîche la recouvrent ({fresh_snow_hours} dernières heures). La probabilité
         est la part des scénarios qui réunissent les trois.
+        Pour la journée entière, la fenêtre va de {ski_start} à {ski_end}.
       en: >-
         For each of the 91 scenarios, at mid-mountain: the snow refroze (at most
         {freeze_max_c} °C between {freeze_start} and {freeze_end}), it softens during
         the slot (at least {soften_min_c} °C) and less than {fresh_snow_max_cm} cm of
         fresh snow covers it (last {fresh_snow_hours} hours). The probability is the
         share of scenarios meeting all three.
+        For the whole day, the window runs from {ski_start} to {ski_end}.
     params:
+      ski_start: "09:00"
+      ski_end: "17:00"
       band: mid
       freeze_start: "00:00"
       freeze_end: "08:00"
@@ -335,7 +339,7 @@ kpis:
   - id: hard_snow_chance
     aggregator: hard_snow_chance
     filters: [snow-quality]
-    periods: [morning]
+    periods: [day, morning]
     name: { fr: Neige dure, en: Hard snow }
     description:
       fr: Probabilité d'une neige dure et glacée le matin, après un redoux la veille et un regel la nuit.
@@ -348,6 +352,7 @@ kpis:
         {frozen_max_c} °C) et moins de {fresh_snow_max_cm} cm de neige fraîche la recouvrent.
         La probabilité est la part des scénarios qui réunissent les quatre.
         La tuile affiche « Oui » à partir de 60 %, « Possible » à partir de 25 %, sinon « Non ».
+        Pour la journée entière, la fenêtre va de {ski_start} à {ski_end}.
       en: >-
         For each of the 91 scenarios, at mid-mountain: the snow melted the day
         before (at least {melt_min_c} °C between {melt_start} and {melt_end}), it refroze
@@ -355,7 +360,10 @@ kpis:
         {frozen_max_c} °C) and less than {fresh_snow_max_cm} cm of fresh snow covers it.
         The probability is the share of scenarios meeting all four.
         The tile shows "Yes" from 60 %, "Possible" from 25 %, otherwise "No".
+        For the whole day, the window runs from {ski_start} to {ski_end}.
     params:
+      ski_start: "09:00"
+      ski_end: "11:00"
       band: mid
       melt_start: "11:00"
       melt_end: "17:00"
@@ -377,7 +385,7 @@ kpis:
   - id: heavy_snow_chance
     aggregator: heavy_snow_chance
     filters: [snow-quality]
-    periods: [midday, afternoon]
+    periods: [day, midday, afternoon]
     name: { fr: Neige lourde, en: Heavy snow }
     description:
       fr: Probabilité d'une neige lourde et collante pendant le créneau (redoux ou neige mouillée).
@@ -388,12 +396,16 @@ kpis:
         température atteint {warm_min_c} °C, ou s'il tombe au moins {wet_snow_min_cm} cm de
         neige à {wet_snow_min_c} °C ou plus. La probabilité est la part des scénarios qui
         le donnent.
+        Pour la journée entière, la fenêtre va de {ski_start} à {ski_end}.
       en: >-
         For each of the 91 scenarios, at mid-mountain, the slot is heavy when the
         temperature reaches {warm_min_c} °C, or when at least {wet_snow_min_cm} cm of snow
         falls at {wet_snow_min_c} °C or more. The probability is the share of scenarios
         giving it.
+        For the whole day, the window runs from {ski_start} to {ski_end}.
     params:
+      ski_start: "11:00"
+      ski_end: "17:00"
       band: mid
       warm_min_c: 4.0
       wet_snow_min_c: 0.5
@@ -405,7 +417,7 @@ kpis:
   - id: easy_conditions_chance
     aggregator: easy_conditions_chance
     filters: [snow-quality]
-    periods: [morning, midday, afternoon]
+    periods: [day, morning, midday, afternoon]
     name: { fr: Conditions faciles, en: Easy conditions }
     description:
       fr: Probabilité de conditions faciles pour débuter pendant le créneau, à mi-altitude.
@@ -417,13 +429,17 @@ kpis:
         tombe moins de {snowfall_max_cm} cm de neige et si au plus {white_share_max_pct} % des
         heures sont blanches (même règle que le jour blanc). La probabilité est la
         part des scénarios qui le donnent.
+        Pour la journée entière, la fenêtre va de {ski_start} à {ski_end}.
       en: >-
         For each of the 91 scenarios, at mid-mountain, the slot is easy when the wind
         stays below {wind_max_kmh} km/h, the temperature above {temp_min_c} °C, less than
         {snowfall_max_cm} cm of snow falls and at most {white_share_max_pct} % of its hours are
         white (same rule as the white day). The probability is the share of
         scenarios giving it.
+        For the whole day, the window runs from {ski_start} to {ski_end}.
     params:
+      ski_start: "09:00"
+      ski_end: "17:00"
       band: mid
       wind_max_kmh: 25
       temp_min_c: -10
@@ -470,7 +486,7 @@ kpis:
   - id: starry_night_chance
     aggregator: starry_night_chance
     filters: [sky]
-    periods: [evening]
+    periods: [sunset, evening]
     name: { fr: Nuit étoilée, en: Starry night }
     description:
       fr: Probabilité d'un ciel dégagé et étoilé en soirée.
@@ -481,12 +497,16 @@ kpis:
         la soirée où les nuages couvrent au plus {cloud_max_pct} % du ciel. La nuit est
         étoilée dès {min_clear_hours} heures dégagées ; la probabilité est la part des
         scénarios qui le donnent.
+        Pour « ce soir », la soirée va de {evening_start} à {evening_end}.
       en: >-
         For each of the 91 scenarios, near the summit, Bluebird counts the evening
         hours with clouds covering at most {cloud_max_pct} % of the sky. The night is
         starry from {min_clear_hours} clear hours; the probability is the share of
         scenarios giving it.
+        For "tonight", the evening runs from {evening_start} to {evening_end}.
     params:
+      evening_start: "18:00"
+      evening_end: "00:00"
       band: summit
       cloud_max_pct: 20
       min_clear_hours: 4
@@ -497,7 +517,7 @@ kpis:
   - id: sunny_slot_chance
     aggregator: sunny_slot_chance
     filters: [sky]
-    periods: [morning, midday, afternoon]
+    periods: [day, morning, midday, afternoon]
     name: { fr: Grand soleil, en: Full sun }
     description:
       fr: Heures de soleil pendant le créneau, à mi-altitude.
@@ -510,6 +530,7 @@ kpis:
         ou après le coucher du soleil ne comptent pas. La tuile affiche la médiane des
         heures ensoleillées du créneau. La fiabilité est élevée quand 8 scénarios sur
         10 tiennent dans un écart de 2 heures.
+        Pour la journée entière, la fenêtre va de {ski_start} à {ski_end}.
       en: >-
         For each of the 91 scenarios, at mid-mountain, an hour is sunny when clouds
         cover at most {cloud_max_pct} % of the sky and sunlight reaches
@@ -517,7 +538,10 @@ kpis:
         sunset do not count. The tile shows the median number of sunny hours in the
         slot. Reliability is high when 8 scenarios out of 10 fall within 2 hours of
         each other.
+        For the whole day, the window runs from {ski_start} to {ski_end}.
     params:
+      ski_start: "09:00"
+      ski_end: "17:00"
       band: mid
       cloud_max_pct: 30
       clear_sky_index_min: 0.6
@@ -535,7 +559,7 @@ kpis:
   - id: wind_chill_chance
     aggregator: wind_chill_chance
     filters: [comfort]
-    periods: [morning, midday, afternoon]
+    periods: [day, morning, midday, afternoon]
     name: { fr: Froid ressenti, en: Wind chill }
     description:
       fr: Température ressentie la plus froide au sommet pendant le créneau, à cause du vent.
@@ -549,6 +573,7 @@ kpis:
         de −10 °C, modéré jusqu'à −27 °C, élevé jusqu'à −39 °C (gelures en 10 à 30
         minutes), très élevé jusqu'à −47 °C, grave jusqu'à −54 °C, extrême au-delà. La
         fiabilité est élevée quand 8 scénarios sur 10 tiennent dans un écart de 6 °C.
+        Pour la journée entière, la fenêtre va de {ski_start} à {ski_end}.
       en: >-
         For each of the 91 scenarios, near the summit, Bluebird computes the felt
         temperature hour by hour (wind chill index, combining temperature and wind)
@@ -557,7 +582,10 @@ kpis:
         down to −39 °C (frostbite in 10 to 30 minutes), very high down to −47 °C,
         severe down to −54 °C, extreme below. Reliability is high when 8 scenarios out
         of 10 fall within 6 °C of each other.
+        For the whole day, the window runs from {ski_start} to {ski_end}.
     params:
+      ski_start: "09:00"
+      ski_end: "17:00"
       band: summit
       chill_max_c: -20
     display:
@@ -663,7 +691,7 @@ kpis:
   - id: lift_wind_chance
     aggregator: lift_wind_chance
     filters: [access]
-    periods: [morning, midday, afternoon]
+    periods: [day, morning, midday, afternoon]
     name: { fr: Remontées au vent, en: Lifts in the wind }
     description:
       fr: "Vent moyen le plus fort au sommet pendant le créneau : les remontées ralentissent ou s'arrêtent dans les fortes rafales."
@@ -677,6 +705,7 @@ kpis:
         de vent moyen, les remontées du haut risquent de ralentir ou de fermer. La
         fiabilité est élevée quand 8 scénarios sur 10 tiennent dans un écart de 15
         km/h.
+        Pour la journée entière, la fenêtre va de {ski_start} à {ski_end}.
       en: >-
         For each of the 91 scenarios, near the summit, Bluebird keeps the strongest
         mean wind of the slot. The tile shows the median: half of the scenarios give
@@ -684,7 +713,10 @@ kpis:
         stronger in the mountains: from {wind_min_kmh} km/h of mean wind, the top
         lifts may slow down or close. Reliability is high when 8 scenarios out of 10
         fall within 15 km/h of each other.
+        For the whole day, the window runs from {ski_start} to {ski_end}.
     params:
+      ski_start: "09:00"
+      ski_end: "17:00"
       band: summit
       wind_min_kmh: 45
       min_hours: 1

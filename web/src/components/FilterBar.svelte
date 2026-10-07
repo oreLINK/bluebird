@@ -7,9 +7,10 @@
                   selected, there is no "all" choice.
     size `small`  the filter bar, Spotify-style (lib/filterLevels.ts): chosen
                   chips are filled with a × (`removable`) and lead the row;
-                  the bar scrolls back to its start after each choice
-                  (`resetScroll`). Chips arriving grow in; the others slide
-                  to their new place (reduced-motion aware).
+                  the bar scrolls back to its start after each choice, as
+                  far as the last chosen chip stays visible (`resetScroll`).
+                  Chips arriving grow in; the others slide to their new
+                  place (reduced-motion aware).
 -->
 <script lang="ts" module>
   import type { Filter } from '../lib/config';
@@ -90,7 +91,12 @@
       return;
     }
     await tick(); // the chips of the new level are in place
-    bar?.scrollTo({ left: 0, behavior: motion(1) ? 'smooth' : 'instant' });
+    if (!bar) return;
+    // Back to the start, unless the last chosen chip would then be hidden (deep levels).
+    const chosen = [...bar.querySelectorAll<HTMLElement>('.chip[aria-pressed="true"]')].at(-1);
+    const end = chosen ? chosen.offsetLeft + chosen.offsetWidth - bar.offsetLeft : 0;
+    const left = Math.max(0, end - bar.clientWidth + 24);
+    bar.scrollTo({ left, behavior: motion(1) ? 'smooth' : 'instant' });
   }
 
   $effect(() => {

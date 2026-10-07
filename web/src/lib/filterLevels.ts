@@ -1,13 +1,19 @@
 /**
  * Filter levels of the filter bar, Spotify-style (unit-tested).
  *
- * The selection is a path: `[]` (home), `['snow']`, `['snow', 'd0']`,
- * `['snow', 'd0', 'morning']`. Level 1 is a filter of config/filters.yaml;
- * the next levels are the `levels` of that filter, built-in kinds:
+ * The selection is a path: `[]` (home), `['snow']`, `['snow', 'snowfall']`,
+ * `['snow', 'snowfall', 'd0']`, `['snow', 'snowfall', 'd0', 'morning']`.
+ * Level 1 is a filter of config/filters.yaml; the next levels are the
+ * `levels` of that filter, built-in kinds:
+ *   group sub-category of the filter (its `groups`); skipped (no chip, no
+ *         path item) when fewer than two groups have tiles
  *   day   ski day of the tile (`d0` today, `d1` tomorrow; `days` labels of
  *         config/periods.yaml)
  *   slot  time slot of the tile (periods without `native_window`, `chip`
  *         labels); whole-day tiles are under no slot.
+ * Grain rule: until a slot is chosen, the page only shows day-grain tiles
+ * (periods with `native_window`: today, tonight…) and Rewind tiles; the time
+ * slot tiles appear at the slot level only, so the page stays short.
  * The bar shows the chosen chips (pressed, removable), then the options of the
  * next level, only those that still have tiles. With nothing chosen it shows
  * every level-1 filter and the page shows the `home` tiles of
@@ -69,6 +75,7 @@ interface LevelContext {
   refDay: string;
   periods: Period[];
   days: Localized[];
+  groups: NonNullable<Filter['groups']>;
 }
 
 interface LevelOption {
@@ -85,7 +92,17 @@ interface LevelKindSpec {
 const dayId = (instance: TileInstance, ctx: LevelContext): string | null =>
   instance.slot ? `d${daysBetween(ctx.refDay, instance.slot.skiDay)}` : null;
 
+const kpiOf = (instance: TileInstance): string | undefined => instance.kpis[0]?.id;
+
 export const LEVEL_KINDS: Record<LevelKind, LevelKindSpec> = {
+  group: {
+    options: (instances, ctx) =>
+      ctx.groups.flatMap((g) =>
+        instances.some((i) => g.kpis.includes(kpiOf(i) ?? '')) ? [{ id: g.id, name: g.name }] : [],
+      ),
+    match: (instance, id, ctx) =>
+      ctx.groups.find((g) => g.id === id)?.kpis.includes(kpiOf(instance) ?? '') ?? false,
+  },
   day: {
     options: (instances, ctx) =>
       ctx.days.flatMap((name, offset) =>
@@ -158,25 +175,51 @@ export function filterState(
     return { path: [], chips, ...homeTiles(home, resolved, payload, now, periods) };
   }
 
-  const tiles = filterTiles(resolved, topic);
+  let tiles = filterTiles(resolved, topic);
   let instances = expandTiles(tiles, payload, now, periods);
-  const ctx: LevelContext = { refDay: payload ? referenceDay(payload, now) : '', periods, days };
+  const ctx: LevelContext = {
+    refDay: payload ? referenceDay(payload, now) : '',
+    periods,
+    days,
+    groups: topic.groups ?? [],
+  };
   const kept = [topic.id];
   const chips = [chip(topic, true)];
-  for (const [index, kind] of (topic.levels ?? []).entries()) {
+  let slotChosen = false;
+  for (const kind of topic.levels ?? []) {
     const spec = LEVEL_KINDS[kind];
-    const level = index + 2;
-    const options = spec.options(instances, ctx);
-    const chosen = options.find((o) => o.id === path[index + 1]);
+    // Groups are known from the configuration: they narrow the tiles even while live data loads.
+    const options =
+      kind === 'group'
+        ? ctx.groups.filter((g) => tiles.some((t) => g.kpis.includes(t.kpis[0]?.id ?? '')))
+        : spec.options(instances, ctx);
+    if (kind === 'group' && options.length < 2) continue; // a single sub-category: skipped
+    const level = kept.length + 1;
+    const chosen = options.find((o) => o.id === path[kept.length]);
     if (!chosen) {
-      chips.push(...options.map((o) => ({ key: `${level}:${o.id}`, ...o, level, pressed: false })));
+      chips.push(
+        ...options.map((o) => ({ key: `${level}:${o.id}`, id: o.id, name: o.name, level, pressed: false })),
+      );
       break;
     }
     instances = instances.filter((i) => spec.match(i, chosen.id, ctx));
+    if (kind === 'group') {
+      const group = ctx.groups.find((g) => g.id === chosen.id);
+      tiles = tiles.filter((t) => group?.kpis.includes(t.kpis[0]?.id ?? ''));
+    }
+    slotChosen ||= kind === 'slot';
     kept.push(chosen.id);
-    chips.push({ key: `${level}:${chosen.id}`, ...chosen, level, pressed: true });
+    const { id, name } = chosen;
+    chips.push({ key: `${level}:${id}`, id, name, level, pressed: true });
   }
+  if (!slotChosen) instances = instances.filter((i) => isDayGrain(i, periods));
   return { path: kept, chips, tiles, instances, rewind: rewindOfFilter(topic.id) };
+}
+
+/** A day-grain tile (period with `native_window`) or a Rewind tile (no period). */
+export function isDayGrain(instance: TileInstance, periods: Period[] = periodsFile.periods): boolean {
+  if (!instance.slot) return true;
+  return periods.find((p) => p.id === instance.slot?.periodId)?.native_window === true;
 }
 
 /**

@@ -10,7 +10,9 @@ the sun. For each ensemble scenario at ``band``:
 3. **No fresh snow** on top: less than ``fresh_snow_max_cm`` in the
    ``fresh_snow_hours`` before the slot.
 
-The probability is the share of scenarios meeting all three. Time slots only.
+The probability is the share of scenarios meeting all three.
+Time slots, and the whole ski day (``ski_start``..``ski_end``) for the
+day-grain period ``day``.
 """
 
 from __future__ import annotations
@@ -24,10 +26,11 @@ from pydantic import Field
 from ..config import Band, LocalTime, StationRef, parse_local_time
 from ..context import PeriodInstance, RunContext
 from ._ensemble import member_table, member_window, quantile, share
+from ._whiteout import SkiHours, day_or_slot
 from .base import Aggregator, AggregatorParams, KpiResult, register_aggregator
 
 
-class SpringSnowParams(AggregatorParams):
+class SpringSnowParams(SkiHours):
     band: Band = "mid"
     freeze_start: LocalTime = "00:00"
     freeze_end: LocalTime = "08:00"
@@ -41,14 +44,14 @@ class SpringSnowParams(AggregatorParams):
 class AggregatorSpringSnowChance(Aggregator):
     """P(night freeze, then softening during the slot, without fresh snow)."""
 
+    version: ClassVar[str] = "2"
     Params: ClassVar[type[AggregatorParams]] = SpringSnowParams
     required_datasets: ClassVar[tuple[str, ...]] = ("ensemble_hourly",)
     params: SpringSnowParams
 
     def compute(self, ctx: RunContext, ref: StationRef, period: PeriodInstance) -> KpiResult | None:
-        if period.period.native_window:
-            return None
         p = self.params
+        slot_start, slot_end = day_or_slot(p, period, ref.massif.tz)
         ensemble = ctx.silver("ensemble_hourly")
         freeze_start = self.on_ski_day(ctx, ref, period, parse_local_time(p.freeze_start))
         freeze_end = self.on_ski_day(ctx, ref, period, parse_local_time(p.freeze_end))
@@ -58,14 +61,14 @@ class AggregatorSpringSnowChance(Aggregator):
             column="temperature_c", how="min", alias="night_min",
         )  # fmt: skip
         slot = member_window(
-            ensemble, **common, start=period.start, end=period.end,
+            ensemble, **common, start=slot_start, end=slot_end,
             column="temperature_c", how="max", alias="slot_max",
         )  # fmt: skip
         fresh = member_table(
             ensemble,
             **common,
-            start=period.start - timedelta(hours=p.fresh_snow_hours),
-            end=period.start,
+            start=slot_start - timedelta(hours=p.fresh_snow_hours),
+            end=slot_start,
             aggs={"fresh_snow": pl.col("snowfall_cm").sum()},
             required=["snowfall_cm"],
         )
@@ -84,7 +87,7 @@ class AggregatorSpringSnowChance(Aggregator):
             probability=share(members, corn),
             members=members.height,
             window_start=freeze_start,
-            window_end=period.end,
+            window_end=slot_end,
             drivers={
                 "night_min_c_p50": quantile(members["night_min"], 0.5, 1),
                 "slot_max_c_p50": quantile(members["slot_max"], 0.5, 1),

@@ -47,6 +47,16 @@ periods:
       - { fr: ce soir, en: tonight }
       - { fr: demain soir, en: tomorrow evening }
 
+  # The night of the ski day as a whole (snowmaking KPI): day-grain version of
+  # the `night` slot, shown all day until the night ends (06:00 the next day).
+  - id: overnight
+    start: "06:00"
+    end: "06:00"
+    native_window: true
+    labels:
+      - { fr: cette nuit, en: tonight }
+      - { fr: la nuit de demain, en: tomorrow night }
+
   - id: morning
     start: "06:00"
     end: "12:00"

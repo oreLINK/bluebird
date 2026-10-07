@@ -11,11 +11,18 @@
 #                   under `filters:` in config/kpis.yaml.
 #   theme:          colour of the chip (default | rewind: Christmas red).
 #   levels:         levels offered after this filter, in order (live KPIs only):
+#                     group sub-categories of the filter (`groups` below); with
+#                           a single group the level is skipped
 #                     day   today / tomorrow (`days` in config/periods.yaml)
 #                     slot  morning, lunchtime, afternoon, evening, night
 #                           (time slots of config/periods.yaml, `chip` labels);
 #                           whole-day tiles are not under any slot.
-#                   Chips only appear for days and slots that still have tiles.
+#                   Chips only appear for groups, days and slots that still have
+#                   tiles. Above the `slot` level the page shows the day-grain
+#                   tiles only (periods with `native_window`: today, tonight…);
+#                   the time slot tiles appear once a slot is chosen.
+#   groups:         sub-categories: id, name {fr, en}, kpis (every KPI tagged
+#                   with the filter belongs to exactly one group).
 #
 # The live filters are the indicator categories of PROJECT.md ("Categories"):
 # Snow, Snow quality, Sky, Comfort, Getting there, Safety; one per KPI.
@@ -33,36 +40,81 @@ filters:
   - id: snow
     name: { fr: Neige, en: Snow }
     icon: snowflake
-    levels: [day, slot]
+    levels: [group, day, slot]
+    groups:
+      - id: snowfall
+        name: { fr: Chutes, en: Snowfall }
+        kpis: [snowfall_chance, powder_alert_chance]
+      - id: snowmaking
+        name: { fr: Canons, en: Snow cannons }
+        kpis: [snowmaking_chance]
 
   # What will the snow be like under the skis: powder, spring snow, ice?
   - id: snow-quality
     name: { fr: Glisse, en: Snow quality }
     icon: piste
-    levels: [day, slot]
+    levels: [group, day, slot]
+    groups:
+      - id: powder
+        name: { fr: Poudreuse, en: Powder }
+        kpis: [onpiste_powder_chance, offpiste_powder_chance]
+      - id: snow-state
+        name: { fr: État de la neige, en: Snow condition }
+        kpis: [spring_snow_chance, hard_snow_chance, heavy_snow_chance]
+      - id: beginners
+        name: { fr: Débutants, en: Beginners }
+        kpis: [easy_conditions_chance]
 
   # What will you see: sun, cloud, white day, sunset, stars? Whole-day tiles
   # (white day, bluebird day, sunset) are under Today/Tomorrow, not a slot.
   - id: sky
     name: { fr: Ciel, en: Sky }
     icon: sun
-    levels: [day, slot]
+    levels: [group, day, slot]
+    groups:
+      - id: sun
+        name: { fr: Soleil, en: Sun }
+        kpis: [bluebird_day_chance, sunny_slot_chance]
+      - id: visibility
+        name: { fr: Visibilité, en: Visibility }
+        kpis: [whiteout_chance]
+      - id: show
+        name: { fr: Spectacle, en: Sky show }
+        kpis: [sunset_chance, starry_night_chance]
 
   # How will it feel: cold, wind, a mild day?
   - id: comfort
     name: { fr: Confort, en: Comfort }
     icon: thermometer
-    levels: [day, slot]
+    levels: [group, day, slot]
+    groups:
+      - id: cold
+        name: { fr: Froid, en: Cold }
+        kpis: [wind_chill_chance]
+      - id: mild
+        name: { fr: Douceur, en: Mild weather }
+        kpis: [mild_day_chance]
 
   # Can you drive up, will the lifts run?
   - id: access
     name: { fr: Accès, en: Getting there }
     icon: car
-    levels: [day, slot]
+    levels: [group, day, slot]
+    groups:
+      - id: road
+        name: { fr: Route, en: Road }
+        kpis: [chains_chance]
+      - id: lifts
+        name: { fr: Remontées, en: Lifts }
+        kpis: [lift_wind_chance]
 
   # Which mountain hazards to watch? Never instead of the avalanche bulletin.
   # Wind-blown snow is computed for the whole day only: no `slot` level.
   - id: safety
     name: { fr: Sécurité, en: Safety }
     icon: alert
-    levels: [day]
+    levels: [group, day]
+    groups:
+      - id: offpiste
+        name: { fr: Hors-piste, en: Off-piste }
+        kpis: [wind_slab_chance]

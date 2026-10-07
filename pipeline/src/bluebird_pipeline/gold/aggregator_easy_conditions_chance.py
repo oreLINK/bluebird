@@ -5,7 +5,9 @@ relief and no snowstorm. For each ensemble scenario at ``band``, the slot is
 easy when the maximum wind is at most ``wind_max_kmh``, the minimum
 temperature at least ``temp_min_c``, the snowfall below ``snowfall_max_cm``
 and at most ``white_share_max_pct`` % of its hours are white (the white hour rule
-of :mod:`._whiteout`). Time slots only.
+of :mod:`._whiteout`).
+Time slots, and the whole ski day (``ski_start``..``ski_end``) for the
+day-grain period ``day``.
 """
 
 from __future__ import annotations
@@ -18,11 +20,11 @@ from pydantic import Field
 from ..config import Band, StationRef
 from ..context import PeriodInstance, RunContext
 from ._ensemble import member_table, quantile, share
-from ._whiteout import WhiteoutRule, clear_sky_expr, white_hour_expr
+from ._whiteout import SkiHours, WhiteoutRule, clear_sky_expr, day_or_slot, white_hour_expr
 from .base import Aggregator, AggregatorParams, KpiResult, register_aggregator
 
 
-class EasyConditionsParams(AggregatorParams):
+class EasyConditionsParams(SkiHours):
     band: Band = "mid"
     wind_max_kmh: float = Field(default=25.0, gt=0)
     temp_min_c: float = -10.0
@@ -34,21 +36,21 @@ class EasyConditionsParams(AggregatorParams):
 class AggregatorEasyConditionsChance(Aggregator):
     """P(calm, not too cold, visible and without a snowstorm during the slot)."""
 
+    version: ClassVar[str] = "2"
     Params: ClassVar[type[AggregatorParams]] = EasyConditionsParams
     required_datasets: ClassVar[tuple[str, ...]] = ("ensemble_hourly",)
     params: EasyConditionsParams
 
     def compute(self, ctx: RunContext, ref: StationRef, period: PeriodInstance) -> KpiResult | None:
-        if period.period.native_window:
-            return None
         p = self.params
+        slot_start, slot_end = day_or_slot(p, period, ref.massif.tz)
         clear_sky = clear_sky_expr("time_utc", ref.station.lat, ref.station.lon)
         members = member_table(
             ctx.silver("ensemble_hourly"),
             station_id=ref.id,
             band=p.band,
-            start=period.start,
-            end=period.end,
+            start=slot_start,
+            end=slot_end,
             columns=[white_hour_expr(WhiteoutRule(), clear_sky).alias("white")],
             aggs={
                 "max_wind": pl.col("wind_speed_kmh").max(),
@@ -72,8 +74,8 @@ class AggregatorEasyConditionsChance(Aggregator):
             period,
             probability=share(members, easy),
             members=members.height,
-            window_start=period.start,
-            window_end=period.end,
+            window_start=slot_start,
+            window_end=slot_end,
             drivers={
                 "max_wind_kmh_p50": quantile(members["max_wind"], 0.5, 0),
                 "min_temp_c_p50": quantile(members["min_temp"], 0.5, 1),

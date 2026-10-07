@@ -108,19 +108,16 @@ describe('filterState', () => {
     expect(layout.home?.[0]).toEqual({ tile: 'bluebird_day', period: 'day' });
   });
 
-  it('narrows a topic by day then by time slot, the chosen chips first', () => {
+  it('narrows a topic by day then by time slot, slot tiles only at the slot level', () => {
     const topic = filterState(['snow'], filters, resolved, payload, morning);
     expect(keys(topic)).toEqual(['1:snow*', '2:d0', '2:d1']);
-    expect(topic.instances).toHaveLength(5);
+    // Day-grain tiles only: one per day, no morning or evening tile yet.
+    expect(ids(topic)).toEqual(['snow_t--day-2026-12-14', 'snow_t--day-2026-12-15']);
     expect(topic.chips[1]?.name.fr).toBe("Aujourd'hui");
 
     const today = filterState(['snow', 'd0'], filters, resolved, payload, morning);
     expect(keys(today)).toEqual(['1:snow*', '2:d0*', '3:morning', '3:evening']);
-    expect(ids(today)).toEqual([
-      'snow_t--day-2026-12-14',
-      'snow_t--morning-2026-12-14',
-      'snow_t--evening-2026-12-14',
-    ]);
+    expect(ids(today)).toEqual(['snow_t--day-2026-12-14']);
     expect(today.chips[2]?.name.fr).toBe('Matin');
 
     const slot = filterState(['snow', 'd0', 'evening'], filters, resolved, payload, morning);
@@ -166,3 +163,74 @@ describe('nextPath', () => {
     expect(nextPath(['snow', 'd0'], chip(1, 'snow', true))).toEqual([]);
   });
 });
+
+describe('sub-categories', () => {
+  const alertKpi = kpi('alert_k', 'snow', ['day']);
+  const grouped: Filter[] = [
+    {
+      id: 'snow',
+      name: { fr: 'Neige', en: 'Snow' },
+      levels: ['group', 'day', 'slot'],
+      groups: [
+        { id: 'falls', name: { fr: 'Chutes', en: 'Snowfall' }, kpis: ['snow_k'] },
+        { id: 'alerts', name: { fr: 'Alertes', en: 'Alerts' }, kpis: ['alert_k'] },
+      ],
+    },
+    {
+      id: 'sky',
+      name: { fr: 'Ciel', en: 'Sky' },
+      levels: ['group', 'day'],
+      groups: [{ id: 'white', name: { fr: 'Visibilité', en: 'Visibility' }, kpis: ['white_k'] }],
+    },
+  ];
+  const withAlert = [...resolved, tile('alert_t', alertKpi)];
+  const alertPayload = {
+    ...payload,
+    kpis: {
+      ...payload.kpis,
+      alert_k: {
+        kpi_id: 'alert_k',
+        aggregator_version: '1',
+        periods: [period('day', D, at(D, '06:00'), at(D, '18:00'))],
+      },
+    },
+  } as MassifDaily;
+
+  it('offers the sub-categories at level 2, then the day and the slot', () => {
+    const topic = filterState(['snow'], grouped, withAlert, alertPayload, morning);
+    expect(keys(topic)).toEqual(['1:snow*', '2:falls', '2:alerts']);
+    // Day-grain tiles of both groups (a tile without data for a day says so).
+    expect(ids(topic)).toEqual([
+      'snow_t--day-2026-12-14',
+      'alert_t--day-2026-12-14',
+      'snow_t--day-2026-12-15',
+      'alert_t--day-2026-12-15',
+    ]);
+
+    const falls = filterState(['snow', 'falls'], grouped, withAlert, alertPayload, morning);
+    expect(keys(falls)).toEqual(['1:snow*', '2:falls*', '3:d0', '3:d1']);
+    expect(falls.tiles.map((t) => t.tile.id)).toEqual(['snow_t']);
+
+    const slot = filterState(['snow', 'falls', 'd0', 'morning'], grouped, withAlert, alertPayload, morning);
+    expect(keys(slot)).toEqual(['1:snow*', '2:falls*', '3:d0*', '4:morning*']);
+    expect(ids(slot)).toEqual(['snow_t--morning-2026-12-14']);
+  });
+
+  it('skips a level with a single sub-category', () => {
+    const sky = filterState(['sky'], grouped, withAlert, alertPayload, morning);
+    expect(keys(sky)).toEqual(['1:sky*', '2:d0', '2:d1']);
+    const tomorrow = filterState(['sky', 'd1'], grouped, withAlert, alertPayload, morning);
+    expect(ids(tomorrow)).toEqual(['white_t--day-2026-12-15']);
+    // Removing the day chip goes back to the category.
+    expect(nextPath(tomorrow.path, tomorrow.chips[1]!)).toEqual(['sky']);
+  });
+
+  it('keeps the sub-category chips while live data loads', () => {
+    expect(keys(filterState(['snow'], grouped, withAlert, null, morning))).toEqual([
+      '1:snow*',
+      '2:falls',
+      '2:alerts',
+    ]);
+  });
+});
+

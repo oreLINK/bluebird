@@ -47,8 +47,8 @@ Aspect = Literal["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
 KpiKind = Literal["live", "historical"]
 """live: a probability for today (daily run); historical: a value over a past season (Rewind)."""
 
-FilterLevel = Literal["day", "slot"]
-"""Built-in kinds of the filter levels after level 1: ski day, then time slot."""
+FilterLevel = Literal["group", "day", "slot"]
+"""Built-in kinds of the filter levels after level 1: sub-category, ski day, time slot."""
 
 MAX_FILTER_LEVELS = 4
 """Depth of the filter bar: the topic chip (level 1) plus at most three levels."""
@@ -491,6 +491,15 @@ class TilesFile(StrictModel):
     tiles: list[Tile]
 
 
+class FilterGroup(StrictModel):
+    """A sub-category of a level-1 filter (level `group`), e.g. Poudreuse under Glisse."""
+
+    id: Slug
+    name: Localized
+    icon: str | None = None
+    kpis: list[Slug] = Field(min_length=1, description="KPIs of the sub-category.")
+
+
 class Filter(StrictModel):
     """A level-1 chip of the filter bar: shows the tiles of the KPIs tagged with its id."""
 
@@ -504,9 +513,14 @@ class Filter(StrictModel):
         default_factory=list,
         max_length=MAX_FILTER_LEVELS - 1,
         description=(
-            "Levels offered once this filter is chosen, in order: `day` (today, "
-            "tomorrow), `slot` (morning, evening…). Live KPIs only."
+            "Levels offered once this filter is chosen, in order: `group` (its "
+            "`groups`), `day` (today, tomorrow), `slot` (morning, evening…). Live KPIs only."
         ),
+    )
+
+    groups: list[FilterGroup] = Field(
+        default_factory=list,
+        description="Sub-categories for the `group` level; every KPI of the filter in one.",
     )
 
     @field_validator("levels")
@@ -843,6 +857,19 @@ class Config:
             tagged = [k for k in self.kpis if flt.id in k.filters]
             if flt.levels and any(k.kind != "live" for k in tagged):
                 errors.append(f"filter '{flt.id}' has levels but shows historical KPIs")
+            if ("group" in flt.levels) != bool(flt.groups):
+                errors.append(f"filter '{flt.id}': the `group` level and `groups` go together")
+            duplicates(f"filter '{flt.id}' group", [g.id for g in flt.groups])
+            grouped = [kpi_id for g in flt.groups for kpi_id in g.kpis]
+            tagged_ids = {k.id for k in tagged}
+            for kpi_id in sorted(set(grouped) - tagged_ids):
+                errors.append(f"filter '{flt.id}': group KPI '{kpi_id}' is not tagged with it")
+            if flt.groups:
+                for kpi_id in sorted(tagged_ids - set(grouped)):
+                    errors.append(f"filter '{flt.id}': KPI '{kpi_id}' is in no group")
+                for kpi_id, count in Counter(grouped).items():
+                    if count > 1:
+                        errors.append(f"filter '{flt.id}': KPI '{kpi_id}' is in several groups")
 
         errors.extend(f"periods.yaml: {e}" for e in self.periods.errors())
         duplicates("period", [p.id for p in self.periods.periods])

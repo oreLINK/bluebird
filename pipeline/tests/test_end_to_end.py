@@ -65,7 +65,8 @@ def test_all_layers_produce_a_valid_diamond_payload(ctx: RunContext) -> None:
     assert all(entry.probability == 1.0 for entry in snowfall)
     assert snowfall[0].members == 91
     assert snowfall[0].drivers["deterministic_snow_cm"] == 3.6  # 9 h x 0.4 cm
-    assert len(payload.kpis["onpiste_powder_chance"].periods) == 6
+    # Whole day (day-grain) and three time slots, today and tomorrow.
+    assert len(payload.kpis["onpiste_powder_chance"].periods) == 8
 
     # One HTTP request per source, and the status says everything is fresh.
     assert [s.message for s in report.steps if s.layer == "bronze"] == ["1 request(s)"] * 2
@@ -125,8 +126,14 @@ def test_run_id_pins_the_run_start(ctx: RunContext) -> None:
     assert pinned.generated_at == datetime(2026, 12, 14, 17, 7, tzinfo=UTC)
     assert pinned.run_id == "20261214T170700Z"
     keys = [i.key for i in pinned.period_instances(pinned.massifs()[0])]
-    # 18:07 local: the sunset period (shown until 22:00), then the evening and the night.
-    assert keys[:3] == ["sunset@2026-12-14", "evening@2026-12-14", "night@2026-12-14"]
+    # 18:07 local: the day-grain sunset (until 22:00) and overnight (until 06:00)
+    # periods, then the evening and night slots.
+    assert keys[:4] == [
+        "sunset@2026-12-14",
+        "overnight@2026-12-14",
+        "evening@2026-12-14",
+        "night@2026-12-14",
+    ]
 
 
 def test_demo_data_covers_every_kpi(repo_config, tmp_path) -> None:

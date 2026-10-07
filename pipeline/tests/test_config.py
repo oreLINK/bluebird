@@ -106,7 +106,7 @@ def test_kpi_filters_must_exist_and_every_filter_must_match_a_kpi(tmp_path: Path
         ),
         (
             "layout.yaml",
-            "{ tile: onpiste_powder, period: morning }",
+            "{ tile: onpiste_powder, period: day }",
             "{ tile: onpiste_powder, period: evening }",
             "tile 'onpiste_powder' is not shown for period 'evening'",
         ),
@@ -122,8 +122,32 @@ def test_kpi_filters_must_exist_and_every_filter_must_match_a_kpi(tmp_path: Path
             "{ tile: bluebird_day, period: day }",
             "duplicate layout 'home' entry id 'bluebird_day@day'",
         ),
-        ("filters.yaml", "levels: [day]\n", "levels: [day, day]\n", "only appear once"),
-        ("filters.yaml", "levels: [day]\n", "levels: [day, week]\n", "Input should be"),
+        (
+            "filters.yaml",
+            "levels: [group, day]\n",
+            "levels: [group, day, day]\n",
+            "only appear once",
+        ),
+        ("filters.yaml", "levels: [group, day]\n", "levels: [group, week]\n", "Input should be"),
+        (
+            "filters.yaml",
+            "kpis: [easy_conditions_chance]",
+            "kpis: [easy_conditions_chance, heavy_snow_chance]",
+            "KPI 'heavy_snow_chance' is in several groups",
+        ),
+        (
+            "filters.yaml",
+            "kpis: [spring_snow_chance, hard_snow_chance, heavy_snow_chance]",
+            "kpis: [spring_snow_chance, hard_snow_chance]",
+            "KPI 'heavy_snow_chance' is in no group",
+        ),
+        (
+            "filters.yaml",
+            "kpis: [wind_chill_chance]",
+            "kpis: [wind_chill_chance, chains_chance]",
+            "group KPI 'chains_chance' is not tagged with it",
+        ),
+        ("filters.yaml", "levels: [group, day]\n", "levels: [day]\n", "`group` level and `groups`"),
         ("periods.yaml", "    chip: { fr: Nuit, en: Night }\n", "", "'night' needs a `chip`"),
         ("periods.yaml", "  - { fr: Demain, en: Tomorrow }\n", "", "`days` needs 2 chip labels"),
     ],
@@ -227,7 +251,9 @@ def test_invalid_pages_are_rejected(tmp_path: Path, old: str, new: str, message:
 
 def test_kpi_and_tile_periods_must_exist(tmp_path: Path) -> None:
     config_dir = tiny_config_dir(tmp_path)
-    _edit(config_dir, "kpis.yaml", "periods: [morning, midday, afternoon]", "periods: [brunch]")
+    _edit(
+        config_dir, "kpis.yaml", "periods: [day, morning, midday, afternoon]", "periods: [brunch]"
+    )
     with pytest.raises(ConfigError, match="unknown period 'brunch'"):
         load_config(config_dir)
 
@@ -241,7 +267,12 @@ def test_tile_titles_need_the_period_placeholder(tmp_path: Path) -> None:
 
 def test_tile_periods_default_to_those_of_its_kpis(repo_config: Config) -> None:
     tiles = {t.id: t for t in repo_config.tiles}
-    assert repo_config.tile_periods(tiles["onpiste_powder"]) == ["morning", "midday", "afternoon"]
+    assert repo_config.tile_periods(tiles["onpiste_powder"]) == [
+        "day",
+        "morning",
+        "midday",
+        "afternoon",
+    ]
     assert repo_config.tile_periods(tiles["snowfall_today"])[0] == "day"
 
 

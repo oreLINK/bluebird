@@ -77,6 +77,21 @@ def test_wet_bulb_wind_chill_and_sunset_match_reference_values() -> None:
     assert (sunset.hour, sunset.minute // 10) == (17, 4)  # 17:43 in Lourdes
 
 
+#: Day-grain version (period, probability) of the KPIs that also have time slots:
+#: computed over the whole ski day, with the same synthetic scenarios.
+DAY_GRAIN = {
+    "snowmaking_chance": ("overnight", 0.5),
+    "spring_snow_chance": ("day", 0.3),
+    "hard_snow_chance": ("day", 0.6),
+    "heavy_snow_chance": ("day", 0.2),
+    "easy_conditions_chance": ("day", 0.7),
+    "starry_night_chance": ("sunset", 0.5),
+    "sunny_slot_chance": ("day", 0.4),
+    "wind_chill_chance": ("day", 0.3),
+    "lift_wind_chance": ("day", 0.2),
+}
+
+
 @pytest.mark.parametrize(
     ("kpi_id", "values", "expected"),
     [
@@ -193,6 +208,9 @@ def test_wet_bulb_wind_chill_and_sunset_match_reference_values() -> None:
 def test_probability_is_the_share_of_scenarios_meeting_the_condition(
     ctx: RunContext, kpi_id: str, values: Values, expected: dict[str, set[float]]
 ) -> None:
+    if kpi_id in DAY_GRAIN:
+        period, probability = DAY_GRAIN[kpi_id]
+        expected = expected | {f"{period}@2026-12-1{d}": {probability} for d in (4, 5)}
     results = run(ctx, kpi_id, values)
     assert probabilities(results) == expected
     assert all(r.members == 10 for r in results)

@@ -7,7 +7,7 @@
 home:
   - { tile: bluebird_day, period: day }      # always first: bluebird today
   - { tile: snowfall_today, period: day }
-  - { tile: onpiste_powder, period: morning }
+  - { tile: onpiste_powder, period: day }
   - { tile: whiteout, period: day }
 
 # Order of the tiles under a filter (top to bottom on mobile), after the time
