@@ -8,7 +8,7 @@
 # are generated and committed through a pull request; never edit them by hand.
 #
 #   start, end  local days of the season, both included.
-#   filter      the exclusive filter of config/filters.yaml showing its tiles.
+#   filter      the level-1 filter of config/filters.yaml showing its tiles (no levels).
 #
 # To add a season: add an entry, its filter and tiles, then run the command
 # (or the "Build a Rewind" workflow) the day after `end`.

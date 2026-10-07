@@ -6,25 +6,16 @@
   import Icon from './components/Icon.svelte';
   import InfoPage from './components/InfoPage.svelte';
   import MessageCard from './components/MessageCard.svelte';
-  import {
-    filterTiles,
-    filters,
-    massifs,
-    pages,
-    rewindOfFilter,
-    rewindPayload,
-    rewinds,
-    tilesForMassif,
-    usableFilters,
-  } from './lib/config';
+  import { filters, massifs, pages, rewindPayload, rewinds, tilesForMassif } from './lib/config';
   import { type MassifDaily, type ServiceStatus, loadMassif, loadStatus } from './lib/data';
   import { i18n } from './lib/i18n/i18n.svelte';
   import { readPref, writePref } from './lib/prefs';
   import { sheets } from './lib/sheets.svelte';
   import { arrive, leave, motion } from './lib/transitions';
   import { flip } from 'svelte/animate';
+  import { filterState, nextPath } from './lib/filterLevels';
   import { viewFor } from './lib/kpiView';
-  import { expandTiles, instanceTitle, isLiveTile, nextBoundary } from './lib/periods';
+  import { instanceTitle, isLiveTile, nextBoundary } from './lib/periods';
   import { skeletonVariant, tileComponent, tileRows } from './tiles/registry';
   import TileShell from './tiles/TileShell.svelte';
   import TileSkeleton from './tiles/TileSkeleton.svelte';
@@ -35,7 +26,9 @@
   let massifId = $state(
     massifs.some((m) => m.id === storedMassif) ? (storedMassif as string) : (massifs[0]?.id ?? ''),
   );
-  let filterId = $state(readPref('filter') ?? '');
+  /** Chosen filter chips, level by level (lib/filterLevels.ts); only level 1 is remembered. */
+  const storedFilter = readPref('filter');
+  let filterPath = $state<string[]>(storedFilter ? [storedFilter] : []);
   let menuOpen = $state(false);
   let status = $state<Status>('loading');
   let payload = $state<MassifDaily | null>(null);
@@ -47,14 +40,14 @@
   const resolvedTiles = $derived(tilesForMassif(massifId));
   /** A full-window page is open (`#<page id>` in the URL): the page behind is inert. */
   const sheetOpen = $derived(pages.some((p) => p.id === sheets.current));
-  const barFilters = $derived(usableFilters(filters, resolvedTiles));
-  const activeFilter = $derived(barFilters.find((f) => f.id === filterId) ?? barFilters[0]);
-  const visibleTiles = $derived(filterTiles(resolvedTiles, activeFilter, barFilters));
-  /** The Rewind of the active filter: its tiles do not depend on the live forecasts. */
-  const activeRewind = $derived(rewindOfFilter(activeFilter?.id));
+  /** Chips of the filter bar and tiles of the page for the chosen filters (home: overview tiles). */
+  const filtered = $derived(filterState(filterPath, filters, resolvedTiles, payload, now));
+  const visibleTiles = $derived(filtered.tiles);
+  /** The Rewind of the chosen filter: its tiles do not depend on the live forecasts. */
+  const activeRewind = $derived(filtered.rewind);
   const showsLive = $derived(visibleTiles.some(isLiveTile));
-  /** One tile per live tile and period not over yet, then the Rewind tiles. */
-  const instances = $derived(expandTiles(visibleTiles, payload, now));
+  /** One tile per live tile and period not over yet (filtered by day and slot), then the Rewind tiles. */
+  const instances = $derived(filtered.instances);
   const massif = $derived(massifs.find((m) => m.id === massifId));
   /** What the "Service status" page needs (config/pages.yaml `service_*` blocks). */
   const serviceContext = $derived({
@@ -129,9 +122,11 @@
     writePref('massif', id);
   }
 
-  function selectFilter(id: string) {
-    filterId = id;
-    writePref('filter', id);
+  function selectFilter(key: string) {
+    const chip = filtered.chips.find((c) => c.key === key);
+    if (!chip) return;
+    filterPath = nextPath(filtered.path, chip);
+    writePref('filter', filterPath[0] ?? '');
   }
 
 </script>
@@ -141,8 +136,7 @@
     {massifs}
     selectedMassif={massifId}
     onselectmassif={selectMassif}
-    filters={barFilters}
-    selectedFilter={activeFilter?.id ?? ''}
+    filters={filtered.chips}
     onselectfilter={selectFilter}
     {menuOpen}
     onmenu={() => (menuOpen = true)}

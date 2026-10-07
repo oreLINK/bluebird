@@ -84,28 +84,16 @@ describe('filters', () => {
     { tile: { id: 't1', type: 'banner', kpis: ['k1'] }, kpis: [snowKpi] },
     { tile: { id: 't2', type: 'banner', kpis: ['k2'] }, kpis: [powderKpi] },
   ];
-  const all = { id: 'all', name, all: true };
   const snow = { id: 'snow', name };
   const wind = { id: 'wind', name };
 
-  it('keeps every tile for an all filter and tagged tiles otherwise', () => {
-    expect(filterTiles(resolved, all).map((r) => r.tile.id)).toEqual(['t1', 't2']);
+  it('keeps the tiles tagged with a filter, every tile without one', () => {
     expect(filterTiles(resolved, snow).map((r) => r.tile.id)).toEqual(['t1']);
     expect(filterTiles(resolved, undefined)).toHaveLength(2);
   });
 
-  it('keeps the tiles of exclusive filters out of the all filter', () => {
-    const rewindKpi: Kpi = { id: 'k3', aggregator: 'a', name, description: name, filters: ['rewind'] };
-    const withRewind = [...resolved, { tile: { id: 't3', type: 'rewind', kpis: ['k3'] }, kpis: [rewindKpi] }];
-    const rewind = { id: 'rewind', name, exclusive: true };
-    const bar = [all, rewind, snow];
-    expect(filterTiles(withRewind, all, bar).map((r) => r.tile.id)).toEqual(['t1', 't2']);
-    expect(filterTiles(withRewind, rewind, bar).map((r) => r.tile.id)).toEqual(['t3']);
-    expect(usableFilters(bar, withRewind).map((f) => f.id)).toEqual(['all', 'rewind', 'snow']);
-  });
-
   it('hides filters that match no tile of the current layout', () => {
-    expect(usableFilters([all, snow, wind], resolved).map((f) => f.id)).toEqual(['all', 'snow']);
+    expect(usableFilters([snow, wind], resolved).map((f) => f.id)).toEqual(['snow']);
   });
 
   it('bundles the repository filters with at least one usable filter', () => {
@@ -166,12 +154,12 @@ describe('rewinds', () => {
     expect(rewind?.end).toBe('2026-05-01');
   });
 
-  it('bundles the Rewind 25/26 behind an exclusive filter placed right after "All"', () => {
+  it('bundles the Rewind 25/26 behind the first level-1 filter, without levels or overview', () => {
     const rewind = rewinds.find((r) => r.id === '2025-26');
     expect(rewind).toBeDefined();
     expect(rewindOfFilter(rewind!.filter)).toBe(rewind);
-    const index = filters.findIndex((f) => f.id === rewind!.filter);
-    expect(filters[index - 1]?.all).toBe(true);
-    expect(filters[index]?.exclusive).toBe(true);
+    expect(filters[0]?.id).toBe(rewind!.filter);
+    expect(filters[0]?.levels ?? []).toEqual([]);
+    expect(filters[0]?.overview ?? null).toBeNull();
   });
 });

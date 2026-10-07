@@ -47,6 +47,12 @@ Aspect = Literal["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
 KpiKind = Literal["live", "historical"]
 """live: a probability for today (daily run); historical: a value over a past season (Rewind)."""
 
+FilterLevel = Literal["day", "slot"]
+"""Built-in kinds of the filter levels after level 1: ski day, then time slot."""
+
+MAX_FILTER_LEVELS = 4
+"""Depth of the filter bar: the topic chip (level 1) plus at most three levels."""
+
 HttpUrl = Annotated[str, StringConstraints(pattern=r"^https://\S+$")]
 """Absolute https:// URL."""
 
@@ -314,6 +320,10 @@ class Period(StrictModel):
         min_length=1,
         description="Label per day offset: [today, tomorrow, …], used in tile titles.",
     )
+    chip: Localized | None = Field(
+        default=None,
+        description="Chip of the `slot` filter level (Matin, Soir…); required for time slots.",
+    )
 
 
 class PeriodsFile(StrictModel):
@@ -325,6 +335,10 @@ class PeriodsFile(StrictModel):
     )
     horizon_days: int = Field(
         default=2, ge=1, le=7, description="Ski days published: 1 = today, 2 = + tomorrow."
+    )
+    days: list[Localized] = Field(
+        default_factory=list,
+        description="Chips of the `day` filter level, one per day of the horizon: [today, …].",
     )
     periods: list[Period] = Field(min_length=1)
 
@@ -355,6 +369,13 @@ class PeriodsFile(StrictModel):
                 )
             if not period.native_window:
                 slots.append((start, end, period.id))
+                if period.chip is None:
+                    errors.append(f"time slot '{period.id}' needs a `chip` label (filter bar)")
+        if len(self.days) < self.horizon_days:
+            errors.append(
+                f"`days` needs {self.horizon_days} chip labels "
+                f"(one per day of the horizon), has {len(self.days)}"
+            )
         cursor = 0
         for start, end, period_id in sorted(slots):
             if start != cursor:
@@ -399,22 +420,40 @@ class TilesFile(StrictModel):
     tiles: list[Tile]
 
 
+class FilterOverview(StrictModel):
+    """The tile a level-1 filter shows on the home page (no filter selected)."""
+
+    tile: Slug = Field(description="Live tile of config/tiles.yaml with a KPI of this filter.")
+    period: Slug = Field(description="Period shown (today's, or tomorrow's once today's is over).")
+
+
 class Filter(StrictModel):
-    """A chip of the filter bar: shows the tiles of the KPIs tagged with its id."""
+    """A level-1 chip of the filter bar: shows the tiles of the KPIs tagged with its id."""
 
     id: Slug
     name: Localized
     icon: str | None = None
-    all: bool = Field(
-        default=False, description="Show every tile, except those of exclusive filters."
-    )
-    exclusive: bool = Field(
-        default=False,
-        description="Its tiles appear only under this filter, never under an `all` filter.",
-    )
     theme: Literal["default", "rewind"] = Field(
         default="default", description="Colour of the chip (rewind: Christmas red)."
     )
+    levels: list[FilterLevel] = Field(
+        default_factory=list,
+        max_length=MAX_FILTER_LEVELS - 1,
+        description=(
+            "Levels offered once this filter is chosen, in order: `day` (today, "
+            "tomorrow), `slot` (morning, evening…). Live KPIs only."
+        ),
+    )
+    overview: FilterOverview | None = Field(
+        default=None, description="Its tile on the home page; none: not on the home page."
+    )
+
+    @field_validator("levels")
+    @classmethod
+    def _unique_levels(cls, value: list[str]) -> list[str]:
+        if len(set(value)) != len(value):
+            raise ValueError("a filter level kind can only appear once")
+        return value
 
 
 class FiltersFile(StrictModel):
@@ -479,7 +518,9 @@ class Rewind(StrictModel):
     end: date = Field(description="Last day of the season (local), included.")
     massifs: list[Slug] = Field(min_length=1)
     kpis: list[Slug] = Field(min_length=1, description="Historical KPIs of this Rewind.")
-    filter: Slug = Field(description="Exclusive filter (config/filters.yaml) showing its tiles.")
+    filter: Slug = Field(
+        description="Level-1 filter (config/filters.yaml) showing its tiles (no levels)."
+    )
     enabled: bool = True
 
     @model_validator(mode="after")
@@ -724,9 +765,30 @@ class Config:
                 if filter_id not in filter_ids:
                     errors.append(f"KPI '{kpi.id}' references unknown filter '{filter_id}'")
         used = {fid for kpi in self.kpis if kpi.enabled for fid in kpi.filters}
+        tiles_by_id = {t.id: t for t in self.tiles}
         for flt in self.filters:
-            if not flt.all and flt.id not in used:
+            if flt.id not in used:
                 errors.append(f"filter '{flt.id}' matches no enabled KPI")
+            tagged = [k for k in self.kpis if flt.id in k.filters]
+            if (flt.levels or flt.overview) and any(k.kind != "live" for k in tagged):
+                errors.append(
+                    f"filter '{flt.id}' has levels or an overview but shows historical KPIs"
+                )
+            if flt.overview is None:
+                continue
+            tile = tiles_by_id.get(flt.overview.tile)
+            if tile is None:
+                errors.append(f"filter '{flt.id}' overview: unknown tile '{flt.overview.tile}'")
+                continue
+            if not any(k.id in tile.kpis for k in tagged):
+                errors.append(
+                    f"filter '{flt.id}' overview: tile '{tile.id}' has no KPI of this filter"
+                )
+            if flt.overview.period not in self.tile_periods(tile):
+                errors.append(
+                    f"filter '{flt.id}' overview: tile '{tile.id}' is not shown "
+                    f"for period '{flt.overview.period}'"
+                )
 
         errors.extend(f"periods.yaml: {e}" for e in self.periods.errors())
         duplicates("period", [p.id for p in self.periods.periods])
@@ -775,9 +837,6 @@ class Config:
         kpis_by_id = {k.id: k for k in self.kpis}
         filters_by_id = {f.id: f for f in self.filters}
         duplicates("rewind", [r.id for r in self.rewinds])
-        for flt in self.filters:
-            if flt.all and flt.exclusive:
-                errors.append(f"filter '{flt.id}' cannot be both `all` and `exclusive`")
         for rewind in self.rewinds:
             for massif_id in rewind.massifs:
                 if massif_id not in massif_ids:
@@ -791,8 +850,11 @@ class Config:
             flt = filters_by_id.get(rewind.filter)
             if flt is None:
                 errors.append(f"rewind '{rewind.id}' references unknown filter '{rewind.filter}'")
-            elif not flt.exclusive:
-                errors.append(f"rewind '{rewind.id}': filter '{rewind.filter}' must be exclusive")
+            elif flt.levels or flt.overview:
+                errors.append(
+                    f"rewind '{rewind.id}': filter '{rewind.filter}' cannot have levels "
+                    "or an overview"
+                )
         in_rewinds = {kpi_id for r in self.rewinds for kpi_id in r.kpis}
         for kpi in self.kpis:
             if kpi.kind == "historical" and kpi.id not in in_rewinds:

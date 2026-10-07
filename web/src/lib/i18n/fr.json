@@ -24,6 +24,7 @@
   "menu.title": "Menu",
   "menu.language": "Langue",
   "filters.label": "Filtrer les indicateurs",
+  "filters.remove": "{name}, filtre choisi : toucher pour le retirer",
   "massifs.label": "Choisir le massif",
   "filter.empty": "Aucun indicateur pour ce filtre.",
   "tile.info": "Comprendre cet indicateur",

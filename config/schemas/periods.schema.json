@@ -58,6 +58,18 @@
           "minItems": 1,
           "title": "Labels",
           "type": "array"
+        },
+        "chip": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Localized"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Chip of the `slot` filter level (Matin, Soir…); required for time slots."
         }
       },
       "required": [
@@ -87,6 +99,14 @@
       "minimum": 1,
       "title": "Horizon Days",
       "type": "integer"
+    },
+    "days": {
+      "description": "Chips of the `day` filter level, one per day of the horizon: [today, …].",
+      "items": {
+        "$ref": "#/$defs/Localized"
+      },
+      "title": "Days",
+      "type": "array"
     },
     "periods": {
       "items": {
