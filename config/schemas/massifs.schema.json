@@ -71,6 +71,14 @@
           },
           "title": "Skyline",
           "type": "array"
+        },
+        "zones": {
+          "description": "Sub-massifs (level 2 of the massif bar); every station names one.",
+          "items": {
+            "$ref": "#/$defs/Zone"
+          },
+          "title": "Zones",
+          "type": "array"
         }
       },
       "required": [
@@ -79,6 +87,46 @@
         "bbox"
       ],
       "title": "Massif",
+      "type": "object"
+    },
+    "Zone": {
+      "additionalProperties": false,
+      "description": "A sub-massif (level 2 of the massif bar): a French département, or abroad a\ncountry or region (Andorre, Aragon, Valais…).",
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9]+(?:[_-][a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "$ref": "#/$defs/Localized"
+        },
+        "country": {
+          "default": "FR",
+          "description": "ISO 3166-1 alpha-2 code of the zone's country.",
+          "pattern": "^[A-Z]{2}$",
+          "title": "Country",
+          "type": "string"
+        },
+        "code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Département number, e.g. '65'.",
+          "title": "Code"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "Zone",
       "type": "object"
     }
   },

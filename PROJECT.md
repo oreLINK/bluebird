@@ -20,9 +20,9 @@ It is built for your phone, in French or English.
 ## What you see
 
 At the top, the Bluebird name sits on the left and the menu button on the
-right lets you choose your language. Below the name, large buttons let you
-choose the mountain range (the Pyrenees for now), and smaller filters narrow
-the page step by step (see [Filters](#filters)). Just
+right lets you choose your language. Below the name, a first row of buttons
+lets you choose **where** (see [Places](#places)), and a second row of the
+same buttons narrows the page step by step (see [Filters](#filters)). Just
 above the tiles, a date tells you which day the data are for (the day of
 their last update), with the update time on a small line below it. Each
 tile then answers one question for one **time slot** (see [Available
@@ -76,6 +76,28 @@ took the photo. Tap the
 Resorts appear under a short name in the tiles (for example "Cauterets" for
 "Cauterets – Cirque du Lys"). All tiles have the same size, so the page stays
 tidy; switching filter brings the matching tiles in with a short animation.
+
+### Places
+
+The first row of buttons works like the filters, one level at a time:
+
+1. **Mountain range**: the Pyrenees for now (Alps and others later).
+2. **Département**, or abroad the region or country, in a single row: in
+   the Pyrenees, **Pyrénées-Atlantiques**, **Hautes-Pyrénées**,
+   **Haute-Garonne**, **Ariège** and **Pyrénées-Orientales** today. When
+   Spanish and Andorran resorts are added, their regions follow the
+   départements with a flag: **🇪🇸 Aragon**, **🇪🇸 Catalogne**, **🇪🇸 Navarre**,
+   **🇦🇩 Andorre**.
+3. **Linked ski area**, when several resorts share one (Les 3 Vallées,
+   Portes du Soleil…): it shows all its resorts, even across a border. None
+   of the current Pyrenean resorts shares a linked area, so this level does
+   not appear yet.
+
+Resorts abroad carry their flag in the tiles (🇪🇸 Baqueira), so a ranking of
+the whole massif shows at a glance which side of the border each one is on.
+Every tile then ranks the resorts of the chosen place only ("1. Cauterets,
+2. Luz Ardiden…" in the Hautes-Pyrénées). Tap the **×** of a place to go
+back up; the whole place you chose is remembered on your device.
 
 ### Filters
 
@@ -404,8 +426,9 @@ archive does not include it), on a coarser grid of about 7 km.
 - **Rewind 25/26**: the review of the 2025/26 season in the Pyrenees (most
   snow, longest snowfall, most snow on the slopes, most off-piste snow, ideal
   snow cover days, fewest white days), behind its own red filter.
-- Mountain range buttons above the filters, and a menu with the language
-  (French or English), both remembered on your device.
+- Place buttons above the filters (mountain range, then département, then
+  linked ski area when there is one), and a menu with the language (French
+  or English), both remembered on your device.
 - Clean dark-blue, light-blue and white design with a sporty typeface, in
   light and dark mode following your phone's setting, without background
   animation.
@@ -451,7 +474,13 @@ archive does not include it), on a coarser grid of about 7 km.
   **Easy conditions** indicator answers beginners.
 - A 7-day trend tile and a map of the ski areas (piste and lift data from
   OpenStreetMap is already collected and refreshed once a season).
-- More mountain ranges: Northern and Southern Alps, Massif Central, Vosges, Jura.
+- More mountain ranges: Northern and Southern Alps, Massif Central, Vosges,
+  Jura, with their départements and linked ski areas, and resorts across the
+  borders marked with a small flag: first the Spanish and Andorran Pyrenees
+  (Baqueira-Beret, Formigal, Cerler, La Molina, Grandvalira…), then
+  Switzerland and Italy for the Alps.
+  Météo-France's avalanche massifs (Haute-Bigorre, Vanoise…) will be kept as
+  data for the avalanche indicator, not as a navigation level.
 - Checking past forecasts against observed snow to make the percentages more accurate.
 
 ## Limits and safety

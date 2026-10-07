@@ -86,6 +86,18 @@ class Localized(StrictModel):
 # ------------------------------------------------------------------------ massifs
 
 
+class Zone(StrictModel):
+    """A sub-massif (level 2 of the massif bar): a French département, or abroad a
+    country or region (Andorre, Aragon, Valais…)."""
+
+    id: Slug
+    name: Localized
+    country: Annotated[str, StringConstraints(pattern=r"^[A-Z]{2}$")] = Field(
+        default="FR", description="ISO 3166-1 alpha-2 code of the zone's country."
+    )
+    code: str | None = Field(default=None, description="Département number, e.g. '65'.")
+
+
 class Massif(StrictModel):
     """A mountain range grouping several stations."""
 
@@ -100,6 +112,10 @@ class Massif(StrictModel):
     skyline: list[Annotated[float, Field(ge=0, le=1)]] = Field(
         default_factory=list,
         description="Relative ridge heights (0..1), west to east, for the banner illustrations.",
+    )
+    zones: list[Zone] = Field(
+        default_factory=list,
+        description="Sub-massifs (level 2 of the massif bar); every station names one.",
     )
 
     @field_validator("timezone")
@@ -168,6 +184,12 @@ class Station(StrictModel):
     lifts_open: LocalTime | None = Field(default=None, description="Overrides the default.")
     website: str | None = None
     enabled: bool = True
+    zone: Slug | None = Field(
+        default=None, description="Sub-massif of the station (`zones` of config/massifs.yaml)."
+    )
+    domain: Slug | None = Field(
+        default=None, description="Linked ski area it belongs to (`domains` of its file)."
+    )
 
 
 class StationDefaults(StrictModel):
@@ -177,10 +199,19 @@ class StationDefaults(StrictModel):
     lifts_open: LocalTime = "09:00"
 
 
+class Domain(StrictModel):
+    """A linked ski area spanning several stations (Les 3 Vallées, Portes du Soleil…),
+    level 3 of the massif bar; its stations may sit in several zones or countries."""
+
+    id: Slug
+    name: str = Field(min_length=1)
+
+
 class StationsFile(StrictModel):
     """Schema of ``config/stations/<massif>.yaml``."""
 
     defaults: StationDefaults = Field(default_factory=StationDefaults)
+    domains: list[Domain] = Field(default_factory=list)
     stations: list[Station]
 
 
@@ -819,6 +850,26 @@ class Config:
 
         duplicates("massif", [m.id for m in self.massifs])
         duplicates("station", [s.id for f in self.stations.values() for s in f.stations])
+        for massif in self.massifs:
+            duplicates(f"massif '{massif.id}' zone", [z.id for z in massif.zones])
+            stations_file = self.stations.get(massif.id)
+            if stations_file is None:
+                continue
+            zone_ids = {z.id for z in massif.zones}
+            domain_ids = {d.id for d in stations_file.domains}
+            duplicates(f"massif '{massif.id}' domain", [d.id for d in stations_file.domains])
+            for station in stations_file.stations:
+                if zone_ids and station.zone not in zone_ids:
+                    errors.append(
+                        f"station '{station.id}' needs a zone of massif '{massif.id}' "
+                        f"({', '.join(sorted(zone_ids))}), has {station.zone!r}"
+                    )
+                elif not zone_ids and station.zone is not None:
+                    errors.append(f"station '{station.id}': massif '{massif.id}' has no zones")
+                if station.domain is not None and station.domain not in domain_ids:
+                    errors.append(
+                        f"station '{station.id}' references unknown domain '{station.domain}'"
+                    )
         duplicates("KPI", [k.id for k in self.kpis])
         duplicates("tile", [t.id for t in self.tiles])
         duplicates("filter", [f.id for f in self.filters])

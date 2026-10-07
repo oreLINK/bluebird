@@ -46,8 +46,13 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
   period ends. A full-window page (`#status`, linked from the footer) shows the service status of the last refresh. Style: betting-app look (Betclic-like) in dark
   blue, light blue and white, sober plain background, no background animation.
   Header: "Bluebird" wordmark (text only) left, menu (language) right;
-  below, the massif bar (large chips, no "all", the only massif choice) then
-  the filter bar (small chips, Spotify-style **filter levels**: level 1 =
+  below, the massif bar (place levels of `lib/geoLevels.ts`:
+  massif → zone = département or foreign country/region (`zones` of
+  `massifs.yaml`, one mixed list: French zones first, foreign ones after
+  with a flag; Spain by comunidad autónoma) → linked ski area (`domains` of
+  the stations file, two stations or more); the chosen place restricts every
+  ranking; resorts abroad get a flag in their short name) then
+  the filter bar (same chips, Spotify-style **filter levels**: level 1 =
   topics of `filters.yaml`; a chosen chip is filled with a ×, leads the row
   and hides its siblings, then the next level appears: `group`
   (sub-categories, skipped when single), `day` (Aujourd'hui, Demain) then
@@ -117,8 +122,9 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 | `web/src/tiles/FlipCard.svelte`, `KpiBack.svelte` | Two-sided card of every tile; front = banner, title, odds (no description); back = one section each for description, time window, method, reliability, update, sources, photo credit (never on the front). |
 | `web/src/lib/transitions.ts` | `arrive` / `leave` tile transitions, `rise` for sheets, and `motion()` (reduced-motion aware). |
 | `web/src/lib/photos.ts`, `web/src/assets/photos/` | Banner photos `<massif>/<station_id>/<station_id>_<n>.*` (`photo: leader` draws one at random per page load; also `none` / `<path>`) and `credits.yaml`. |
-| `web/src/components/AppMenu.svelte`, `FilterBar.svelte`, `Logo.svelte` | Side menu (language; blur, scroll lock, inert page), scrollable chip bar (`size` `large` = massif bar, `small` = filter bar; options with `pressed`/`removable` (×), `resetScroll`, chips grow in and slide with `animate:flip`), text-only wordmark. |
+| `web/src/components/AppMenu.svelte`, `FilterBar.svelte`, `Logo.svelte` | Side menu (language; blur, scroll lock, inert page), scrollable chip bar, the same chips for the massif bar and the filter bar (options with `pressed`/`removable` (×), `resetScroll`, chips grow in and slide with `animate:flip`), text-only wordmark. |
 | `web/src/lib/filterLevels.ts` | Pure, tested: `filterState(path, …)` → chips, tiles and tile instances of the filter path (home = `homeTiles`: `layout.yaml` `home` in priority order), `LEVEL_KINDS` (`group`, `day`, `slot`: options + match; a single group is skipped), `isDayGrain` (grain rule: day-grain tiles until a slot is chosen), `nextPath` (tap = choose, tap a chosen chip = remove it and the levels after). Only level 1 is stored in `localStorage`. |
+| `web/src/lib/geoLevels.ts` | Pure, tested: `geoState(path, massifs, siteStations, siteDomains, fallback)` → chips of the massif bar (massif, zone skipped below two, linked area with 2+ stations), the massif shown and the station subset (`null` = all) passed to `viewFor(…, only)`; `readGeoPath` (preference `geo`, migrated from `massif`).; French zones first, foreign ones after with `flagOf` (ISO code → flag emoji). `stationCountries` (`lib/config.ts`) feeds the flag of `shortName` in `lib/kpiView.ts`. |
 | `web/src/components/Sheet.svelte`, `web/src/lib/sheets.svelte.ts` | Generic full-window sheet (Liquid Glass, close ×, rises from the bottom) and its router (`#<id>` in the URL, back gesture closes). Reuse them for any future over-page. |
 | `web/src/components/InfoPage.svelte`, `AppFooter.svelte` | A `pages.yaml` page in a `Sheet` (blocks `data_sources`, `photo_credits`); footer with the GitHub logo and page links. |
 | `web/src/components/ForecastStatus.svelte` | Plain text above the tiles: data date (day of `generated_at` in the massif timezone) and update time; with a Rewind filter, the season period. |
@@ -269,6 +275,11 @@ with `scripts/ci/fetch-gh-pages-data.sh` before computing (fallback).
 23. **CI jobs share the run id** chosen by `plan` (`--run-id`); never compute
     dates from each job's own clock. `--run-id` older than 3 h is refused
     with the bronze layer.
+24. **Places restrict views, never data.** Zones and linked areas are
+    configuration only (`massifs.yaml` `zones`, stations `zone`/`domain`);
+    the pipeline still computes and publishes per massif. The site narrows
+    each `KpiView` to the chosen stations (`viewFor(…, only)`), so ranks,
+    bars and reliability describe the chosen place.
 
 ## 5. Git rules for agents
 
@@ -317,8 +328,9 @@ npm run dev
 
 | Task | Files to touch | Then run |
 |---|---|---|
-| Add a station | `config/stations/<massif>.yaml` (with `short_name`), folder `web/src/assets/photos/<massif>/<id>/.gitkeep` | `bluebird reference --massif <massif>`, `bluebird validate`, `npm test` |
-| Add a massif | `config/massifs.yaml`, new `config/stations/<id>.yaml`, optional `layout.yaml` override | `bluebird reference --massif <id>`, `bluebird validate`, `bluebird demo` |
+| Add a station | `config/stations/<massif>.yaml` (with `short_name`, `zone`, optional `domain`), folder `web/src/assets/photos/<massif>/<id>/.gitkeep` | `bluebird reference --massif <massif>`, `bluebird validate`, `npm test` |
+| Add a foreign resort | its zone in `config/massifs.yaml` (`country`: ES, AD…; Spain by comunidad autónoma), the station with checked coordinates | `bluebird reference --massif <massif>`, `bluebird validate`; check the ensemble quota (+2 locations per resort) |
+| Add a massif | `config/massifs.yaml` (with its `zones`), new `config/stations/<id>.yaml`, optional `layout.yaml` override | `bluebird reference --massif <id>`, `bluebird validate`, `bluebird demo` |
 | Add reference data | `bronze/extractor_<x>.py`, `silver/transformer_<x>.py` with `reference_suffix`, `reference_file`, `read_reference`; source with `schedule: reference` | `bluebird reference`, `pytest`, commit `config/reference/` |
 | Add a source | `bronze/extractor_<x>.py` (one grouped request if the API allows), `silver/transformer_<x>.py`, `config/sources.yaml` (+ attribution), tests | `bluebird validate`, `pytest` |
 | Add a KPI | `gold/aggregator_<x>.py` (live: `compute(ctx, ref, period)`), PROJECT.md "Available indicators", README.md "Tiles on the site", `config/kpis.yaml` (name, description, `method` with `{param}` placeholders, params, drivers, filters, `periods` for live KPIs, including a day-grain one (`day`, with `day_or_slot` for KPIs that also have slots), `display`: percent / value / levels), `config/tiles.yaml` (live: title with `{period}`), its group in `config/filters.yaml`, `config/layout.yaml`, tests | `bluebird validate`, `pytest`, `bluebird demo` |
@@ -481,6 +493,10 @@ this file when behaviour, commands or conventions change.
 
 ## 10. Roadmap context
 
+The massif bar has place levels (massif → zone → linked area); adding the
+Alps or foreign resorts is configuration, but mind the Open-Meteo ensemble
+quota (every location weighs) and the payload size of large massifs
+(README.md "Future features").
 Indicators are grouped into six categories (Snow, Snow quality, Sky,
 Comfort, Getting there, Safety; PROJECT.md "Categories" and "Future
 indicators"), the level-1 filters today. Every live KPI feasible with the

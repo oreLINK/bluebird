@@ -425,8 +425,8 @@ Red Hat YAML extension) validates and autocompletes them from `config/schemas/`.
 
 | File | Purpose | Key fields |
 |---|---|---|
-| `massifs.yaml` | Mountain ranges of the massif bar | `id`, `name {fr,en}`, `timezone`, `enabled`, `order`, `bbox`, `skyline` |
-| `stations/<massif>.yaml` | Resorts of one massif | `defaults {grooming_end, lifts_open}`, `stations[]`: `id`, `name`, `short_name?` (≤ 20 chars, shown in tiles), `lat`, `lon`, `elevation {base, summit, mid?}`, `aspects`, `grooming_end?`, `lifts_open?`, `website?`, `enabled` |
+| `massifs.yaml` | Mountain ranges of the massif bar (level 1) | `id`, `name {fr,en}`, `timezone`, `enabled`, `order`, `bbox`, `skyline`, `zones[]` (level 2: `id`, `name {fr,en}`, `country` ISO alpha-2, default FR, `code?` département number) |
+| `stations/<massif>.yaml` | Resorts of one massif | `defaults {grooming_end, lifts_open}`, `stations[]`: `id`, `name`, `short_name?` (≤ 20 chars, shown in tiles), `lat`, `lon`, `elevation {base, summit, mid?}`, `aspects`, `grooming_end?`, `lifts_open?`, `website?`, `enabled`, `zone` (required when the massif has zones), `domain?`; `domains[]` (linked ski areas, level 3: `id`, `name`) |
 | `kpis.yaml` | KPI registry | `id`, `aggregator`, `kind` (`live` / `historical`), `display` (live: `percent` default, optional `note` driver; `value` with `driver`, `range` [p10, p90], `tolerance`, `bands`; `levels` by probability), `order` (`desc` / `asc`: lowest value first, e.g. fewest white days, coldest felt temperature), `value {unit, unit_label, unit_label_one, decimals, scale, max}` (`unit_label {fr,en}` when the unit depends on the language, e.g. jours / days, and `unit_label_one` its singular, chosen with the language's plural rules) (historical; `scale` converts the aggregator's unit, e.g. `0.01` for cm → m; `max` is the value of a full bar, e.g. `100` for a percentage, default the best value), `name`, `description`, `method?` (`{param}` placeholders, shown on the tile back), `params`, `drivers {key: {label, unit, decimals}}`, `filters[]`, `periods[]` (live KPIs; default `[day]`), `enabled` |
 | `periods.yaml` | Time slots of the ski day | `day_start`, `horizon_days`, `days[]` (`{fr,en}` chips of the `day` filter level: Aujourd'hui, Demain), `periods[]` (time slots, and day-grain periods with `native_window`: `day`, `sunset`, `overnight`): `id`, `start`, `end`, `native_window?`, `labels[]` (`{fr,en}` per day: today, tomorrow), `chip` (`{fr,en}` chip of the `slot` filter level, required for time slots) |
 | `filters.yaml` | Level-1 chips of the filter bar, in order | `id`, `name {fr,en}`, `icon?`, `theme?` (`default` / `rewind`), `levels?[]` (next levels, at most 3: `group`, `day`, `slot`; live KPIs only), `groups?[]` (sub-categories: `id`, `name`, `kpis[]`) |
@@ -458,7 +458,10 @@ A test enforces it.
 
 1. Add a block to `config/stations/<massif>.yaml` (coordinates at the middle
    of the ski area: they select the weather model grid cell).
-2. Give it a `short_name` (≤ 20 characters) for the tiles.
+2. Give it a `short_name` (≤ 20 characters) for the tiles, its `zone`
+   (département, or country/region abroad: `zones` of `config/massifs.yaml`)
+   and, if it belongs to a linked ski area, its `domain` (declared once under
+   `domains` of the file).
 3. Create its photo folder `web/src/assets/photos/<massif>/<station_id>/`
    (with a `.gitkeep` until it has a photo; a test checks the folder exists).
 4. `uv run bluebird reference --massif <massif>` to add its pistes and lifts.
@@ -466,10 +469,27 @@ A test enforces it.
 
 The next refresh includes it; no frontend change is needed.
 
+### Add a foreign resort (Spain, Andorra…)
+
+1. Declare its zone in `config/massifs.yaml` if needed, with `country` (ISO
+   code) and names in both languages: one zone per comunidad autónoma in
+   Spain (`aragon`, `catalogne`, `navarre`), a single `andorre` zone (AD).
+   The site lists foreign zones after the départements, with a flag
+   (`flagOf` in `lib/geoLevels.ts`), and flags the resort's short name in the
+   tiles (`shortName` with `stationCountries`, `lib/kpiView.ts`).
+2. Add the station as in "Add a station", with checked coordinates (middle of
+   the ski area) and elevations from official data, and its `zone`.
+3. `uv run bluebird reference --massif <massif>` for its pistes and lifts.
+4. Check the quota: every resort adds two ensemble locations (mid and summit)
+   to the grouped request; the ~12 main Spanish and Andorran resorts make it
+   ~60 % heavier. Check that the Météo-France second opinion
+   (`open_meteo_forecast`) returns values on the Spanish side.
+
 ### Add a massif
 
 1. Add an entry to `config/massifs.yaml` (`id`, `name`, `timezone`, `bbox`,
-   optional `skyline` for the ridges of the banner illustrations).
+   optional `skyline` for the ridges of the banner illustrations, `zones`:
+   its départements, and the countries or regions abroad).
 2. Create `config/stations/<id>.yaml`.
 3. Optionally add a `layout.yaml` override for its tile order.
 4. `uv run bluebird reference --massif <id>` to fetch its pistes and lifts.
@@ -736,12 +756,19 @@ Implement `write_bytes`, `read_bytes`, `exists` and `list` of
   button on the right. The menu (`components/AppMenu.svelte`) slides in over a blurred
   backdrop, locks page scrolling (`lib/scrollLock.ts`), makes the page inert,
   closes with Escape, and holds the language choice.
-- **Massif bar**: under the wordmark, one chip per enabled massif of
-  `config/massifs.yaml` (no "all" choice: one massif is always shown). It is
-  the only place to choose the massif. `components/FilterBar.svelte` with
-  `size="large"`; the choice is remembered in `localStorage`.
+- **Massif bar** (place levels): under the wordmark, `components/FilterBar.svelte`
+  (same chips as the filter bar), driven by `lib/geoLevels.ts` (`geoState`, tested) and
+  the bundled station config (`siteStations`, `siteDomains` in
+  `lib/config.ts`): massif → zone (`zones`, skipped below two) → linked area
+  (`domains` with at least two stations, offered under every zone where it
+  has one, keeping all its stations across zones and borders). One massif
+  is always on the page (its payload): removing the massif chip lists the
+  massifs and keeps the last one. The chosen place restricts every view to
+  its stations (`viewFor(…, only)` in `lib/kpiView.ts`: ranks, bars, the
+  reliability index and the leader photo follow the subset). The whole path
+  is remembered in `localStorage` (`geo`, migrated from the former `massif`).
 - **Filter bar** (Spotify-style levels): under the massif bar, the same
-  component with smaller chips (`size="small"`). `lib/filterLevels.ts`
+  component with the same chips. `lib/filterLevels.ts`
   (`filterState`, `nextPath`, unit-tested) turns the chosen path (`[]`,
   `['snow']`, `['snow', 'snowfall']`, `['snow', 'snowfall', 'd0']`,
   `['snow', 'snowfall', 'd0', 'morning']`) into chips and
@@ -939,6 +966,7 @@ AGENTS.md §4; scraping must respect the site's terms).
 | Near me | Sort resorts by conditions × travel time | Browser geolocation (never stored) + public routing (OSRM) | 🟡 |
 | Value for money | Lift pass price per km of pistes | Prices (scraper) + piste km from `domain_features` | 🔴 |
 | Ski area map | Map tile of pistes and lifts | `domain_features` (already collected) | 🟢 |
+| Alps and cross-border resorts | Northern and Southern Alps, Andorra, Spain, Switzerland, Italy in the place levels (zones, linked areas, a flag for foreign resorts) | Config only for the navigation, but two limits: **Open-Meteo quota** — the ensemble request weighs every location and member, and ~120 Alpine resorts × 2 bands is ~7 times today's request (split the source by massif, stagger the refreshes or keep one band); **payload size** — ~360 KB for 18 resorts, ~2 MB for a large massif (publish per-zone payloads, or keep the top N plus the chosen zone per ranking) | 🟢/🟡 |
 | Comparator | Two resorts side by side on every KPI | Existing payloads | 🟢 |
 | Slope aspect and steepness | Refine powder KPIs (north faces keep powder) | IGN RGE ALTI or Copernicus DEM | 🟡 |
 | Rewind calendar | Season timeline: storms, white days, bluebird days | Committed season hourly file | 🟢 |

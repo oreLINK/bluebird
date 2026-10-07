@@ -16,6 +16,13 @@ def test_repository_config_is_valid(repo_config: Config) -> None:
     assert len(repo_config.station_refs()) >= 15
 
 
+def test_every_pyrenean_station_has_a_departement(repo_config: Config) -> None:
+    pyrenees = next(m for m in repo_config.massifs if m.id == "pyrenees")
+    assert [z.code for z in pyrenees.zones] == ["64", "65", "31", "09", "66"]
+    zones = {s.zone for s in repo_config.stations["pyrenees"].stations}
+    assert zones == {z.id for z in pyrenees.zones}
+
+
 def test_station_defaults_are_resolved(two_station_config: Config) -> None:
     alpha, beta = two_station_config.station_refs()
     assert (alpha.grooming_end, alpha.lifts_open) == (time(2, 0), time(9, 0))
@@ -34,6 +41,21 @@ def test_mid_elevation_defaults_to_rounded_average() -> None:
         (TWO_STATIONS.replace("summit: 2500", "summit: 1000"), "summit must be higher"),
         (TWO_STATIONS.replace('lifts_open: "09:00"', 'lifts_open: "9h"'), "String should match"),
         (TWO_STATIONS.replace("id: beta", "id: alpha"), "duplicate station id"),
+        (TWO_STATIONS.replace("zone: haute-garonne", "zone: savoie"), "needs a zone of massif"),
+        (TWO_STATIONS.replace("    zone: hautes-pyrenees\n", ""), "has None"),
+        (
+            TWO_STATIONS.replace(
+                "domain: alpha-beta\n    name: Beta", "domain: nope\n    name: Beta"
+            ),
+            "unknown domain 'nope'",
+        ),
+        (
+            TWO_STATIONS.replace(
+                "  - id: alpha-beta\n    name: Alpha-Beta\n",
+                "  - id: alpha-beta\n    name: Alpha-Beta\n  - id: alpha-beta\n    name: Again\n",
+            ),
+            "duplicate massif 'pyrenees' domain id",
+        ),
     ],
 )
 def test_invalid_stations_are_rejected(tmp_path: Path, bad_yaml: str, message: str) -> None:

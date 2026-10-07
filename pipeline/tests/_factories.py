@@ -128,13 +128,20 @@ TWO_STATIONS = """
 defaults:
   grooming_end: "02:00"
   lifts_open: "09:00"
+domains:
+  - id: alpha-beta
+    name: Alpha-Beta
 stations:
   - id: alpha
+    zone: hautes-pyrenees
+    domain: alpha-beta
     name: Alpha
     lat: 42.8
     lon: 0.1
     elevation: { base: 1500, summit: 2500 }
   - id: beta
+    zone: haute-garonne
+    domain: alpha-beta
     name: Beta
     lat: 42.9
     lon: 0.2
