@@ -1,12 +1,38 @@
 # yaml-language-server: $schema=./schemas/layout.schema.json
 #
-# Order of the tiles on the page (top to bottom on mobile).
-# `default` applies to every massif; `overrides` replaces it for one massif.
+# Home page (no filter selected): `home` lists its tiles in priority order,
+# the first one at the top. Each entry is a live tile id of config/tiles.yaml
+# and one of its periods; the tile shows today's period, or tomorrow's once
+# today's is over. Tiles missing from a massif's layout are skipped.
+home:
+  - { tile: bluebird_day, period: day }      # always first: bluebird today
+  - { tile: snowfall_today, period: day }
+  - { tile: onpiste_powder, period: morning }
+  - { tile: whiteout, period: day }
+
+# Order of the tiles under a filter (top to bottom on mobile), after the time
+# order of their periods. `default` applies to every massif; `overrides`
+# replaces it for one massif.
 default:
   - snowfall_today
   - onpiste_powder
   - offpiste_powder
+  - bluebird_day
   - whiteout
+  - powder_alert
+  - snowmaking
+  - spring_snow
+  - hard_snow
+  - heavy_snow
+  - easy_conditions
+  - sunset
+  - starry_night
+  - sunny_slot
+  - wind_chill
+  - mild_day
+  - chains
+  - lift_wind
+  - wind_slab
   - rewind_2025_26_total_snowfall
   - rewind_2025_26_longest_snowfall
   - rewind_2025_26_domain_snowfall

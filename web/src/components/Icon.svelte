@@ -60,6 +60,22 @@
   {:else if name === 'fog'}
     <path d="M4 8h12M7 12h13M4 16h11M8 20h8" />
     <path d="M17.5 4.5a3 3 0 0 0-5.6-1" />
+  {:else if name === 'sun'}
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" />
+  {:else if name === 'sunset'}
+    <path d="M3 18h18M7 18a5 5 0 0 1 10 0" />
+    <path d="M12 6.5V9M5.6 10.6l1.4 1.4M18.4 10.6 17 12M3 21.5h18" />
+  {:else if name === 'moon'}
+    <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z" />
+  {:else if name === 'thermometer'}
+    <path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0Z" />
+    <path d="M12 11v6" />
+  {:else if name === 'car'}
+    <path d="M5 16.5v2M19 16.5v2M3.5 16.5h17v-4l-2-5h-13l-2 5Z" />
+    <path d="M3.5 12.5h17M7 14.5h.01M17 14.5h.01" />
+  {:else if name === 'wind'}
+    <path d="M3 9h11a3 3 0 1 0-3-3M3 15h15a3 3 0 1 1-3 3M3 12h7" />
   {:else if name === 'rewind'}
     <path d="M11.5 6 5 12l6.5 6M19.5 6 13 12l6.5 6" />
   {:else if name === 'github'}

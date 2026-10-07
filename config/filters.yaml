@@ -1,10 +1,11 @@
 # yaml-language-server: $schema=./schemas/filters.schema.json
 #
 # Filter bar under the header, Spotify-style. With nothing selected, the bar
-# shows the level-1 filters below (in this order) and the home page shows one
-# overview tile per filter. Choosing a filter fills its chip, moves it to the
-# left with a small "x", hides the other level-1 chips and offers the next
-# level; each chosen chip joins the row the same way (at most 4 levels).
+# shows the level-1 filters below (in this order) and the home page shows the
+# `home` tiles of config/layout.yaml. Choosing a filter fills its chip, moves
+# it to the left with a small "x", hides the other level-1 chips and offers
+# the next level; each chosen chip joins the row the same way (at most 4
+# levels).
 #
 #   id, name, icon: the chip. A filter shows the tiles whose KPIs list its id
 #                   under `filters:` in config/kpis.yaml.
@@ -15,34 +16,53 @@
 #                           (time slots of config/periods.yaml, `chip` labels);
 #                           whole-day tiles are not under any slot.
 #                   Chips only appear for days and slots that still have tiles.
-#   overview:       the tile shown on the home page: a live tile of this
-#                   filter and one of its periods (today's, or tomorrow's once
-#                   today's is over). No overview: not on the home page.
+#
+# The live filters are the indicator categories of PROJECT.md ("Categories"):
+# Snow, Snow quality, Sky, Comfort, Getting there, Safety; one per KPI.
 #
 # To add a filter: add an entry here, then tag the KPIs it should show with
 # its id in config/kpis.yaml. A filter that matches no enabled KPI is an error.
 filters:
-  # The Rewind of the last season (config/rewinds.yaml): no levels, no overview.
+  # The Rewind of the last season (config/rewinds.yaml): no levels.
   - id: rewind-2025-26
     name: { fr: Rewind 25/26, en: Rewind 25/26 }
     icon: rewind
     theme: rewind
 
+  # Will it snow, how much, is there snow on the ground?
   - id: snow
     name: { fr: Neige, en: Snow }
     icon: snowflake
     levels: [day, slot]
-    overview: { tile: snowfall_today, period: day }
 
-  - id: powder
-    name: { fr: Poudreuse, en: Powder }
-    icon: mountain
+  # What will the snow be like under the skis: powder, spring snow, ice?
+  - id: snow-quality
+    name: { fr: Glisse, en: Snow quality }
+    icon: piste
     levels: [day, slot]
-    overview: { tile: onpiste_powder, period: morning }
 
-  # White days are computed for the whole day only: no `slot` level.
-  - id: visibility
-    name: { fr: Visibilité, en: Visibility }
-    icon: fog
+  # What will you see: sun, cloud, white day, sunset, stars? Whole-day tiles
+  # (white day, bluebird day, sunset) are under Today/Tomorrow, not a slot.
+  - id: sky
+    name: { fr: Ciel, en: Sky }
+    icon: sun
+    levels: [day, slot]
+
+  # How will it feel: cold, wind, a mild day?
+  - id: comfort
+    name: { fr: Confort, en: Comfort }
+    icon: thermometer
+    levels: [day, slot]
+
+  # Can you drive up, will the lifts run?
+  - id: access
+    name: { fr: Accès, en: Getting there }
+    icon: car
+    levels: [day, slot]
+
+  # Which mountain hazards to watch? Never instead of the avalanche bulletin.
+  # Wind-blown snow is computed for the whole day only: no `slot` level.
+  - id: safety
+    name: { fr: Sécurité, en: Safety }
+    icon: alert
     levels: [day]
-    overview: { tile: whiteout, period: day }

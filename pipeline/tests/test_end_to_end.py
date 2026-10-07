@@ -36,6 +36,21 @@ def test_all_layers_produce_a_valid_diamond_payload(ctx: RunContext) -> None:
         "offpiste_powder_chance",
         "onpiste_powder_chance",
         "whiteout_chance",
+        "bluebird_day_chance",
+        "powder_alert_chance",
+        "snowmaking_chance",
+        "spring_snow_chance",
+        "hard_snow_chance",
+        "heavy_snow_chance",
+        "easy_conditions_chance",
+        "sunset_chance",
+        "starry_night_chance",
+        "sunny_slot_chance",
+        "wind_chill_chance",
+        "mild_day_chance",
+        "chains_chance",
+        "lift_wind_chance",
+        "wind_slab_chance",
     }
     periods = payload.kpis["snowfall_chance"].periods
     # Run at 05:30 local: every period of the 14th and the 15th, in time order.
@@ -110,7 +125,8 @@ def test_run_id_pins_the_run_start(ctx: RunContext) -> None:
     assert pinned.generated_at == datetime(2026, 12, 14, 17, 7, tzinfo=UTC)
     assert pinned.run_id == "20261214T170700Z"
     keys = [i.key for i in pinned.period_instances(pinned.massifs()[0])]
-    assert keys[:2] == ["evening@2026-12-14", "night@2026-12-14"]  # 18:07 local
+    # 18:07 local: the sunset period (shown until 22:00), then the evening and the night.
+    assert keys[:3] == ["sunset@2026-12-14", "evening@2026-12-14", "night@2026-12-14"]
 
 
 def test_demo_data_covers_every_kpi(repo_config, tmp_path) -> None:
@@ -162,6 +178,21 @@ def test_ci_chain_one_job_per_unit(ctx: RunContext, tmp_path, capsys) -> None:
         "offpiste_powder_chance",
         "onpiste_powder_chance",
         "whiteout_chance",
+        "bluebird_day_chance",
+        "powder_alert_chance",
+        "snowmaking_chance",
+        "spring_snow_chance",
+        "hard_snow_chance",
+        "heavy_snow_chance",
+        "easy_conditions_chance",
+        "sunset_chance",
+        "starry_night_chance",
+        "sunny_slot_chance",
+        "wind_chill_chance",
+        "mild_day_chance",
+        "chains_chance",
+        "lift_wind_chance",
+        "wind_slab_chance",
     ]
 
     # Bronze and silver for the ensemble only: the forecast jobs "crashed".

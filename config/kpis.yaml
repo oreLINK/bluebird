@@ -28,26 +28,31 @@ kpis:
     periods: [day, morning, midday, afternoon, evening, night]
     name: { fr: Chute de neige, en: Snowfall }
     description:
-      fr: Probabilité qu'il neige pendant le créneau affiché, à mi-altitude.
-      en: Probability of snowfall during the time slot shown, at mid-mountain.
+      fr: Neige attendue pendant le créneau affiché, à mi-altitude.
+      en: Snow expected during the time slot shown, at mid-mountain.
     method:
       fr: >-
-        Pour chaque station, Bluebird additionne la neige prévue à mi-altitude
-        pendant le créneau (pour la journée entière : de {window_start} à
-        {window_end}) dans chacun des 91 scénarios des prévisions d'ensemble (ECMWF
-        et DWD). La probabilité est la part des scénarios qui donnent au moins
-        {threshold_cm} cm.
+        Pour chaque station, Bluebird additionne la neige prévue à mi-altitude pendant
+        le créneau (pour la journée entière : de {window_start} à {window_end}) dans
+        chacun des 91 scénarios des prévisions d'ensemble (ECMWF et DWD). La tuile
+        affiche la médiane : la moitié des scénarios donnent plus, l'autre moitié
+        moins. La fiabilité est élevée quand 8 scénarios sur 10 tiennent dans un écart
+        de 3 cm.
       en: >-
-        For each resort, Bluebird adds up the snow forecast at mid-mountain during
-        the time slot (for the whole day: from {window_start} to {window_end}) in
-        each of the 91 ensemble forecast scenarios (ECMWF and DWD). The probability
-        is the share of scenarios giving at least {threshold_cm} cm.
+        For each resort, Bluebird adds up the snow forecast at mid-mountain during the
+        time slot (for the whole day: from {window_start} to {window_end}) in each of
+        the 91 ensemble forecast scenarios (ECMWF and DWD). The tile shows the median:
+        half of the scenarios give more, half give less. Reliability is high when 8
+        scenarios out of 10 fall within 3 cm of each other.
     params:
       band: mid
       window_start: "08:00"
       window_end: "17:00"
       threshold_cm: 1.0
+    display: { kind: value, driver: snow_cm_p50, range: [snow_cm_p10, snow_cm_p90], tolerance: 3 }
+    value: { unit: cm, decimals: 0 }
     drivers:
+      snow_cm_p10: { label: { fr: Neige – scénario bas, en: Snow – low scenario }, unit: cm, decimals: 1 }
       snow_cm_p50: { label: { fr: Neige attendue (médiane), en: Expected snow (median) }, unit: cm, decimals: 1 }
       snow_cm_p90: { label: { fr: Neige – scénario haut, en: Snow – high scenario }, unit: cm, decimals: 1 }
       deterministic_snow_cm: { label: { fr: Neige selon Météo-France, en: Snow per Météo-France }, unit: cm, decimals: 1 }
@@ -55,7 +60,7 @@ kpis:
 
   - id: offpiste_powder_chance
     aggregator: offpiste_powder_chance
-    filters: [powder]
+    filters: [snow-quality]
     periods: [morning, midday, afternoon]
     name: { fr: Poudreuse hors-piste, en: Off-piste powder }
     description:
@@ -95,28 +100,34 @@ kpis:
 
   - id: onpiste_powder_chance
     aggregator: onpiste_powder_chance
-    filters: [powder]
+    filters: [snow-quality]
     periods: [morning, midday, afternoon]
     name: { fr: Poudreuse sur piste, en: On-piste powder }
     description:
-      fr: Probabilité que la neige tombée après le damage recouvre les pistes au début du créneau.
-      en: Probability that snow fallen after grooming covers the pistes at the start of the time slot.
+      fr: Neige tombée sur les pistes depuis la fin du damage, au début du créneau, à mi-altitude.
+      en: Snow fallen on the pistes since grooming ended, at the start of the time slot, at mid-mountain.
     method:
       fr: >-
         Pour chaque station, Bluebird additionne la neige prévue entre la fin du
         damage et le début du créneau (au plus tôt l'ouverture des remontées), à
-        mi-altitude, dans chacun des 91 scénarios. La probabilité est la part des scénarios qui donnent au moins
-        {threshold_cm} cm sur les pistes damées.
+        mi-altitude, dans chacun des 91 scénarios. La tuile affiche la médiane : la
+        moitié des scénarios donnent plus, l'autre moitié moins. Les pistes damées
+        sont recouvertes de poudreuse à partir de {threshold_cm} cm. La fiabilité est
+        élevée quand 8 scénarios sur 10 tiennent dans un écart de 4 cm.
       en: >-
         For each resort, Bluebird adds up the snow forecast between the end of
         grooming and the start of the time slot (lifts opening at the earliest), at
-        mid-mountain, in each of the 91 scenarios.
-        The probability is the share of scenarios giving at least {threshold_cm}
-        cm on the groomed pistes.
+        mid-mountain, in each of the 91 scenarios. The tile shows the median: half of
+        the scenarios give more, half give less. The groomed pistes are covered with
+        powder from {threshold_cm} cm. Reliability is high when 8 scenarios out of 10
+        fall within 4 cm of each other.
     params:
       band: mid
       threshold_cm: 5.0
+    display: { kind: value, driver: snow_after_grooming_cm_p50, range: [snow_after_grooming_cm_p10, snow_after_grooming_cm_p90], tolerance: 4 }
+    value: { unit: cm, decimals: 0 }
     drivers:
+      snow_after_grooming_cm_p10: { label: { fr: Neige depuis le damage – scénario bas, en: Snow since grooming – low scenario }, unit: cm, decimals: 1 }
       snow_after_grooming_cm_p50: { label: { fr: Neige depuis le damage (médiane), en: Snow since grooming (median) }, unit: cm, decimals: 1 }
       snow_after_grooming_cm_p90: { label: { fr: Neige depuis le damage – scénario haut, en: Snow since grooming – high scenario }, unit: cm, decimals: 1 }
       window_hours: { label: { fr: Durée depuis le damage, en: Hours since grooming }, unit: h }
@@ -124,7 +135,7 @@ kpis:
 
   - id: whiteout_chance
     aggregator: whiteout_chance
-    filters: [visibility]
+    filters: [sky]
     periods: [day]   # a white *day*: today and tomorrow
     name: { fr: Jour blanc, en: White day }
     description:
@@ -158,6 +169,581 @@ kpis:
       min_white_hours: 6
     drivers:
       white_hours_p50: { label: { fr: Heures blanches (médiane), en: White hours (median) }, unit: h }
+      members: { label: { fr: Scénarios analysés, en: Scenarios analysed } }
+
+  - id: bluebird_day_chance
+    aggregator: bluebird_day_chance
+    filters: [sky]
+    periods: [day]   # a bluebird *day*: today and tomorrow
+    name: { fr: Journée bluebird, en: Bluebird day }
+    description:
+      fr: Probabilité d'une journée de grand beau juste après une chute de neige, à mi-altitude.
+      en: Probability of a clear, sunny ski day right after a snowfall, at mid-mountain.
+    method:
+      fr: >-
+        Pour chacun des 91 scénarios, Bluebird additionne la neige tombée à
+        mi-altitude dans les {lookback_hours} heures avant {ski_start} : il en faut
+        au moins {threshold_cm} cm. Puis il regarde chaque heure skiable
+        ({ski_start}–{ski_end}) : une heure est ensoleillée si les nuages couvrent au
+        plus {cloud_max_pct} % du ciel et si le rayonnement solaire atteint
+        {clear_sky_index_min} fois celui d'un ciel clair. Il faut au moins
+        {min_sunny_hours} heures ensoleillées ; la probabilité est la part des
+        scénarios qui réunissent les deux.
+      en: >-
+        For each of the 91 scenarios, Bluebird adds up the snow fallen at
+        mid-mountain in the {lookback_hours} hours before {ski_start}: at least
+        {threshold_cm} cm are needed. Then it checks every ski hour
+        ({ski_start}–{ski_end}): an hour is sunny when clouds cover at most
+        {cloud_max_pct} % of the sky and sunlight reaches {clear_sky_index_min}
+        times a clear sky's. At least {min_sunny_hours} sunny hours are needed; the
+        probability is the share of scenarios meeting both.
+    params:
+      band: mid
+      lookback_hours: 36
+      threshold_cm: 15.0
+      ski_start: "09:00"
+      ski_end: "17:00"
+      cloud_max_pct: 30
+      clear_sky_index_min: 0.6
+      min_sunny_hours: 6
+    drivers:
+      new_snow_cm_p50: { label: { fr: Neige fraîche (médiane), en: Fresh snow (median) }, unit: cm }
+      sunny_hours_p50: { label: { fr: Heures ensoleillées (médiane), en: Sunny hours (median) }, unit: h }
+      members: { label: { fr: Scénarios analysés, en: Scenarios analysed } }
+
+  # ----------------------------------------------------- more live KPIs
+  # Built only from the data already fetched (ensemble at mid-mountain and
+  # summit); one category filter each (config/filters.yaml).
+
+  # ❄️ Snow
+  - id: powder_alert_chance
+    aggregator: powder_alert_chance
+    filters: [snow]
+    periods: [day]
+    name: { fr: Alerte neige, en: Snow alert }
+    description:
+      fr: Neige attendue à mi-altitude sur 36 heures à partir du matin.
+      en: Snow expected at mid-mountain over 36 hours from the morning.
+    method:
+      fr: >-
+        Pour chacun des 91 scénarios, Bluebird additionne la neige prévue à
+        mi-altitude pendant {hours} heures à partir de {start}. La tuile affiche la
+        médiane : la moitié des scénarios donnent plus, l'autre moitié moins. L'alerte
+        commence à {threshold_cm} cm. La fiabilité est élevée quand 8 scénarios sur 10
+        tiennent dans un écart de 15 cm.
+      en: >-
+        For each of the 91 scenarios, Bluebird adds up the snow forecast at
+        mid-mountain over {hours} hours from {start}. The tile shows the median: half
+        of the scenarios give more, half give less. The alert starts at {threshold_cm}
+        cm. Reliability is high when 8 scenarios out of 10 fall within 15 cm of each
+        other.
+    params:
+      band: mid
+      start: "06:00"
+      hours: 36
+      threshold_cm: 30.0
+    display:
+      kind: value
+      driver: snow_cm_p50
+      range: [snow_cm_p10, snow_cm_p90]
+      tolerance: 15
+      bands:
+        - { max: 10, label: { fr: faible, en: light } }
+        - { max: 29, label: { fr: bonne, en: good } }
+        - { label: { fr: alerte, en: alert } }
+    value: { unit: cm, decimals: 0 }
+    drivers:
+      snow_cm_p10: { label: { fr: Neige – scénario bas, en: Snow – low scenario }, unit: cm }
+      snow_cm_p50: { label: { fr: Neige attendue (médiane), en: Expected snow (median) }, unit: cm }
+      snow_cm_p90: { label: { fr: Neige – scénario haut, en: Snow – high scenario }, unit: cm }
+      members: { label: { fr: Scénarios analysés, en: Scenarios analysed } }
+
+  - id: snowmaking_chance
+    aggregator: snowmaking_chance
+    filters: [snow]
+    periods: [night]
+    name: { fr: Canons à neige, en: Snow cannons }
+    description:
+      fr: Heures de la nuit assez froides et sèches pour fabriquer de la neige sur les pistes.
+      en: Hours of the night cold and dry enough to make snow on the pistes.
+    method:
+      fr: >-
+        Les canons ont besoin d'une température humide (qui tient compte de l'humidité
+        de l'air) basse. Pour chacun des 91 scénarios, Bluebird compte les heures de
+        {evening_start} à 06:00 où elle est à {wet_bulb_max_c} °C ou moins, à
+        mi-altitude. La tuile affiche la médiane : la moitié des scénarios donnent
+        plus, l'autre moitié moins. Une nuit utile pour les canons en compte au moins
+        {min_hours}. La fiabilité est élevée quand 8 scénarios sur 10 tiennent dans un
+        écart de 3 heures.
+      en: >-
+        Snow cannons need a low wet-bulb temperature (which takes the air's humidity
+        into account). For each of the 91 scenarios, Bluebird counts the hours from
+        {evening_start} to 06:00 when it is at {wet_bulb_max_c} °C or below, at
+        mid-mountain. The tile shows the median: half of the scenarios give more, half
+        give less. A useful night for the cannons has at least {min_hours}.
+        Reliability is high when 8 scenarios out of 10 fall within 3 hours of each
+        other.
+    params:
+      band: mid
+      evening_start: "20:00"
+      wet_bulb_max_c: -2.5
+      min_hours: 6
+    display: { kind: value, driver: cold_hours_p50, range: [cold_hours_p10, cold_hours_p90], tolerance: 3 }
+    value: { unit: h, decimals: 0 }
+    drivers:
+      cold_hours_p10: { label: { fr: Heures favorables – scénario bas, en: Suitable hours – low scenario }, unit: h }
+      cold_hours_p90: { label: { fr: Heures favorables – scénario haut, en: Suitable hours – high scenario }, unit: h }
+      cold_hours_p50: { label: { fr: Heures favorables (médiane), en: Suitable hours (median) }, unit: h }
+      wet_bulb_min_c_p50: { label: { fr: Température humide minimale (médiane), en: Lowest wet-bulb temperature (median) }, unit: °C, decimals: 1 }
+      members: { label: { fr: Scénarios analysés, en: Scenarios analysed } }
+
+  # 🎿 Snow quality
+  - id: spring_snow_chance
+    aggregator: spring_snow_chance
+    filters: [snow-quality]
+    periods: [morning, midday, afternoon]
+    name: { fr: Neige de printemps, en: Spring snow }
+    description:
+      fr: Probabilité d'une neige transformée qui ramollit pendant le créneau après avoir regelé la nuit.
+      en: Probability of corn snow softening during the time slot after a night freeze.
+    method:
+      fr: >-
+        Pour chacun des 91 scénarios, à mi-altitude : la neige a regelé (au plus
+        {freeze_max_c} °C entre {freeze_start} et {freeze_end}), elle ramollit pendant le
+        créneau (au moins {soften_min_c} °C) et moins de {fresh_snow_max_cm} cm de neige
+        fraîche la recouvrent ({fresh_snow_hours} dernières heures). La probabilité
+        est la part des scénarios qui réunissent les trois.
+      en: >-
+        For each of the 91 scenarios, at mid-mountain: the snow refroze (at most
+        {freeze_max_c} °C between {freeze_start} and {freeze_end}), it softens during
+        the slot (at least {soften_min_c} °C) and less than {fresh_snow_max_cm} cm of
+        fresh snow covers it (last {fresh_snow_hours} hours). The probability is the
+        share of scenarios meeting all three.
+    params:
+      band: mid
+      freeze_start: "00:00"
+      freeze_end: "08:00"
+      freeze_max_c: -1.0
+      soften_min_c: 1.0
+      fresh_snow_hours: 24
+      fresh_snow_max_cm: 5.0
+    drivers:
+      night_min_c_p50: { label: { fr: Minimum de la nuit (médiane), en: Night minimum (median) }, unit: °C, decimals: 1 }
+      slot_max_c_p50: { label: { fr: Maximum du créneau (médiane), en: Slot maximum (median) }, unit: °C, decimals: 1 }
+      members: { label: { fr: Scénarios analysés, en: Scenarios analysed } }
+
+  - id: hard_snow_chance
+    aggregator: hard_snow_chance
+    filters: [snow-quality]
+    periods: [morning]
+    name: { fr: Neige dure, en: Hard snow }
+    description:
+      fr: Probabilité d'une neige dure et glacée le matin, après un redoux la veille et un regel la nuit.
+      en: Probability of hard, icy snow in the morning after a thaw the day before and a night freeze.
+    method:
+      fr: >-
+        Pour chacun des 91 scénarios, à mi-altitude : la neige a fondu la veille
+        (au moins {melt_min_c} °C entre {melt_start} et {melt_end}), elle a regelé (au plus
+        {freeze_max_c} °C ensuite), elle reste gelée pendant le créneau (au plus
+        {frozen_max_c} °C) et moins de {fresh_snow_max_cm} cm de neige fraîche la recouvrent.
+        La probabilité est la part des scénarios qui réunissent les quatre.
+        La tuile affiche « Oui » à partir de 60 %, « Possible » à partir de 25 %, sinon « Non ».
+      en: >-
+        For each of the 91 scenarios, at mid-mountain: the snow melted the day
+        before (at least {melt_min_c} °C between {melt_start} and {melt_end}), it refroze
+        (at most {freeze_max_c} °C afterwards), it stays frozen during the slot (at most
+        {frozen_max_c} °C) and less than {fresh_snow_max_cm} cm of fresh snow covers it.
+        The probability is the share of scenarios meeting all four.
+        The tile shows "Yes" from 60 %, "Possible" from 25 %, otherwise "No".
+    params:
+      band: mid
+      melt_start: "11:00"
+      melt_end: "17:00"
+      melt_min_c: 2.0
+      freeze_max_c: -2.0
+      frozen_max_c: 0.0
+      fresh_snow_max_cm: 2.0
+    display:
+      kind: levels
+      levels:
+        - { min: 0.6, label: { fr: Oui, en: "Yes" } }
+        - { min: 0.25, label: { fr: Possible, en: Possible } }
+        - { min: 0, label: { fr: Non, en: "No" } }
+    drivers:
+      melt_max_c_p50: { label: { fr: Maximum de la veille (médiane), en: Previous day's maximum (median) }, unit: °C, decimals: 1 }
+      night_min_c_p50: { label: { fr: Minimum de la nuit (médiane), en: Night minimum (median) }, unit: °C, decimals: 1 }
+      members: { label: { fr: Scénarios analysés, en: Scenarios analysed } }
+
+  - id: heavy_snow_chance
+    aggregator: heavy_snow_chance
+    filters: [snow-quality]
+    periods: [midday, afternoon]
+    name: { fr: Neige lourde, en: Heavy snow }
+    description:
+      fr: Probabilité d'une neige lourde et collante pendant le créneau (redoux ou neige mouillée).
+      en: Probability of heavy, sticky snow during the time slot (warm spell or wet snowfall).
+    method:
+      fr: >-
+        Pour chacun des 91 scénarios, à mi-altitude, le créneau est lourd si la
+        température atteint {warm_min_c} °C, ou s'il tombe au moins {wet_snow_min_cm} cm de
+        neige à {wet_snow_min_c} °C ou plus. La probabilité est la part des scénarios qui
+        le donnent.
+      en: >-
+        For each of the 91 scenarios, at mid-mountain, the slot is heavy when the
+        temperature reaches {warm_min_c} °C, or when at least {wet_snow_min_cm} cm of snow
+        falls at {wet_snow_min_c} °C or more. The probability is the share of scenarios
+        giving it.
+    params:
+      band: mid
+      warm_min_c: 4.0
+      wet_snow_min_c: 0.5
+      wet_snow_min_cm: 1.0
+    drivers:
+      max_temp_c_p50: { label: { fr: Maximum du créneau (médiane), en: Slot maximum (median) }, unit: °C, decimals: 1 }
+      members: { label: { fr: Scénarios analysés, en: Scenarios analysed } }
+
+  - id: easy_conditions_chance
+    aggregator: easy_conditions_chance
+    filters: [snow-quality]
+    periods: [morning, midday, afternoon]
+    name: { fr: Conditions faciles, en: Easy conditions }
+    description:
+      fr: Probabilité de conditions faciles pour débuter pendant le créneau, à mi-altitude.
+      en: Probability of easy conditions for beginners during the time slot, at mid-mountain.
+    method:
+      fr: >-
+        Pour chacun des 91 scénarios, à mi-altitude, le créneau est facile si le vent
+        reste sous {wind_max_kmh} km/h, la température au-dessus de {temp_min_c} °C, s'il
+        tombe moins de {snowfall_max_cm} cm de neige et si au plus {white_share_max_pct} % des
+        heures sont blanches (même règle que le jour blanc). La probabilité est la
+        part des scénarios qui le donnent.
+      en: >-
+        For each of the 91 scenarios, at mid-mountain, the slot is easy when the wind
+        stays below {wind_max_kmh} km/h, the temperature above {temp_min_c} °C, less than
+        {snowfall_max_cm} cm of snow falls and at most {white_share_max_pct} % of its hours are
+        white (same rule as the white day). The probability is the share of
+        scenarios giving it.
+    params:
+      band: mid
+      wind_max_kmh: 25
+      temp_min_c: -10
+      snowfall_max_cm: 2.0
+      white_share_max_pct: 25
+    drivers:
+      max_wind_kmh_p50: { label: { fr: Vent maximal (médiane), en: Maximum wind (median) }, unit: km/h }
+      min_temp_c_p50: { label: { fr: Minimum du créneau (médiane), en: Slot minimum (median) }, unit: °C, decimals: 1 }
+      members: { label: { fr: Scénarios analysés, en: Scenarios analysed } }
+
+  # ☀️ Sky
+  - id: sunset_chance
+    aggregator: sunset_chance
+    filters: [sky]
+    periods: [sunset]
+    name: { fr: Coucher de soleil, en: Sunset }
+    description:
+      fr: Probabilité d'un coucher de soleil visible depuis le haut du domaine skiable.
+      en: Probability of a visible sunset from the top of the ski area.
+    method:
+      fr: >-
+        Bluebird calcule l'heure du coucher du soleil pour chaque station (horizon
+        plat : les crêtes à l'ouest le cachent plus tôt). Pour chacun des 91 scénarios,
+        près du sommet, les nuages doivent couvrir en moyenne au plus {cloud_max_pct} %
+        du ciel de {hours_before} h avant à {hours_after} h après. La probabilité est la
+        part des scénarios qui le donnent.
+      en: >-
+        Bluebird computes the sunset time for each resort (flat horizon: ridges to
+        the west hide it earlier). For each of the 91 scenarios, near the summit,
+        clouds must cover at most {cloud_max_pct} % of the sky on average from
+        {hours_before} h before to {hours_after} h after. The probability is the share of
+        scenarios giving it.
+    params:
+      band: summit
+      hours_before: 1
+      hours_after: 1
+      cloud_max_pct: 40
+    display: { kind: percent, note: sunset_time }
+    drivers:
+      sunset_time: { label: { fr: Coucher du soleil, en: Sunset time } }
+      cloud_pct_p50: { label: { fr: Nuages (médiane), en: Cloud cover (median) }, unit: "%" }
+      members: { label: { fr: Scénarios analysés, en: Scenarios analysed } }
+
+  - id: starry_night_chance
+    aggregator: starry_night_chance
+    filters: [sky]
+    periods: [evening]
+    name: { fr: Nuit étoilée, en: Starry night }
+    description:
+      fr: Probabilité d'un ciel dégagé et étoilé en soirée.
+      en: Probability of a clear, starry sky in the evening.
+    method:
+      fr: >-
+        Pour chacun des 91 scénarios, près du sommet, Bluebird compte les heures de
+        la soirée où les nuages couvrent au plus {cloud_max_pct} % du ciel. La nuit est
+        étoilée dès {min_clear_hours} heures dégagées ; la probabilité est la part des
+        scénarios qui le donnent.
+      en: >-
+        For each of the 91 scenarios, near the summit, Bluebird counts the evening
+        hours with clouds covering at most {cloud_max_pct} % of the sky. The night is
+        starry from {min_clear_hours} clear hours; the probability is the share of
+        scenarios giving it.
+    params:
+      band: summit
+      cloud_max_pct: 20
+      min_clear_hours: 4
+    drivers:
+      clear_hours_p50: { label: { fr: Heures dégagées (médiane), en: Clear hours (median) }, unit: h }
+      members: { label: { fr: Scénarios analysés, en: Scenarios analysed } }
+
+  - id: sunny_slot_chance
+    aggregator: sunny_slot_chance
+    filters: [sky]
+    periods: [morning, midday, afternoon]
+    name: { fr: Grand soleil, en: Full sun }
+    description:
+      fr: Heures de soleil pendant le créneau, à mi-altitude.
+      en: Hours of sunshine during the time slot, at mid-mountain.
+    method:
+      fr: >-
+        Pour chacun des 91 scénarios, à mi-altitude, une heure est ensoleillée si les
+        nuages couvrent au plus {cloud_max_pct} % du ciel et si le rayonnement atteint
+        {clear_sky_index_min} fois celui d'un ciel clair ; les heures avant le lever
+        ou après le coucher du soleil ne comptent pas. La tuile affiche la médiane des
+        heures ensoleillées du créneau. La fiabilité est élevée quand 8 scénarios sur
+        10 tiennent dans un écart de 2 heures.
+      en: >-
+        For each of the 91 scenarios, at mid-mountain, an hour is sunny when clouds
+        cover at most {cloud_max_pct} % of the sky and sunlight reaches
+        {clear_sky_index_min} times a clear sky's; hours before sunrise or after
+        sunset do not count. The tile shows the median number of sunny hours in the
+        slot. Reliability is high when 8 scenarios out of 10 fall within 2 hours of
+        each other.
+    params:
+      band: mid
+      cloud_max_pct: 30
+      clear_sky_index_min: 0.6
+      sunny_share_min_pct: 75
+    display: { kind: value, driver: sunny_hours_p50, range: [sunny_hours_p10, sunny_hours_p90], tolerance: 2 }
+    value: { unit: h, decimals: 0 }
+    drivers:
+      sunny_hours_p10: { label: { fr: Heures de soleil – scénario bas, en: Sunny hours – low scenario }, unit: h }
+      sunny_hours_p50: { label: { fr: Heures de soleil (médiane), en: Sunny hours (median) }, unit: h }
+      sunny_hours_p90: { label: { fr: Heures de soleil – scénario haut, en: Sunny hours – high scenario }, unit: h }
+      sunny_pct_p50: { label: { fr: Part ensoleillée (médiane), en: Sunny share (median) }, unit: "%" }
+      members: { label: { fr: Scénarios analysés, en: Scenarios analysed } }
+
+  # 🧣 Comfort
+  - id: wind_chill_chance
+    aggregator: wind_chill_chance
+    filters: [comfort]
+    periods: [morning, midday, afternoon]
+    name: { fr: Froid ressenti, en: Wind chill }
+    description:
+      fr: Température ressentie la plus froide au sommet pendant le créneau, à cause du vent.
+      en: Coldest felt temperature at the summit during the time slot, because of the wind.
+    method:
+      fr: >-
+        Pour chacun des 91 scénarios, près du sommet, Bluebird calcule heure par heure
+        la température ressentie (indice de refroidissement éolien, qui combine
+        température et vent) et garde la plus froide du créneau. La tuile affiche la
+        médiane et le risque selon l'échelle d'Environnement Canada : faible au-dessus
+        de −10 °C, modéré jusqu'à −27 °C, élevé jusqu'à −39 °C (gelures en 10 à 30
+        minutes), très élevé jusqu'à −47 °C, grave jusqu'à −54 °C, extrême au-delà. La
+        fiabilité est élevée quand 8 scénarios sur 10 tiennent dans un écart de 6 °C.
+      en: >-
+        For each of the 91 scenarios, near the summit, Bluebird computes the felt
+        temperature hour by hour (wind chill index, combining temperature and wind)
+        and keeps the coldest of the slot. The tile shows the median and the risk on
+        Environment Canada's scale: low above −10 °C, moderate down to −27 °C, high
+        down to −39 °C (frostbite in 10 to 30 minutes), very high down to −47 °C,
+        severe down to −54 °C, extreme below. Reliability is high when 8 scenarios out
+        of 10 fall within 6 °C of each other.
+    params:
+      band: summit
+      chill_max_c: -20
+    display:
+      kind: value
+      driver: wind_chill_c_p50
+      range: [wind_chill_c_p10, wind_chill_c_p90]
+      tolerance: 6
+      bands:
+        - { max: -55, label: { fr: risque extrême, en: extreme risk } }
+        - { max: -48, label: { fr: risque grave, en: severe risk } }
+        - { max: -40, label: { fr: risque très élevé, en: very high risk } }
+        - { max: -28, label: { fr: risque élevé, en: high risk } }
+        - { max: -10, label: { fr: risque modéré, en: moderate risk } }
+        - { label: { fr: risque faible, en: low risk } }
+    value: { unit: °C, decimals: 0 }
+    order: asc
+    drivers:
+      wind_chill_c_p90: { label: { fr: Ressenti – scénario doux, en: Felt temperature – mild scenario }, unit: °C }
+      wind_chill_c_p50: { label: { fr: Ressenti le plus froid (médiane), en: Coldest felt temperature (median) }, unit: °C }
+      wind_chill_c_p10: { label: { fr: Ressenti – scénario froid, en: Felt temperature – cold scenario }, unit: °C }
+      members: { label: { fr: Scénarios analysés, en: Scenarios analysed } }
+
+  - id: mild_day_chance
+    aggregator: mild_day_chance
+    filters: [comfort]
+    periods: [day]
+    name: { fr: Journée douce, en: Mild day }
+    description:
+      fr: Probabilité d'une journée douce, ensoleillée et sans vent à mi-altitude (temps de pique-nique).
+      en: Probability of a mild, sunny and calm day at mid-mountain (picnic weather).
+    method:
+      fr: >-
+        Pour chacun des 91 scénarios, à mi-altitude, de {ski_start} à {ski_end} : la
+        température atteint {temp_min_c} °C, le vent reste sous {wind_max_kmh} km/h et au
+        moins {min_sunny_hours} heures sont ensoleillées (nuages au plus {cloud_max_pct} %,
+        rayonnement d'au moins {clear_sky_index_min} fois un ciel clair). La probabilité
+        est la part des scénarios qui le donnent.
+      en: >-
+        For each of the 91 scenarios, at mid-mountain, from {ski_start} to {ski_end}: the
+        temperature reaches {temp_min_c} °C, the wind stays below {wind_max_kmh} km/h and
+        at least {min_sunny_hours} hours are sunny (clouds at most {cloud_max_pct} %,
+        sunlight at least {clear_sky_index_min} times a clear sky's). The probability is
+        the share of scenarios giving it.
+    params:
+      band: mid
+      ski_start: "09:00"
+      ski_end: "17:00"
+      temp_min_c: 5
+      wind_max_kmh: 20
+      cloud_max_pct: 30
+      clear_sky_index_min: 0.6
+      min_sunny_hours: 5
+    drivers:
+      max_temp_c_p50: { label: { fr: Maximum (médiane), en: Maximum (median) }, unit: °C, decimals: 1 }
+      sunny_hours_p50: { label: { fr: Heures ensoleillées (médiane), en: Sunny hours (median) }, unit: h }
+      members: { label: { fr: Scénarios analysés, en: Scenarios analysed } }
+
+  # 🚗 Getting there
+  - id: chains_chance
+    aggregator: chains_chance
+    filters: [access]
+    periods: [day]
+    name: { fr: Chaînes nécessaires, en: Chains needed }
+    description:
+      fr: Probabilité de neige sur la route d'accès le matin, au niveau du bas de la station.
+      en: Probability of snow on the access road in the morning, at the bottom of the resort.
+    method:
+      fr: >-
+        Les scénarios ne décrivent pas la route : Bluebird la place au bas de la
+        station et y ramène la température de mi-altitude (0,65 °C de plus par 100 m
+        plus bas). Pour chacun des 91 scénarios, il additionne la neige tombée de
+        {since} la veille à {until} pendant les heures où cette température est d'au
+        plus {road_temp_max_c} °C. Il faut des chaînes à partir de {threshold_cm} cm ; la
+        probabilité est la part des scénarios qui le donnent. Le déneigement n'est pas
+        pris en compte, et l'obligation d'équipement en montagne s'applique de toute façon.
+        La tuile affiche « Oui » à partir de 60 %, « Possible » à partir de 25 %, sinon « Non ».
+      en: >-
+        The scenarios do not describe the road: Bluebird places it at the bottom of
+        the resort and brings the mid-mountain temperature down to it (0.65 °C warmer
+        per 100 m lower). For each of the 91 scenarios, it adds up the snow fallen from
+        {since} the evening before to {until} during the hours when that temperature is
+        at most {road_temp_max_c} °C. Chains are needed from {threshold_cm} cm; the
+        probability is the share of scenarios giving it. Snow clearing is not taken
+        into account, and the mountain winter equipment rules apply anyway.
+        The tile shows "Yes" from 60 %, "Possible" from 25 %, otherwise "No".
+    params:
+      since: "20:00"
+      until: "10:00"
+      road_temp_max_c: 1.0
+      threshold_cm: 2.0
+    display:
+      kind: levels
+      levels:
+        - { min: 0.6, label: { fr: Oui, en: "Yes" } }
+        - { min: 0.25, label: { fr: Possible, en: Possible } }
+        - { min: 0, label: { fr: Non, en: "No" } }
+    drivers:
+      road_snow_cm_p50: { label: { fr: Neige sur la route (médiane), en: Snow on the road (median) }, unit: cm, decimals: 1 }
+      road_temp_min_c_p50: { label: { fr: Température minimale sur la route (médiane), en: Lowest road temperature (median) }, unit: °C, decimals: 1 }
+      base_m: { label: { fr: Altitude de la route, en: Road elevation }, unit: m }
+      members: { label: { fr: Scénarios analysés, en: Scenarios analysed } }
+
+  - id: lift_wind_chance
+    aggregator: lift_wind_chance
+    filters: [access]
+    periods: [morning, midday, afternoon]
+    name: { fr: Remontées au vent, en: Lifts in the wind }
+    description:
+      fr: "Vent moyen le plus fort au sommet pendant le créneau : les remontées ralentissent ou s'arrêtent dans les fortes rafales."
+      en: "Strongest mean wind at the summit during the time slot: lifts slow down or stop in strong gusts."
+    method:
+      fr: >-
+        Pour chacun des 91 scénarios, près du sommet, Bluebird garde le vent moyen le
+        plus fort du créneau. La tuile affiche la médiane : la moitié des scénarios
+        donnent plus, l'autre moitié moins. Les scénarios n'ont pas les rafales,
+        souvent 1,5 à 2 fois plus fortes en montagne : à partir de {wind_min_kmh} km/h
+        de vent moyen, les remontées du haut risquent de ralentir ou de fermer. La
+        fiabilité est élevée quand 8 scénarios sur 10 tiennent dans un écart de 15
+        km/h.
+      en: >-
+        For each of the 91 scenarios, near the summit, Bluebird keeps the strongest
+        mean wind of the slot. The tile shows the median: half of the scenarios give
+        more, half give less. The scenarios have no gusts, often 1.5 to 2 times
+        stronger in the mountains: from {wind_min_kmh} km/h of mean wind, the top
+        lifts may slow down or close. Reliability is high when 8 scenarios out of 10
+        fall within 15 km/h of each other.
+    params:
+      band: summit
+      wind_min_kmh: 45
+      min_hours: 1
+    display:
+      kind: value
+      driver: max_wind_kmh_p50
+      range: [max_wind_kmh_p10, max_wind_kmh_p90]
+      tolerance: 15
+      bands:
+        - { max: 29, label: { fr: faible, en: light } }
+        - { max: 44, label: { fr: soutenu, en: strong } }
+        - { label: { fr: fermetures possibles, en: closures likely } }
+    value: { unit: km/h, decimals: 0 }
+    drivers:
+      max_wind_kmh_p10: { label: { fr: Vent maximal – scénario faible, en: Maximum wind – light scenario }, unit: km/h }
+      max_wind_kmh_p50: { label: { fr: Vent maximal (médiane), en: Maximum wind (median) }, unit: km/h }
+      max_wind_kmh_p90: { label: { fr: Vent maximal – scénario fort, en: Maximum wind – strong scenario }, unit: km/h }
+      members: { label: { fr: Scénarios analysés, en: Scenarios analysed } }
+
+  # ⚠️ Safety
+  - id: wind_slab_chance
+    aggregator: wind_slab_chance
+    filters: [safety]
+    periods: [day]
+    name: { fr: Neige ventée, en: Wind-blown snow }
+    description:
+      fr: Probabilité que le vent transporte la neige fraîche au sommet, signe d'alerte hors-piste. Ne remplace jamais le bulletin d'avalanche.
+      en: Probability that the wind moves fresh snow near the summit, a warning sign off-piste. Never a replacement for the avalanche bulletin.
+    method:
+      fr: >-
+        Pour chacun des 91 scénarios, près du sommet : au moins {fresh_snow_cm} cm de neige
+        sont tombés dans les {lookback_hours} heures avant {ski_start}, et le vent a atteint
+        {wind_min_kmh} km/h depuis le début de cette période jusqu'à {ski_end}. La
+        probabilité est la part des scénarios qui réunissent les deux. Lisez toujours le
+        bulletin d'estimation du risque d'avalanche de Météo-France.
+        La tuile affiche « Oui » à partir de 60 %, « Possible » à partir de 25 %, sinon « Non ».
+      en: >-
+        For each of the 91 scenarios, near the summit: at least {fresh_snow_cm} cm of snow
+        fell in the {lookback_hours} hours before {ski_start}, and the wind reached
+        {wind_min_kmh} km/h from the start of that period until {ski_end}. The probability is
+        the share of scenarios meeting both. Always read the Météo-France avalanche
+        bulletin.
+        The tile shows "Yes" from 60 %, "Possible" from 25 %, otherwise "No".
+    params:
+      band: summit
+      ski_start: "09:00"
+      ski_end: "17:00"
+      lookback_hours: 48
+      fresh_snow_cm: 10
+      wind_min_kmh: 30
+    display:
+      kind: levels
+      levels:
+        - { min: 0.6, label: { fr: Oui, en: "Yes" } }
+        - { min: 0.25, label: { fr: Possible, en: Possible } }
+        - { min: 0, label: { fr: Non, en: "No" } }
+    drivers:
+      fresh_snow_cm_p50: { label: { fr: Neige fraîche (médiane), en: Fresh snow (median) }, unit: cm }
+      max_wind_kmh_p50: { label: { fr: Vent maximal (médiane), en: Maximum wind (median) }, unit: km/h }
       members: { label: { fr: Scénarios analysés, en: Scenarios analysed } }
 
   # ------------------------------------------------------------ historical KPIs

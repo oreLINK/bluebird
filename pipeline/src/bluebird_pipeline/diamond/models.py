@@ -65,7 +65,12 @@ class DiamondKpiPeriod(DiamondModel):
     generated_at: datetime = Field(
         description="When these values were computed; older than the payload = stale."
     )
-    ranking: list[DiamondRankingEntry] = Field(description="Sorted by probability, descending.")
+    ranking: list[DiamondRankingEntry] = Field(
+        description=(
+            "Best first: by probability, or by the shown value for a KPI with a `value` "
+            "display (config/kpis.yaml `display`, `order`)."
+        )
+    )
 
 
 class DiamondKpi(DiamondModel):

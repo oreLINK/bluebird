@@ -92,7 +92,7 @@
           "type": "string"
         },
         "ranking": {
-          "description": "Sorted by probability, descending.",
+          "description": "Best first: by probability, or by the shown value for a KPI with a `value` display (config/kpis.yaml `display`, `order`).",
           "items": {
             "$ref": "#/$defs/DiamondRankingEntry"
           },

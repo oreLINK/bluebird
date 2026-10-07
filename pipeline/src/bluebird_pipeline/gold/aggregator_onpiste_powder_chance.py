@@ -33,7 +33,7 @@ class OnpisteParams(AggregatorParams):
 class AggregatorOnpistePowderChance(Aggregator):
     """P(snowfall between grooming end and the period start >= threshold)."""
 
-    version: ClassVar[str] = "2"
+    version: ClassVar[str] = "3"
     Params: ClassVar[type[AggregatorParams]] = OnpisteParams
     required_datasets: ClassVar[tuple[str, ...]] = ("ensemble_hourly",)
     params: OnpisteParams
@@ -68,6 +68,7 @@ class AggregatorOnpistePowderChance(Aggregator):
             window_start=start,
             window_end=end,
             drivers={
+                "snow_after_grooming_cm_p10": quantile(snow, 0.1),
                 "snow_after_grooming_cm_p50": quantile(snow, 0.5),
                 "snow_after_grooming_cm_p90": quantile(snow, 0.9),
                 "window_hours": round((end - start).total_seconds() / 3600),

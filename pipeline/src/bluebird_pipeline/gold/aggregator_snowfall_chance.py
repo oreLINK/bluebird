@@ -36,7 +36,7 @@ class SnowfallChanceParams(AggregatorParams):
 class AggregatorSnowfallChance(Aggregator):
     """P(snowfall over the period >= threshold)."""
 
-    version: ClassVar[str] = "2"
+    version: ClassVar[str] = "3"
     Params: ClassVar[type[AggregatorParams]] = SnowfallChanceParams
     required_datasets: ClassVar[tuple[str, ...]] = ("ensemble_hourly",)
     params: SnowfallChanceParams
@@ -56,6 +56,7 @@ class AggregatorSnowfallChance(Aggregator):
             return None
         snow = totals["value"]
         drivers: dict[str, DriverValue] = {
+            "snow_cm_p10": quantile(snow, 0.1),
             "snow_cm_p50": quantile(snow, 0.5),
             "snow_cm_p90": quantile(snow, 0.9),
             "members": len(snow),

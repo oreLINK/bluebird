@@ -21,6 +21,27 @@ export type En = string;
  * Value (in `unit`) of a full bar in the tiles, e.g. 100 for a percentage. Default: the best value of the ranking.
  */
 export type Max = number | null;
+export type Kind1 = 'percent' | 'value' | 'levels';
+/**
+ * value: driver holding the median.
+ */
+export type Driver = string | null;
+/**
+ * value: p10 and p90 drivers.
+ */
+export type Range = [string, string] | null;
+/**
+ * value: p90 - p10 spread of a high reliability.
+ */
+export type Tolerance = number | null;
+export type Max1 = number | null;
+export type Bands = DisplayBand[];
+export type Min = number;
+export type Levels = DisplayLevel[];
+/**
+ * Driver shown in small type.
+ */
+export type Note = string | null;
 /**
  * Ranking order: desc puts the highest value first; asc the lowest (e.g. fewest white days).
  */
@@ -57,6 +78,7 @@ export interface Kpi {
    * Unit and decimals of the value; required for historical KPIs.
    */
   value?: ValueSpec | null;
+  display?: KpiDisplay;
   order?: Order;
   enabled?: Enabled;
   name: Localized;
@@ -93,6 +115,32 @@ export interface ValueSpec {
 export interface Localized {
   fr: Fr;
   en: En;
+}
+/**
+ * Live KPIs: shown as a percent (default), a value or levels.
+ */
+export interface KpiDisplay {
+  kind?: Kind1;
+  driver?: Driver;
+  range?: Range;
+  tolerance?: Tolerance;
+  bands?: Bands;
+  levels?: Levels;
+  note?: Note;
+}
+/**
+ * A named band of a `value` display, for values up to `max` (none: every value above).
+ */
+export interface DisplayBand {
+  max?: Max1;
+  label: Localized;
+}
+/**
+ * A level of a `levels` display, shown from probability `min` (e.g. Oui from 0.6).
+ */
+export interface DisplayLevel {
+  min: Min;
+  label: Localized;
 }
 export interface Params {
   [k: string]: unknown;

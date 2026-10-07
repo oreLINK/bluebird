@@ -1,5 +1,8 @@
 """White days ("jours blancs"): shared by the live and the historical KPIs.
 
+Also holds the ski hours, the clear-sky radiation and the sunny hour rule
+used by the bluebird day and the sunny slot.
+
 A white day is a ski day without relief: skiing inside the cloud or under a
 thick overcast sky, often in snow. No variable of the models measures it (the
 AROME archive has no visibility, and never reports fog), so an hour is
@@ -14,7 +17,8 @@ AROME archive has no visibility, and never reports fog), so an hour is
    sun is high enough for it to mean anything.
 
 A day is white when at least ``min_white_hours`` of its ski hours
-(``ski_start``..``ski_end``, local) are white. Values describe the hour ending
+(``ski_start``..``ski_end``, local, :class:`SkiHours`, shared with the
+bluebird day) are white. Values describe the hour ending
 at their timestamp, so the sun position is taken half an hour earlier.
 """
 
@@ -32,26 +36,19 @@ from .base import AggregatorParams
 
 _HALF_HOUR = timedelta(minutes=30)
 #: Below this clear-sky radiation (W/m²) the sun is too low for the flat-light test.
-_MIN_CLEAR_SKY_WM2 = 50.0
+MIN_CLEAR_SKY_WM2 = 50.0
 
 
-class WhiteoutRule(AggregatorParams):
-    """Thresholds of a white hour and a white day (KPI `params`)."""
+class SkiHours(AggregatorParams):
+    """Ski hours of a day, ``(ski_start, ski_end]`` local (KPI `params`)."""
 
-    rh_min_pct: float = Field(default=98.0, gt=0, le=100)
-    low_cloud_min_pct: float = Field(default=90.0, gt=0, le=100)
-    snowfall_min_cm_h: float = Field(default=0.5, gt=0)
-    clear_sky_index_max: float = Field(default=0.3, gt=0, lt=1)
     ski_start: LocalTime = "09:00"
     ski_end: LocalTime = "17:00"
-    min_white_hours: int = Field(default=6, ge=1, le=24)
 
     @model_validator(mode="after")
-    def _window(self) -> WhiteoutRule:
+    def _window(self) -> SkiHours:
         if parse_local_time(self.ski_end) <= parse_local_time(self.ski_start):
             raise ValueError("ski_end must be after ski_start")
-        if self.min_white_hours > self.ski_hours:
-            raise ValueError("min_white_hours exceeds the ski hours")
         return self
 
     @property
@@ -64,6 +61,22 @@ class WhiteoutRule(AggregatorParams):
         start = datetime.combine(day, parse_local_time(self.ski_start), tzinfo=tz)
         end = datetime.combine(day, parse_local_time(self.ski_end), tzinfo=tz)
         return start, end
+
+
+class WhiteoutRule(SkiHours):
+    """Thresholds of a white hour and a white day (KPI `params`)."""
+
+    rh_min_pct: float = Field(default=98.0, gt=0, le=100)
+    low_cloud_min_pct: float = Field(default=90.0, gt=0, le=100)
+    snowfall_min_cm_h: float = Field(default=0.5, gt=0)
+    clear_sky_index_max: float = Field(default=0.3, gt=0, lt=1)
+    min_white_hours: int = Field(default=6, ge=1, le=24)
+
+    @model_validator(mode="after")
+    def _white_hours(self) -> WhiteoutRule:
+        if self.min_white_hours > self.ski_hours:
+            raise ValueError("min_white_hours exceeds the ski hours")
+        return self
 
 
 def clear_sky_ghi(when: datetime, lat: float, lon: float) -> float:
@@ -139,10 +152,23 @@ def white_hour_expr(rule: WhiteoutRule, clear_sky: pl.Expr) -> pl.Expr:
         low_cloud >= rule.low_cloud_min_pct
     )
     snowing = pl.col("snowfall_cm") >= rule.snowfall_min_cm_h
-    flat_light = (clear_sky >= _MIN_CLEAR_SKY_WM2) & (
+    flat_light = (clear_sky >= MIN_CLEAR_SKY_WM2) & (
         pl.col("shortwave_wm2") < rule.clear_sky_index_max * clear_sky
     )
     return in_cloud.fill_null(False) | snowing.fill_null(False) | flat_light.fill_null(False)
+
+
+def sunny_hour_expr(
+    cloud_max_pct: float, clear_sky_index_min: float, clear_sky: pl.Expr
+) -> pl.Expr:
+    """True when the hour is sunny: total cloud <= ``cloud_max_pct`` and, when the sun
+    is high enough, radiation >= ``clear_sky_index_min`` x clear sky. Null if a value is
+    missing. Used by the bluebird day and the sunny slot (never ``sunshine_duration``)."""
+    clear = pl.col("cloud_cover_pct") <= cloud_max_pct
+    bright = (clear_sky < MIN_CLEAR_SKY_WM2) | (
+        pl.col("shortwave_wm2") >= clear_sky_index_min * clear_sky
+    )
+    return clear & bright
 
 
 def ski_hours_mask(rule: WhiteoutRule, tz_name: str) -> pl.Expr:

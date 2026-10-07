@@ -29,8 +29,9 @@ sources:
     schedule: daily
     params:
       models: [ecmwf_ifs025, icon_seamless]
-      # humidity, low cloud and radiation: white days (whiteout_chance KPIs);
-      # ICON has no low cloud cover, so its scenarios use the total cloud cover.
+      # Every live KPI reads only these variables (snow, temperature, mean wind,
+      # humidity, cloud and radiation; no gusts). ICON has no low cloud cover,
+      # so its scenarios use the total cloud cover.
       hourly:
         - snowfall
         - temperature_2m

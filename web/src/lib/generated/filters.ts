@@ -22,14 +22,6 @@ export type Levels =
   | ['day' | 'slot']
   | ['day' | 'slot', 'day' | 'slot']
   | ['day' | 'slot', 'day' | 'slot', 'day' | 'slot'];
-/**
- * Live tile of config/tiles.yaml with a KPI of this filter.
- */
-export type Tile = string;
-/**
- * Period shown (today's, or tomorrow's once today's is over).
- */
-export type Period = string;
 
 /**
  * Schema of ``config/filters.yaml``: the filter bar, in display order.
@@ -46,10 +38,6 @@ export interface Filter {
   icon?: Icon;
   theme?: Theme;
   levels?: Levels;
-  /**
-   * Its tile on the home page; none: not on the home page.
-   */
-  overview?: FilterOverview | null;
 }
 /**
  * A user-facing string in every supported UI language.
@@ -57,11 +45,4 @@ export interface Filter {
 export interface Localized {
   fr: Fr;
   en: En;
-}
-/**
- * The tile a level-1 filter shows on the home page (no filter selected).
- */
-export interface FilterOverview {
-  tile: Tile;
-  period: Period;
 }

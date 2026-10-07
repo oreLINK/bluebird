@@ -240,6 +240,66 @@ class ValueSpec(StrictModel):
     )
 
 
+class DisplayLevel(StrictModel):
+    """A level of a `levels` display, shown from probability `min` (e.g. Oui from 0.6)."""
+
+    min: float = Field(ge=0, le=1)
+    label: Localized
+
+
+class DisplayBand(StrictModel):
+    """A named band of a `value` display, for values up to `max` (none: every value above)."""
+
+    max: float | None = None
+    label: Localized
+
+
+class KpiDisplay(StrictModel):
+    """How a live KPI is shown on its tiles (the probability is always computed).
+
+    percent  the probability ("82 %"), optionally with a `note` driver in small
+             type (e.g. the sunset time);
+    value    the median of the scenarios, from `driver`, in the KPI `value` unit
+             ("4 cm", "-24 °C"); the ranking follows that value (`order`), and
+             reliability comes from the spread between the two `range` drivers
+             (p10, p90): high within `tolerance`, medium within twice it;
+             `bands` name ranges of values (e.g. the wind chill risk);
+    levels   a decision from the probability ("Oui", "Possible", "Non").
+    """
+
+    kind: Literal["percent", "value", "levels"] = "percent"
+    driver: str | None = Field(default=None, description="value: driver holding the median.")
+    range: list[str] | None = Field(
+        default=None, min_length=2, max_length=2, description="value: p10 and p90 drivers."
+    )
+    tolerance: float | None = Field(
+        default=None, gt=0, description="value: p90 - p10 spread of a high reliability."
+    )
+    bands: list[DisplayBand] = Field(default_factory=list)
+    levels: list[DisplayLevel] = Field(default_factory=list)
+    note: str | None = Field(default=None, description="Driver shown in small type.")
+
+    @model_validator(mode="after")
+    def _complete(self) -> KpiDisplay:
+        if self.kind == "value" and not (self.driver and self.range and self.tolerance):
+            raise ValueError("a `value` display needs `driver`, `range` and `tolerance`")
+        if self.kind == "levels":
+            mins = [level.min for level in self.levels]
+            if len(mins) < 2 or mins != sorted(mins, reverse=True) or mins[-1] != 0:
+                raise ValueError("`levels` need 2+ levels by decreasing `min`, the last at 0")
+        if self.bands:
+            maxima = [band.max for band in self.bands]
+            known = [m for m in maxima[:-1] if m is not None]
+            if maxima[-1] is not None or len(known) != len(maxima) - 1 or known != sorted(known):
+                raise ValueError("`bands` need increasing `max`, the last one without `max`")
+        return self
+
+    @property
+    def drivers(self) -> list[str]:
+        """Drivers the display reads."""
+        return [d for d in [self.driver, *(self.range or []), self.note] if d]
+
+
 class Kpi(StrictModel):
     """A KPI computed by a gold-layer Aggregator."""
 
@@ -254,6 +314,10 @@ class Kpi(StrictModel):
     )
     value: ValueSpec | None = Field(
         default=None, description="Unit and decimals of the value; required for historical KPIs."
+    )
+    display: KpiDisplay = Field(
+        default_factory=KpiDisplay,
+        description="Live KPIs: shown as a percent (default), a value or levels.",
     )
     order: Literal["desc", "asc"] = Field(
         default="desc",
@@ -291,6 +355,13 @@ class Kpi(StrictModel):
     def _value_for_historical(self) -> Kpi:
         if self.kind == "historical" and self.value is None:
             raise ValueError(f"historical KPI '{self.id}' needs `value` (unit, decimals)")
+        if self.kind == "historical" and self.display.kind != "percent":
+            raise ValueError(f"historical KPI '{self.id}' is always shown as its value")
+        if self.display.kind == "value" and self.value is None:
+            raise ValueError(f"KPI '{self.id}': a `value` display needs `value` (unit, decimals)")
+        for driver in self.display.drivers:
+            if driver not in self.drivers:
+                raise ValueError(f"KPI '{self.id}': display driver '{driver}' is not in `drivers`")
         return self
 
 
@@ -420,13 +491,6 @@ class TilesFile(StrictModel):
     tiles: list[Tile]
 
 
-class FilterOverview(StrictModel):
-    """The tile a level-1 filter shows on the home page (no filter selected)."""
-
-    tile: Slug = Field(description="Live tile of config/tiles.yaml with a KPI of this filter.")
-    period: Slug = Field(description="Period shown (today's, or tomorrow's once today's is over).")
-
-
 class Filter(StrictModel):
     """A level-1 chip of the filter bar: shows the tiles of the KPIs tagged with its id."""
 
@@ -444,9 +508,6 @@ class Filter(StrictModel):
             "tomorrow), `slot` (morning, evening…). Live KPIs only."
         ),
     )
-    overview: FilterOverview | None = Field(
-        default=None, description="Its tile on the home page; none: not on the home page."
-    )
 
     @field_validator("levels")
     @classmethod
@@ -462,9 +523,20 @@ class FiltersFile(StrictModel):
     filters: list[Filter] = Field(min_length=1)
 
 
-class LayoutFile(StrictModel):
-    """Schema of ``config/layout.yaml``: tile order, optionally per massif."""
+class HomeTile(StrictModel):
+    """A tile of the home page (no filter selected), for one of its periods."""
 
+    tile: Slug = Field(description="Live tile of config/tiles.yaml.")
+    period: Slug = Field(description="Period shown (today's, or tomorrow's once today's is over).")
+
+
+class LayoutFile(StrictModel):
+    """Schema of ``config/layout.yaml``: home page and tile order, optionally per massif."""
+
+    home: list[HomeTile] = Field(
+        default_factory=list,
+        description="Home page tiles in priority order: the first one is shown first.",
+    )
     default: list[Slug]
     overrides: dict[str, list[Slug]] = Field(default_factory=dict)
 
@@ -765,30 +837,12 @@ class Config:
                 if filter_id not in filter_ids:
                     errors.append(f"KPI '{kpi.id}' references unknown filter '{filter_id}'")
         used = {fid for kpi in self.kpis if kpi.enabled for fid in kpi.filters}
-        tiles_by_id = {t.id: t for t in self.tiles}
         for flt in self.filters:
             if flt.id not in used:
                 errors.append(f"filter '{flt.id}' matches no enabled KPI")
             tagged = [k for k in self.kpis if flt.id in k.filters]
-            if (flt.levels or flt.overview) and any(k.kind != "live" for k in tagged):
-                errors.append(
-                    f"filter '{flt.id}' has levels or an overview but shows historical KPIs"
-                )
-            if flt.overview is None:
-                continue
-            tile = tiles_by_id.get(flt.overview.tile)
-            if tile is None:
-                errors.append(f"filter '{flt.id}' overview: unknown tile '{flt.overview.tile}'")
-                continue
-            if not any(k.id in tile.kpis for k in tagged):
-                errors.append(
-                    f"filter '{flt.id}' overview: tile '{tile.id}' has no KPI of this filter"
-                )
-            if flt.overview.period not in self.tile_periods(tile):
-                errors.append(
-                    f"filter '{flt.id}' overview: tile '{tile.id}' is not shown "
-                    f"for period '{flt.overview.period}'"
-                )
+            if flt.levels and any(k.kind != "live" for k in tagged):
+                errors.append(f"filter '{flt.id}' has levels but shows historical KPIs")
 
         errors.extend(f"periods.yaml: {e}" for e in self.periods.errors())
         duplicates("period", [p.id for p in self.periods.periods])
@@ -833,6 +887,18 @@ class Config:
         for massif_id in self.layout.overrides:
             if massif_id not in massif_ids:
                 errors.append(f"layout override for unknown massif '{massif_id}'")
+        tiles_by_id = {t.id: t for t in self.tiles}
+        duplicates("layout 'home' entry", [f"{h.tile}@{h.period}" for h in self.layout.home])
+        for home in self.layout.home:
+            tile = tiles_by_id.get(home.tile)
+            if tile is None:
+                errors.append(f"layout 'home' references unknown tile '{home.tile}'")
+            elif not self.is_live_tile(tile):
+                errors.append(f"layout 'home': Rewind tile '{tile.id}' cannot be on the home page")
+            elif home.period not in self.tile_periods(tile):
+                errors.append(
+                    f"layout 'home': tile '{tile.id}' is not shown for period '{home.period}'"
+                )
 
         kpis_by_id = {k.id: k for k in self.kpis}
         filters_by_id = {f.id: f for f in self.filters}
@@ -850,11 +916,8 @@ class Config:
             flt = filters_by_id.get(rewind.filter)
             if flt is None:
                 errors.append(f"rewind '{rewind.id}' references unknown filter '{rewind.filter}'")
-            elif flt.levels or flt.overview:
-                errors.append(
-                    f"rewind '{rewind.id}': filter '{rewind.filter}' cannot have levels "
-                    "or an overview"
-                )
+            elif flt.levels:
+                errors.append(f"rewind '{rewind.id}': filter '{rewind.filter}' cannot have levels")
         in_rewinds = {kpi_id for r in self.rewinds for kpi_id in r.kpis}
         for kpi in self.kpis:
             if kpi.kind == "historical" and kpi.id not in in_rewinds:
@@ -871,12 +934,34 @@ class Config:
         return errors
 
 
+class _StrictLoader(yaml.SafeLoader):
+    """Safe YAML loader that rejects duplicate keys, like the site's YAML parser.
+
+    PyYAML keeps the last value of a repeated key silently, so a pasted line
+    could drop a value from the pipeline while the site build fails.
+    """
+
+    def construct_mapping(self, node: yaml.MappingNode, deep: bool = False) -> dict[Any, Any]:
+        seen: set[Any] = set()
+        for key_node, _ in node.value:
+            key = self.construct_object(key_node, deep=deep)
+            if key in seen:
+                raise yaml.constructor.ConstructorError(
+                    "while constructing a mapping",
+                    node.start_mark,
+                    f"duplicate key {key!r}",
+                    key_node.start_mark,
+                )
+            seen.add(key)
+        return super().construct_mapping(node, deep=deep)
+
+
 def _read_model[M: BaseModel](path: Path, model: type[M]) -> M:
     if not path.is_file():
         raise ConfigError(f"missing configuration file {path}")
     try:
         with path.open(encoding="utf-8") as handle:
-            data = yaml.safe_load(handle)
+            data = yaml.load(handle, Loader=_StrictLoader)
         return model.model_validate(data)
     except yaml.YAMLError as exc:
         raise ConfigError(f"{path}: invalid YAML: {exc}") from exc

@@ -10,12 +10,19 @@
  * Tiles only read a KpiView: every tile type works for both kinds, and a new
  * kind of data only needs a new builder here. The Rewind of a historical KPI
  * is found from config/rewinds.yaml, so tiles need no Rewind option.
+ *
+ * A live KPI is shown as its `display` says (config/kpis.yaml): `percent`
+ * (the probability, optionally with a `note` driver such as the sunset time),
+ * `value` (the median of the scenarios, from a driver, with an optional band
+ * label such as the wind chill risk) or `levels` (Oui / Possible / Non from
+ * the probability). The ranking order comes from the pipeline.
  */
 import type { DiamondRewind, Kpi, Rewind } from './config';
 import type { MassifDaily, RankingEntry, StationInfo } from './data';
 import type { Slot } from './periods';
 import { formatDriver, formatPercent } from './format';
-import type { Locale } from './i18n/core';
+import { type Locale, pickLocalized } from './i18n/core';
+import type { KpiDisplay, Localized } from './generated/kpis';
 
 export type Confidence = RankingEntry['confidence'];
 
@@ -42,6 +49,8 @@ export interface RankItem {
   confidence?: Confidence;
   /** Live only: the full entry, for the station details. */
   entry?: RankingEntry;
+  /** Small text next to the value: a band label ("risque modéré") or a note driver ("17:41"). */
+  note?: Localized | string;
 }
 
 interface ViewBase {
@@ -75,6 +84,59 @@ export interface HistoricalView extends ViewBase {
 
 export type KpiView = LiveView | HistoricalView;
 
+/** The display of a KPI, `percent` when not configured. */
+export function displayOf(kpi: Kpi): KpiDisplay & { kind: 'percent' | 'value' | 'levels' } {
+  return { ...kpi.display, kind: kpi.display?.kind ?? 'percent' };
+}
+
+/** Label of the band a value falls in (bands sorted by `max`, the last without). */
+export function bandOf(display: KpiDisplay, value: number): Localized | undefined {
+  return display.bands?.find((band) => band.max === undefined || band.max === null || value <= band.max)
+    ?.label;
+}
+
+/** Label of the level of a probability (levels sorted by decreasing `min`). */
+export function levelOf(display: KpiDisplay, probability: number): Localized | undefined {
+  return display.levels?.find((level) => probability >= level.min)?.label;
+}
+
+const round = (value: number, decimals: number) => Number(value.toFixed(decimals));
+
+function liveItems(kpi: Kpi, ranking: RankingEntry[]): RankItem[] {
+  const display = displayOf(kpi);
+  if (display.kind === 'value' && display.driver) {
+    const driver = display.driver;
+    const decimals = kpi.value?.decimals ?? 0;
+    const raw = (entry: RankingEntry) => entry.drivers[driver];
+    const values = ranking.map(raw).filter((v): v is number => typeof v === 'number');
+    const extreme = kpi.order === 'asc' ? Math.min(0, ...values) : Math.max(0, ...values);
+    const full = kpi.value?.max ?? extreme;
+    return ranking.map((entry) => {
+      const value = raw(entry);
+      const known = typeof value === 'number';
+      return {
+        stationId: entry.station_id,
+        value: known ? value : Number.NaN,
+        share: known && full !== 0 ? Math.max(0, Math.min(1, value / full)) : 0,
+        confidence: entry.confidence,
+        entry,
+        note: known ? bandOf(display, round(value, decimals)) : undefined,
+      };
+    });
+  }
+  return ranking.map((entry) => {
+    const note = display.note ? entry.drivers[display.note] : undefined;
+    return {
+      stationId: entry.station_id,
+      value: entry.probability,
+      share: entry.probability,
+      confidence: entry.confidence,
+      entry,
+      note: typeof note === 'string' || typeof note === 'number' ? String(note) : undefined,
+    };
+  });
+}
+
 export function liveView(kpi: Kpi, payload: MassifDaily, slot: Slot | null = null): LiveView {
   const period = slot ? payload.kpis[kpi.id]?.periods.find((p) => p.key === slot.key) : undefined;
   const ranking = period?.ranking ?? [];
@@ -86,13 +148,7 @@ export function liveView(kpi: Kpi, payload: MassifDaily, slot: Slot | null = nul
     forecastDate: slot?.skiDay ?? payload.forecast_date,
     slot,
     stale: period ? Date.parse(period.generated_at) < Date.parse(payload.generated_at) : false,
-    items: ranking.map((entry) => ({
-      stationId: entry.station_id,
-      value: entry.probability,
-      share: entry.probability,
-      confidence: entry.confidence,
-      entry,
-    })),
+    items: liveItems(kpi, ranking),
     stations: payload.stations,
     timezone: payload.timezone,
     sources: payload.sources,
@@ -132,17 +188,37 @@ export function rewindOfKpi(kpiId: string, rewinds: Rewind[]): Rewind | undefine
 }
 
 /**
- * The value of an item as displayed: "82 %" (live), "4,43 m" / "46 h" /
- * "12 jours", "1 jour" (historical; `value.unit_label` / `unit_label_one` when the
- * unit depends on the language).
+ * The value of an item as displayed: "82 %", "4 cm", "−24 °C", "Oui" (live,
+ * after its `display`), "4,43 m" / "46 h" / "12 jours", "1 jour" (historical;
+ * `value.unit_label` / `unit_label_one` when the unit depends on the language).
  */
 export function itemLabel(view: KpiView, item: RankItem, locale: Locale): string {
-  if (view.kind === 'live') return formatPercent(item.value, locale);
+  if (view.kind === 'live') {
+    const display = displayOf(view.kpi);
+    if (display.kind === 'levels') {
+      return pickLocalized(levelOf(display, item.value), locale) || formatPercent(item.value, locale);
+    }
+    if (display.kind === 'percent') return formatPercent(item.value, locale);
+    if (!Number.isFinite(item.value)) return '—';
+  }
   const spec = view.kpi.value;
   const singular = new Intl.PluralRules(locale).select(item.value) === 'one';
   const unit =
-    (singular ? spec?.unit_label_one?.[locale] : undefined) ?? spec?.unit_label?.[locale] ?? view.unit;
+    (singular ? spec?.unit_label_one?.[locale] : undefined) ??
+    spec?.unit_label?.[locale] ??
+    (view.kind === 'historical' ? view.unit : spec?.unit);
   return formatDriver(item.value, locale, unit, spec?.decimals ?? 0) ?? '';
+}
+
+/** The small text next to an item's value ("risque modéré", "17:41"), or "". */
+export function itemNote(item: RankItem, locale: Locale): string {
+  if (item.note === undefined) return '';
+  return typeof item.note === 'string' ? item.note : pickLocalized(item.note, locale);
+}
+
+/** Whether a view shows probabilities (and so can show decimal odds). */
+export function showsPercent(view: KpiView): boolean {
+  return view.kind === 'live' && displayOf(view.kpi).kind === 'percent';
 }
 
 export function shortName(view: KpiView, stationId: string): string {

@@ -72,12 +72,138 @@ tiles:
       top: 3
       show_odds: false
 
-  # Visibility: white days today and tomorrow (live, filter "Visibilité").
+  # Sky: white days today and tomorrow (live, filter "Ciel").
   - id: whiteout
     type: simple
     kpis: [whiteout_chance]
     title: { fr: "Jour blanc {period}", en: "White day {period}" }
     icon: fog
+    options:
+      top: 3
+
+  # Bluebird day: fresh snow then a sunny ski day, today and tomorrow.
+  - id: bluebird_day
+    type: banner
+    kpis: [bluebird_day_chance]
+    title: { fr: "Journée bluebird {period}", en: "Bluebird day {period}" }
+    icon: sun
+    options:
+      top: 3
+      photo: leader
+      scene: mountain
+
+  # Live KPIs built from the data already fetched (one category filter each).
+  - id: powder_alert
+    type: simple
+    kpis: [powder_alert_chance]
+    title: { fr: "Alerte neige {period}", en: "Snow alert {period}" }
+    icon: snowflake
+    options:
+      top: 3
+
+  - id: snowmaking
+    type: simple
+    kpis: [snowmaking_chance]
+    title: { fr: "Canons à neige {period}", en: "Snow cannons {period}" }
+    icon: snowflake
+    options:
+      top: 3
+
+  - id: spring_snow
+    type: simple
+    kpis: [spring_snow_chance]
+    title: { fr: "Neige de printemps {period}", en: "Spring snow {period}" }
+    icon: piste
+    options:
+      top: 3
+
+  - id: hard_snow
+    type: simple
+    kpis: [hard_snow_chance]
+    title: { fr: "Neige dure {period}", en: "Hard snow {period}" }
+    icon: piste
+    options:
+      top: 3
+
+  - id: heavy_snow
+    type: simple
+    kpis: [heavy_snow_chance]
+    title: { fr: "Neige lourde {period}", en: "Heavy snow {period}" }
+    icon: piste
+    options:
+      top: 3
+
+  - id: easy_conditions
+    type: simple
+    kpis: [easy_conditions_chance]
+    title: { fr: "Conditions faciles {period}", en: "Easy conditions {period}" }
+    icon: piste
+    options:
+      top: 3
+
+  - id: sunset
+    type: banner
+    kpis: [sunset_chance]
+    title: { fr: "Coucher de soleil {period}", en: "Sunset {period}" }
+    icon: sunset
+    options:
+      top: 3
+      photo: leader
+      scene: mountain
+
+  - id: starry_night
+    type: simple
+    kpis: [starry_night_chance]
+    title: { fr: "Nuit étoilée {period}", en: "Starry night {period}" }
+    icon: moon
+    options:
+      top: 3
+
+  - id: sunny_slot
+    type: simple
+    kpis: [sunny_slot_chance]
+    title: { fr: "Grand soleil {period}", en: "Full sun {period}" }
+    icon: sun
+    options:
+      top: 3
+
+  - id: wind_chill
+    type: simple
+    kpis: [wind_chill_chance]
+    title: { fr: "Froid ressenti {period}", en: "Wind chill {period}" }
+    icon: thermometer
+    options:
+      top: 3
+
+  - id: mild_day
+    type: simple
+    kpis: [mild_day_chance]
+    title: { fr: "Journée douce {period}", en: "Mild day {period}" }
+    icon: sun
+    options:
+      top: 3
+
+  - id: chains
+    type: simple
+    kpis: [chains_chance]
+    title: { fr: "Chaînes nécessaires {period}", en: "Chains needed {period}" }
+    icon: car
+    options:
+      top: 3
+
+  - id: lift_wind
+    type: simple
+    kpis: [lift_wind_chance]
+    title: { fr: "Remontées au vent {period}", en: "Lifts in the wind {period}" }
+    icon: wind
+    options:
+      top: 3
+
+  - id: wind_slab
+    type: simple
+    kpis: [wind_slab_chance]
+    title: { fr: "Neige ventée {period}", en: "Wind-blown snow {period}" }
+    icon: alert
     options:
       top: 3
 

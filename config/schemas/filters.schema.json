@@ -48,18 +48,6 @@
           "maxItems": 3,
           "title": "Levels",
           "type": "array"
-        },
-        "overview": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/FilterOverview"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "description": "Its tile on the home page; none: not on the home page."
         }
       },
       "required": [
@@ -67,30 +55,6 @@
         "name"
       ],
       "title": "Filter",
-      "type": "object"
-    },
-    "FilterOverview": {
-      "additionalProperties": false,
-      "description": "The tile a level-1 filter shows on the home page (no filter selected).",
-      "properties": {
-        "tile": {
-          "description": "Live tile of config/tiles.yaml with a KPI of this filter.",
-          "pattern": "^[a-z0-9]+(?:[_-][a-z0-9]+)*$",
-          "title": "Tile",
-          "type": "string"
-        },
-        "period": {
-          "description": "Period shown (today's, or tomorrow's once today's is over).",
-          "pattern": "^[a-z0-9]+(?:[_-][a-z0-9]+)*$",
-          "title": "Period",
-          "type": "string"
-        }
-      },
-      "required": [
-        "tile",
-        "period"
-      ],
-      "title": "FilterOverview",
       "type": "object"
     },
     "Localized": {
