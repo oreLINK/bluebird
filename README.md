@@ -327,7 +327,16 @@ resort's base elevation) and the sunset time (NOAA). Approximations, stated
 on the tile backs: no gusts in the ensemble (lifts in the wind uses the mean
 wind), no base band (chains), cloud cover of the whole air column (sunset,
 starry night). The `sunset` period of `periods.yaml` is a native window
-shown from 06:00 to 22:00, since spring sunsets come after 18:00.
+shown from 06:00 to 22:00, since spring sunsets come after 18:00; the
+`overnight` period (06:00 to 06:00 the next day) is the day-grain night.
+
+**Day-grain versions.** Every live KPI has a day-grain period, the only
+one shown above the slot level: `day` for most of them (KPIs with time
+slots compute it over `ski_start`..`ski_end` of their params through
+`day_or_slot` in `gold/_whiteout.py`: 09:00–17:00, 09:00–11:00 for hard
+snow, 11:00–17:00 for heavy snow; the powder KPIs at lift opening),
+`overnight` for snowmaking and `sunset` for the sunset and the starry night
+(`evening_start`..`evening_end`).
 
 **Rewind sampling.** For each station the season source asks for the station
 point (mid elevation, like the live KPIs), `domain_points` points spread at
@@ -416,11 +425,11 @@ Red Hat YAML extension) validates and autocompletes them from `config/schemas/`.
 
 | File | Purpose | Key fields |
 |---|---|---|
-| `massifs.yaml` | Mountain ranges of the massif bar | `id`, `name {fr,en}`, `timezone`, `enabled`, `order`, `bbox`, `skyline` |
-| `stations/<massif>.yaml` | Resorts of one massif | `defaults {grooming_end, lifts_open}`, `stations[]`: `id`, `name`, `short_name?` (≤ 20 chars, shown in tiles), `lat`, `lon`, `elevation {base, summit, mid?}`, `aspects`, `grooming_end?`, `lifts_open?`, `website?`, `enabled` |
+| `massifs.yaml` | Mountain ranges of the massif bar (level 1) | `id`, `name {fr,en}`, `timezone`, `enabled`, `order`, `bbox`, `skyline`, `zones[]` (level 2: `id`, `name {fr,en}`, `country` ISO alpha-2, default FR, `code?` département number) |
+| `stations/<massif>.yaml` | Resorts of one massif | `defaults {grooming_end, lifts_open}`, `stations[]`: `id`, `name`, `short_name?` (≤ 20 chars, shown in tiles), `lat`, `lon`, `elevation {base, summit, mid?}`, `aspects`, `grooming_end?`, `lifts_open?`, `website?`, `enabled`, `zone` (required when the massif has zones), `domain?`; `domains[]` (linked ski areas, level 3: `id`, `name`) |
 | `kpis.yaml` | KPI registry | `id`, `aggregator`, `kind` (`live` / `historical`), `display` (live: `percent` default, optional `note` driver; `value` with `driver`, `range` [p10, p90], `tolerance`, `bands`; `levels` by probability), `order` (`desc` / `asc`: lowest value first, e.g. fewest white days, coldest felt temperature), `value {unit, unit_label, unit_label_one, decimals, scale, max}` (`unit_label {fr,en}` when the unit depends on the language, e.g. jours / days, and `unit_label_one` its singular, chosen with the language's plural rules) (historical; `scale` converts the aggregator's unit, e.g. `0.01` for cm → m; `max` is the value of a full bar, e.g. `100` for a percentage, default the best value), `name`, `description`, `method?` (`{param}` placeholders, shown on the tile back), `params`, `drivers {key: {label, unit, decimals}}`, `filters[]`, `periods[]` (live KPIs; default `[day]`), `enabled` |
-| `periods.yaml` | Time slots of the ski day | `day_start`, `horizon_days`, `days[]` (`{fr,en}` chips of the `day` filter level: Aujourd'hui, Demain), `periods[]`: `id`, `start`, `end`, `native_window?`, `labels[]` (`{fr,en}` per day: today, tomorrow), `chip` (`{fr,en}` chip of the `slot` filter level, required for time slots) |
-| `filters.yaml` | Level-1 chips of the filter bar, in order | `id`, `name {fr,en}`, `icon?`, `theme?` (`default` / `rewind`), `levels?[]` (next levels, at most 3: `day`, `slot`; live KPIs only) |
+| `periods.yaml` | Time slots of the ski day | `day_start`, `horizon_days`, `days[]` (`{fr,en}` chips of the `day` filter level: Aujourd'hui, Demain), `periods[]` (time slots, and day-grain periods with `native_window`: `day`, `sunset`, `overnight`): `id`, `start`, `end`, `native_window?`, `labels[]` (`{fr,en}` per day: today, tomorrow), `chip` (`{fr,en}` chip of the `slot` filter level, required for time slots) |
+| `filters.yaml` | Level-1 chips of the filter bar, in order | `id`, `name {fr,en}`, `icon?`, `theme?` (`default` / `rewind`), `levels?[]` (next levels, at most 3: `group`, `day`, `slot`; live KPIs only), `groups?[]` (sub-categories: `id`, `name`, `kpis[]`) |
 | `tiles.yaml` | KPI containers; a live tile is shown once per period | `id`, `type`, `kpis[]`, `title?` (live: must contain `{period}`; Rewind: must not), `periods?[]` (live), `icon?`, `options` (`details` turns station details on, off by default) |
 | `layout.yaml` | Home page and tile order | `home[] {tile, period}` (home page tiles in priority order, live only; first = top), `default[]`, `overrides {massif: [tiles]}` |
 | `sources.yaml` | Data sources | `id`, `extractor`, `transformer`, `schedule (daily/on_demand/reference/season)`, `params`, `attribution` |
@@ -449,7 +458,10 @@ A test enforces it.
 
 1. Add a block to `config/stations/<massif>.yaml` (coordinates at the middle
    of the ski area: they select the weather model grid cell).
-2. Give it a `short_name` (≤ 20 characters) for the tiles.
+2. Give it a `short_name` (≤ 20 characters) for the tiles, its `zone`
+   (département, or country/region abroad: `zones` of `config/massifs.yaml`)
+   and, if it belongs to a linked ski area, its `domain` (declared once under
+   `domains` of the file).
 3. Create its photo folder `web/src/assets/photos/<massif>/<station_id>/`
    (with a `.gitkeep` until it has a photo; a test checks the folder exists).
 4. `uv run bluebird reference --massif <massif>` to add its pistes and lifts.
@@ -457,10 +469,27 @@ A test enforces it.
 
 The next refresh includes it; no frontend change is needed.
 
+### Add a foreign resort (Spain, Andorra…)
+
+1. Declare its zone in `config/massifs.yaml` if needed, with `country` (ISO
+   code) and names in both languages: one zone per comunidad autónoma in
+   Spain (`aragon`, `catalogne`, `navarre`), a single `andorre` zone (AD).
+   The site lists foreign zones after the départements, with a flag
+   (`flagOf` in `lib/geoLevels.ts`), and flags the resort's short name in the
+   tiles (`shortName` with `stationCountries`, `lib/kpiView.ts`).
+2. Add the station as in "Add a station", with checked coordinates (middle of
+   the ski area) and elevations from official data, and its `zone`.
+3. `uv run bluebird reference --massif <massif>` for its pistes and lifts.
+4. Check the quota: every resort adds two ensemble locations (mid and summit)
+   to the grouped request; the ~12 main Spanish and Andorran resorts make it
+   ~60 % heavier. Check that the Météo-France second opinion
+   (`open_meteo_forecast`) returns values on the Spanish side.
+
 ### Add a massif
 
 1. Add an entry to `config/massifs.yaml` (`id`, `name`, `timezone`, `bbox`,
-   optional `skyline` for the ridges of the banner illustrations).
+   optional `skyline` for the ridges of the banner illustrations, `zones`:
+   its départements, and the countries or regions abroad).
 2. Create `config/stations/<id>.yaml`.
 3. Optionally add a `layout.yaml` override for its tile order.
 4. `uv run bluebird reference --massif <id>` to fetch its pistes and lifts.
@@ -594,10 +623,13 @@ The site creates its tiles from the payload; no frontend change is needed.
 ### Add a filter (filter bar)
 
 1. Add an entry to `config/filters.yaml` (`id`, `name {fr, en}`, `icon`),
-   with its next `levels` (`[day, slot]`, `[day]` or none).
-2. Tag the KPIs it should show with its id: `filters: [<id>]` in `config/kpis.yaml`.
-3. `uv run bluebird validate` (a filter matching no enabled KPI or levels on
-   historical KPIs are errors).
+   with its next `levels` (`[group, day, slot]`, `[group, day]` or none) and
+   its sub-categories `groups` (`id`, `name {fr, en}`, `kpis`).
+2. Tag the KPIs it should show with its id: `filters: [<id>]` in
+   `config/kpis.yaml`, and put each of them in exactly one group.
+3. `uv run bluebird validate` (a filter matching no enabled KPI, levels on
+   historical KPIs, a KPI in no group or in several, a `group` level without
+   `groups` are errors).
 
 Nothing is selected by default: the home page shows the `home` tiles of
 `config/layout.yaml` (see "Reorder tiles"). Filters matching no tile of the
@@ -724,22 +756,35 @@ Implement `write_bytes`, `read_bytes`, `exists` and `list` of
   button on the right. The menu (`components/AppMenu.svelte`) slides in over a blurred
   backdrop, locks page scrolling (`lib/scrollLock.ts`), makes the page inert,
   closes with Escape, and holds the language choice.
-- **Massif bar**: under the wordmark, one chip per enabled massif of
-  `config/massifs.yaml` (no "all" choice: one massif is always shown). It is
-  the only place to choose the massif. `components/FilterBar.svelte` with
-  `size="large"`; the choice is remembered in `localStorage`.
+- **Massif bar** (place levels): under the wordmark, `components/FilterBar.svelte`
+  (same chips as the filter bar), driven by `lib/geoLevels.ts` (`geoState`, tested) and
+  the bundled station config (`siteStations`, `siteDomains` in
+  `lib/config.ts`): massif → zone (`zones`, skipped below two) → linked area
+  (`domains` with at least two stations, offered under every zone where it
+  has one, keeping all its stations across zones and borders). One massif
+  is always on the page (its payload): removing the massif chip lists the
+  massifs and keeps the last one. The chosen place restricts every view to
+  its stations (`viewFor(…, only)` in `lib/kpiView.ts`: ranks, bars, the
+  reliability index and the leader photo follow the subset). The whole path
+  is remembered in `localStorage` (`geo`, migrated from the former `massif`).
 - **Filter bar** (Spotify-style levels): under the massif bar, the same
-  component with smaller chips (`size="small"`). `lib/filterLevels.ts`
+  component with the same chips. `lib/filterLevels.ts`
   (`filterState`, `nextPath`, unit-tested) turns the chosen path (`[]`,
-  `['snow']`, `['snow', 'd0']`, `['snow', 'd0', 'morning']`) into chips and
+  `['snow']`, `['snow', 'snowfall']`, `['snow', 'snowfall', 'd0']`,
+  `['snow', 'snowfall', 'd0', 'morning']`) into chips and
   tiles. With nothing chosen, the bar shows the level-1 filters of
   `config/filters.yaml` and the page the `home` tiles of
   `config/layout.yaml` in priority order (`homeTiles`; each for its period,
   today's or tomorrow's once today's is over; never Rewind tiles). Choosing a filter fills its chip with a × and keeps only it, then
-  offers its `levels`: `day` (Aujourd'hui, Demain: `days` of `periods.yaml`)
-  then `slot` (Matin…Nuit: `chip` of the time slots; whole-day tiles are
-  under no slot), only those that still have tiles. Each choice joins the row
-  and the bar scrolls back to its start; tapping a chosen chip removes it
+  offers its `levels`: `group` (its sub-categories `groups`; skipped, without
+  chip nor path item, when fewer than two groups have tiles), `day`
+  (Aujourd'hui, Demain: `days` of `periods.yaml`) then `slot` (Matin…Nuit:
+  `chip` of the time slots), only those that still have tiles. **Grain
+  rule**: until a slot is chosen, only day-grain tiles (periods with
+  `native_window`: `day`, `sunset`, `overnight`) and Rewind tiles are shown
+  (`isDayGrain`); the time-slot tiles appear at the slot level only. Each
+  choice joins the row and the bar scrolls back to its start, as far as the
+  last chosen chip stays visible; tapping a chosen chip removes it
   and the levels after it. Unknown or ended path items are dropped. Only
   level 1 is remembered in `localStorage`. `theme: rewind` makes a chip
   Christmas red. New chips grow in and the others slide (`animate:flip`).
@@ -872,23 +917,23 @@ Keep this table in sync when a tile is added, removed or changed.
 | Tile id | Type | KPI (kind) | Filter | Title (fr / en) | Options |
 |---|---|---|---|---|---|
 | `snowfall_today` | `banner_full` | `snowfall_chance` (live: day, morning, midday, afternoon, evening, night) | Snow | Neige {period} / Snow {period} | `photo: leader`, `scene: snowfall` |
-| `onpiste_powder` | `banner` | `onpiste_powder_chance` (live: morning, midday, afternoon) | Snow quality | Poudreuse sur piste {period} / On-piste powder {period} | `photo: leader`, `scene: piste` |
-| `offpiste_powder` | `simple` | `offpiste_powder_chance` (live: morning, midday, afternoon) | Snow quality | Poudreuse hors-piste {period} / Off-piste powder {period} | — |
+| `onpiste_powder` | `banner` | `onpiste_powder_chance` (live: day, morning, midday, afternoon) | Snow quality | Poudreuse sur piste {period} / On-piste powder {period} | `photo: leader`, `scene: piste` |
+| `offpiste_powder` | `simple` | `offpiste_powder_chance` (live: day, morning, midday, afternoon) | Snow quality | Poudreuse hors-piste {period} / Off-piste powder {period} | — |
 | `bluebird_day` | `banner` | `bluebird_day_chance` (live: day) | Sky | Journée bluebird {period} / Bluebird day {period} | `photo: leader`, `scene: mountain`, icon `sun` |
 | `whiteout` | `simple` | `whiteout_chance` (live: day) | Sky | Jour blanc {period} / White day {period} ("aujourd'hui", "demain") | `top: 3` |
 | `powder_alert` | `simple` | `powder_alert_chance` (live: day) | Snow | Alerte neige {period} / Snow alert {period} | `top: 3` |
-| `snowmaking` | `simple` | `snowmaking_chance` (live: night) | Snow | Canons à neige {period} / Snow cannons {period} | `top: 3` |
-| `spring_snow` | `simple` | `spring_snow_chance` (live: morning, midday, afternoon) | Snow quality | Neige de printemps {period} / Spring snow {period} | `top: 3` |
-| `hard_snow` | `simple` | `hard_snow_chance` (live: morning) | Snow quality | Neige dure {period} / Hard snow {period} | `top: 3` |
-| `heavy_snow` | `simple` | `heavy_snow_chance` (live: midday, afternoon) | Snow quality | Neige lourde {period} / Heavy snow {period} | `top: 3` |
-| `easy_conditions` | `simple` | `easy_conditions_chance` (live: morning, midday, afternoon) | Snow quality | Conditions faciles {period} / Easy conditions {period} | `top: 3` |
+| `snowmaking` | `simple` | `snowmaking_chance` (live: overnight, night) | Snow | Canons à neige {period} / Snow cannons {period} | `top: 3` |
+| `spring_snow` | `simple` | `spring_snow_chance` (live: day, morning, midday, afternoon) | Snow quality | Neige de printemps {period} / Spring snow {period} | `top: 3` |
+| `hard_snow` | `simple` | `hard_snow_chance` (live: day, morning) | Snow quality | Neige dure {period} / Hard snow {period} | `top: 3` |
+| `heavy_snow` | `simple` | `heavy_snow_chance` (live: day, midday, afternoon) | Snow quality | Neige lourde {period} / Heavy snow {period} | `top: 3` |
+| `easy_conditions` | `simple` | `easy_conditions_chance` (live: day, morning, midday, afternoon) | Snow quality | Conditions faciles {period} / Easy conditions {period} | `top: 3` |
 | `sunset` | `banner` | `sunset_chance` (live: sunset) | Sky | Coucher de soleil {period} / Sunset {period} | `photo: leader`, `scene: mountain`, icon `sunset` |
-| `starry_night` | `simple` | `starry_night_chance` (live: evening) | Sky | Nuit étoilée {period} / Starry night {period} | `top: 3` |
-| `sunny_slot` | `simple` | `sunny_slot_chance` (live: morning, midday, afternoon) | Sky | Grand soleil {period} / Full sun {period} | `top: 3` |
-| `wind_chill` | `simple` | `wind_chill_chance` (live: morning, midday, afternoon) | Comfort | Froid ressenti {period} / Wind chill {period} | `top: 3` |
+| `starry_night` | `simple` | `starry_night_chance` (live: sunset, evening) | Sky | Nuit étoilée {period} / Starry night {period} | `top: 3` |
+| `sunny_slot` | `simple` | `sunny_slot_chance` (live: day, morning, midday, afternoon) | Sky | Grand soleil {period} / Full sun {period} | `top: 3` |
+| `wind_chill` | `simple` | `wind_chill_chance` (live: day, morning, midday, afternoon) | Comfort | Froid ressenti {period} / Wind chill {period} | `top: 3` |
 | `mild_day` | `simple` | `mild_day_chance` (live: day) | Comfort | Journée douce {period} / Mild day {period} | `top: 3` |
 | `chains` | `simple` | `chains_chance` (live: day) | Getting there | Chaînes nécessaires {period} / Chains needed {period} | `top: 3` |
-| `lift_wind` | `simple` | `lift_wind_chance` (live: morning, midday, afternoon) | Getting there | Remontées au vent {period} / Lifts in the wind {period} | `top: 3` |
+| `lift_wind` | `simple` | `lift_wind_chance` (live: day, morning, midday, afternoon) | Getting there | Remontées au vent {period} / Lifts in the wind {period} | `top: 3` |
 | `wind_slab` | `simple` | `wind_slab_chance` (live: day) | Safety | Neige ventée {period} / Wind-blown snow {period} | `top: 3` |
 | `rewind_2025_26_total_snowfall` | `banner_full` | `season_total_snowfall` (historical, m) | Rewind 25/26 | Le plus de neige / Most snow | `photo: leader`, `scene: snowfall` |
 | `rewind_2025_26_longest_snowfall` | `banner` | `season_longest_snowfall` (historical, h) | Rewind 25/26 | La plus longue chute de neige / Longest snowfall | `photo: leader`, `scene: snowfall` |
@@ -899,10 +944,12 @@ Keep this table in sync when a tile is added, removed or changed.
 
 The home page (no filter) shows the `home` tiles of `config/layout.yaml`, in
 priority order: `bluebird_day` (day, always first), `snowfall_today` (day),
-`onpiste_powder` (morning), `whiteout` (day). Under a filter, live tiles show once per period of
-today and tomorrow not over yet (`{period}` becomes "ce soir", "demain
-matin"…), narrowed by the day and slot chips; Rewind tiles only under their
-Rewind filter, once, in the Rewind theme with a "REWIND 25/26" badge.
+`onpiste_powder` (day), `whiteout` (day). Under a filter, live tiles show
+once per day-grain period of today and tomorrow not over yet ("aujourd'hui",
+"cette nuit", "ce soir"), narrowed by the sub-category and day chips; the
+time-slot instances ("ce matin", "demain midi"…) only once a slot chip is
+chosen. Rewind tiles only under their Rewind filter, once, in the Rewind
+theme with a "REWIND 25/26" badge.
 
 ### Future features (roadmap)
 
@@ -919,6 +966,7 @@ AGENTS.md §4; scraping must respect the site's terms).
 | Near me | Sort resorts by conditions × travel time | Browser geolocation (never stored) + public routing (OSRM) | 🟡 |
 | Value for money | Lift pass price per km of pistes | Prices (scraper) + piste km from `domain_features` | 🔴 |
 | Ski area map | Map tile of pistes and lifts | `domain_features` (already collected) | 🟢 |
+| Alps and cross-border resorts | Northern and Southern Alps, Andorra, Spain, Switzerland, Italy in the place levels (zones, linked areas, a flag for foreign resorts) | Config only for the navigation, but two limits: **Open-Meteo quota** — the ensemble request weighs every location and member, and ~120 Alpine resorts × 2 bands is ~7 times today's request (split the source by massif, stagger the refreshes or keep one band); **payload size** — ~360 KB for 18 resorts, ~2 MB for a large massif (publish per-zone payloads, or keep the top N plus the chosen zone per ranking) | 🟢/🟡 |
 | Comparator | Two resorts side by side on every KPI | Existing payloads | 🟢 |
 | Slope aspect and steepness | Refine powder KPIs (north faces keep powder) | IGN RGE ALTI or Copernicus DEM | 🟡 |
 | Rewind calendar | Season timeline: storms, white days, bluebird days | Committed season hourly file | 🟢 |

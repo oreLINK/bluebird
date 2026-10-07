@@ -1,6 +1,9 @@
 # yaml-language-server: $schema=./schemas/massifs.schema.json
 #
-# Mountain ranges ("massifs") listed in the site menu, sorted by `order`.
+# Mountain ranges ("massifs"), level 1 of the massif bar, sorted by `order`.
+# `zones` are level 2: the départements in France, the country or region
+# abroad (`country`: ISO code, e.g. AD, ES, CH, IT); linked ski areas, level 3,
+# are declared in config/stations/<id>.yaml (`domains`).
 #
 # To add a massif:
 #   1. Add an entry below.
@@ -17,3 +20,17 @@ massifs:
     # Relative ridge heights (0..1), west to east. Purely decorative: the
     # frontend draws the ridgelines of the tile banner illustrations from them.
     skyline: [0.32, 0.46, 0.4, 0.62, 0.52, 0.78, 0.58, 0.7, 0.94, 0.66, 0.6, 0.82, 0.5, 0.56, 0.38]
+    # Sub-massifs (level 2 of the massif bar): départements in France, the
+    # country or region abroad. Every station names one. One mixed list: the
+    # site shows the French zones first, then the foreign ones with a flag.
+    # Spain: one zone per comunidad autónoma; Andorra: a single zone, e.g.
+    #   - { id: aragon, name: { fr: Aragon, en: Aragon }, country: ES }
+    #   - { id: catalogne, name: { fr: Catalogne, en: Catalonia }, country: ES }
+    #   - { id: navarre, name: { fr: Navarre, en: Navarre }, country: ES }
+    #   - { id: andorre, name: { fr: Andorre, en: Andorra }, country: AD }
+    zones:
+      - { id: pyrenees-atlantiques, name: { fr: Pyrénées-Atlantiques, en: Pyrénées-Atlantiques }, code: "64" }
+      - { id: hautes-pyrenees, name: { fr: Hautes-Pyrénées, en: Hautes-Pyrénées }, code: "65" }
+      - { id: haute-garonne, name: { fr: Haute-Garonne, en: Haute-Garonne }, code: "31" }
+      - { id: ariege, name: { fr: Ariège, en: Ariège }, code: "09" }
+      - { id: pyrenees-orientales, name: { fr: Pyrénées-Orientales, en: Pyrénées-Orientales }, code: "66" }

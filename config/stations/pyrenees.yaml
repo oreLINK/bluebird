@@ -14,6 +14,13 @@
 # full official name. Each station also has a photo folder:
 # web/src/assets/photos/<massif>/<station_id>/ (see the README there).
 #
+# `zone` is the station's sub-massif (`zones` of config/massifs.yaml: the
+# département here), level 2 of the massif bar. A linked ski area spanning
+# several stations is declared once under `domains: [{id, name}]` and named by
+# each of its stations with `domain: <id>` (level 3 of the massif bar, shown
+# when the area has at least two stations). None of these resorts shares a
+# linked area today.
+#
 # Times are local (massif timezone), formatted HH:MM.
 #   grooming_end: when piste grooming usually finishes. If it is later than
 #                 lifts_open (e.g. 22:00), it refers to the previous evening.
@@ -24,6 +31,7 @@ defaults:
 
 stations:
   - id: font-romeu
+    zone: pyrenees-orientales
     name: Font-Romeu Pyrénées 2000
     short_name: Font-Romeu
     lat: 42.515
@@ -32,6 +40,7 @@ stations:
     aspects: [N, NE, E]
 
   - id: les-angles
+    zone: pyrenees-orientales
     name: Les Angles
     short_name: Les Angles
     lat: 42.570
@@ -40,6 +49,7 @@ stations:
     aspects: [N, NE, E]
 
   - id: formigueres
+    zone: pyrenees-orientales
     name: Formiguères
     short_name: Formiguères
     lat: 42.620
@@ -48,6 +58,7 @@ stations:
     aspects: [NE, E]
 
   - id: porte-puymorens
+    zone: pyrenees-orientales
     name: Porté-Puymorens
     short_name: Porté
     lat: 42.553
@@ -56,6 +67,7 @@ stations:
     aspects: [N, NW, W]
 
   - id: ax-3-domaines
+    zone: ariege
     name: Ax 3 Domaines
     short_name: Ax 3 Domaines
     lat: 42.685
@@ -64,6 +76,7 @@ stations:
     aspects: [N, NE]
 
   - id: ascou-pailheres
+    zone: ariege
     name: Ascou-Pailhères
     short_name: Ascou
     lat: 42.740
@@ -72,6 +85,7 @@ stations:
     aspects: [N]
 
   - id: guzet
+    zone: ariege
     name: Guzet
     short_name: Guzet
     lat: 42.788
@@ -80,6 +94,7 @@ stations:
     aspects: [N, NW]
 
   - id: le-mourtis
+    zone: haute-garonne
     name: Le Mourtis
     short_name: Le Mourtis
     lat: 42.877
@@ -88,6 +103,7 @@ stations:
     aspects: [N, NE]
 
   - id: peyragudes
+    zone: hautes-pyrenees
     name: Peyragudes
     short_name: Peyragudes
     lat: 42.795
@@ -96,6 +112,7 @@ stations:
     aspects: [N, E, W]
 
   - id: saint-lary
+    zone: hautes-pyrenees
     name: Saint-Lary
     short_name: Saint-Lary
     lat: 42.800
@@ -104,6 +121,7 @@ stations:
     aspects: [N, NE, E]
 
   - id: piau-engaly
+    zone: hautes-pyrenees
     name: Piau-Engaly
     short_name: Piau
     lat: 42.788
@@ -112,6 +130,7 @@ stations:
     aspects: [N, NE]
 
   - id: val-louron
+    zone: hautes-pyrenees
     name: Val Louron
     short_name: Val Louron
     lat: 42.807
@@ -120,6 +139,7 @@ stations:
     aspects: [N, E]
 
   - id: grand-tourmalet
+    zone: hautes-pyrenees
     name: Grand Tourmalet
     short_name: Tourmalet
     lat: 42.910
@@ -128,6 +148,7 @@ stations:
     aspects: [N, E, S]
 
   - id: luz-ardiden
+    zone: hautes-pyrenees
     name: Luz Ardiden
     short_name: Luz Ardiden
     lat: 42.876
@@ -136,6 +157,7 @@ stations:
     aspects: [N, E]
 
   - id: cauterets
+    zone: hautes-pyrenees
     name: Cauterets – Cirque du Lys
     short_name: Cauterets
     lat: 42.866
@@ -144,6 +166,7 @@ stations:
     aspects: [N, NE]
 
   - id: gourette
+    zone: pyrenees-atlantiques
     name: Gourette
     short_name: Gourette
     lat: 42.957
@@ -152,6 +175,7 @@ stations:
     aspects: [N, E, W]
 
   - id: la-pierre-saint-martin
+    zone: pyrenees-atlantiques
     name: La Pierre Saint-Martin
     short_name: La Pierre St-Martin
     lat: 42.978
@@ -160,6 +184,7 @@ stations:
     aspects: [N, NE]
 
   - id: superbagneres
+    zone: haute-garonne
     name: Luchon-Superbagnères
     short_name: Superbagnères
     lat: 42.757

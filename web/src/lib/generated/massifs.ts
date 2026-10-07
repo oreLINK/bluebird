@@ -20,6 +20,19 @@ export type Bbox = [number, number, number, number];
  * Relative ridge heights (0..1), west to east, for the banner illustrations.
  */
 export type Skyline = number[];
+export type Id1 = string;
+/**
+ * ISO 3166-1 alpha-2 code of the zone's country.
+ */
+export type Country = string;
+/**
+ * Département number, e.g. '65'.
+ */
+export type Code = string | null;
+/**
+ * Sub-massifs (level 2 of the massif bar); every station names one.
+ */
+export type Zones = Zone[];
 export type Massifs = Massif[];
 
 /**
@@ -39,6 +52,7 @@ export interface Massif {
   order?: Order;
   bbox: Bbox;
   skyline?: Skyline;
+  zones?: Zones;
 }
 /**
  * A user-facing string in every supported UI language.
@@ -46,4 +60,14 @@ export interface Massif {
 export interface Localized {
   fr: Fr;
   en: En;
+}
+/**
+ * A sub-massif (level 2 of the massif bar): a French département, or abroad a
+ * country or region (Andorre, Aragon, Valais…).
+ */
+export interface Zone {
+  id: Id1;
+  name: Localized;
+  country?: Country;
+  code?: Code;
 }

@@ -16,6 +16,13 @@ def test_repository_config_is_valid(repo_config: Config) -> None:
     assert len(repo_config.station_refs()) >= 15
 
 
+def test_every_pyrenean_station_has_a_departement(repo_config: Config) -> None:
+    pyrenees = next(m for m in repo_config.massifs if m.id == "pyrenees")
+    assert [z.code for z in pyrenees.zones] == ["64", "65", "31", "09", "66"]
+    zones = {s.zone for s in repo_config.stations["pyrenees"].stations}
+    assert zones == {z.id for z in pyrenees.zones}
+
+
 def test_station_defaults_are_resolved(two_station_config: Config) -> None:
     alpha, beta = two_station_config.station_refs()
     assert (alpha.grooming_end, alpha.lifts_open) == (time(2, 0), time(9, 0))
@@ -34,6 +41,21 @@ def test_mid_elevation_defaults_to_rounded_average() -> None:
         (TWO_STATIONS.replace("summit: 2500", "summit: 1000"), "summit must be higher"),
         (TWO_STATIONS.replace('lifts_open: "09:00"', 'lifts_open: "9h"'), "String should match"),
         (TWO_STATIONS.replace("id: beta", "id: alpha"), "duplicate station id"),
+        (TWO_STATIONS.replace("zone: haute-garonne", "zone: savoie"), "needs a zone of massif"),
+        (TWO_STATIONS.replace("    zone: hautes-pyrenees\n", ""), "has None"),
+        (
+            TWO_STATIONS.replace(
+                "domain: alpha-beta\n    name: Beta", "domain: nope\n    name: Beta"
+            ),
+            "unknown domain 'nope'",
+        ),
+        (
+            TWO_STATIONS.replace(
+                "  - id: alpha-beta\n    name: Alpha-Beta\n",
+                "  - id: alpha-beta\n    name: Alpha-Beta\n  - id: alpha-beta\n    name: Again\n",
+            ),
+            "duplicate massif 'pyrenees' domain id",
+        ),
     ],
 )
 def test_invalid_stations_are_rejected(tmp_path: Path, bad_yaml: str, message: str) -> None:
@@ -106,7 +128,7 @@ def test_kpi_filters_must_exist_and_every_filter_must_match_a_kpi(tmp_path: Path
         ),
         (
             "layout.yaml",
-            "{ tile: onpiste_powder, period: morning }",
+            "{ tile: onpiste_powder, period: day }",
             "{ tile: onpiste_powder, period: evening }",
             "tile 'onpiste_powder' is not shown for period 'evening'",
         ),
@@ -122,8 +144,32 @@ def test_kpi_filters_must_exist_and_every_filter_must_match_a_kpi(tmp_path: Path
             "{ tile: bluebird_day, period: day }",
             "duplicate layout 'home' entry id 'bluebird_day@day'",
         ),
-        ("filters.yaml", "levels: [day]\n", "levels: [day, day]\n", "only appear once"),
-        ("filters.yaml", "levels: [day]\n", "levels: [day, week]\n", "Input should be"),
+        (
+            "filters.yaml",
+            "levels: [group, day]\n",
+            "levels: [group, day, day]\n",
+            "only appear once",
+        ),
+        ("filters.yaml", "levels: [group, day]\n", "levels: [group, week]\n", "Input should be"),
+        (
+            "filters.yaml",
+            "kpis: [easy_conditions_chance]",
+            "kpis: [easy_conditions_chance, heavy_snow_chance]",
+            "KPI 'heavy_snow_chance' is in several groups",
+        ),
+        (
+            "filters.yaml",
+            "kpis: [spring_snow_chance, hard_snow_chance, heavy_snow_chance]",
+            "kpis: [spring_snow_chance, hard_snow_chance]",
+            "KPI 'heavy_snow_chance' is in no group",
+        ),
+        (
+            "filters.yaml",
+            "kpis: [wind_chill_chance]",
+            "kpis: [wind_chill_chance, chains_chance]",
+            "group KPI 'chains_chance' is not tagged with it",
+        ),
+        ("filters.yaml", "levels: [group, day]\n", "levels: [day]\n", "`group` level and `groups`"),
         ("periods.yaml", "    chip: { fr: Nuit, en: Night }\n", "", "'night' needs a `chip`"),
         ("periods.yaml", "  - { fr: Demain, en: Tomorrow }\n", "", "`days` needs 2 chip labels"),
     ],
@@ -227,7 +273,9 @@ def test_invalid_pages_are_rejected(tmp_path: Path, old: str, new: str, message:
 
 def test_kpi_and_tile_periods_must_exist(tmp_path: Path) -> None:
     config_dir = tiny_config_dir(tmp_path)
-    _edit(config_dir, "kpis.yaml", "periods: [morning, midday, afternoon]", "periods: [brunch]")
+    _edit(
+        config_dir, "kpis.yaml", "periods: [day, morning, midday, afternoon]", "periods: [brunch]"
+    )
     with pytest.raises(ConfigError, match="unknown period 'brunch'"):
         load_config(config_dir)
 
@@ -241,7 +289,12 @@ def test_tile_titles_need_the_period_placeholder(tmp_path: Path) -> None:
 
 def test_tile_periods_default_to_those_of_its_kpis(repo_config: Config) -> None:
     tiles = {t.id: t for t in repo_config.tiles}
-    assert repo_config.tile_periods(tiles["onpiste_powder"]) == ["morning", "midday", "afternoon"]
+    assert repo_config.tile_periods(tiles["onpiste_powder"]) == [
+        "day",
+        "morning",
+        "midday",
+        "afternoon",
+    ]
     assert repo_config.tile_periods(tiles["snowfall_today"])[0] == "day"
 
 

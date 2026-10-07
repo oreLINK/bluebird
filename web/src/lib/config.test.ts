@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  stationCountriesOf,
+  stationCountries,
+  siteStations,
   enabledMassifs,
   filterTiles,
   filters,
@@ -162,3 +165,14 @@ describe('rewinds', () => {
     expect(filters[0]?.levels ?? []).toEqual([]);
   });
 });
+
+describe('stations and countries', () => {
+  it('knows the country of every station from its zone', () => {
+    expect(stationCountries.size).toBe(siteStations.length);
+    expect(new Set(stationCountries.values())).toEqual(new Set(['FR'])); // French Pyrenees only
+    const massifList = [{ id: 'm', zones: [{ id: 'aragon', country: 'ES' }] }] as never;
+    const countries = stationCountriesOf([{ id: 'formigal', massifId: 'm', zone: 'aragon' }], massifList);
+    expect(countries.get('formigal')).toBe('ES');
+  });
+});
+

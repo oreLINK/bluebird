@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { Kpi, Rewind } from './config';
 import {
+  fullName,
   historicalView,
   itemLabel,
   itemNote,
   liveView,
   rewindOfKpi,
+  shortName,
   showsPercent,
   viewFor,
 } from './kpiView';
@@ -241,3 +243,63 @@ describe('live displays', () => {
     expect(showsPercent(view)).toBe(true);
   });
 });
+
+describe('views restricted to a place', () => {
+  it('ranks and scales the chosen stations only', () => {
+    const entry = (station: string, probability: number) => ({
+      station_id: station,
+      probability,
+      confidence: 'high' as const,
+      window_start: '2026-10-04T06:00:00+02:00',
+      window_end: '2026-10-04T12:00:00+02:00',
+      members: 91,
+      drivers: { snow_p50: probability * 10 },
+    });
+    const slot = { key: 'day@2026-10-04', periodId: 'day', skiDay: '2026-10-04', start: '2026-10-04T06:00:00+02:00', end: '2026-10-04T18:00:00+02:00' };
+    const daily = {
+      massif_id: 'm',
+      forecast_date: '2026-10-04',
+      timezone: 'Europe/Paris',
+      generated_at: '2026-10-04T04:30:00Z',
+      stations: {},
+      sources: [],
+      kpis: {
+        k: { periods: [{ key: slot.key, period_id: 'day', ski_day: slot.skiDay, start: slot.start, end: slot.end, generated_at: '2026-10-04T04:30:00Z', ranking: [entry('a', 0.9), entry('b', 0.6), entry('c', 0.3)] }] },
+      },
+    } as never;
+    const snow: Kpi = {
+      id: 'k',
+      aggregator: 'a',
+      name,
+      description: name,
+      display: { kind: 'value', driver: 'snow_p50', range: ['snow_p50', 'snow_p50'], tolerance: 3 },
+      value: { unit: 'cm', decimals: 0 },
+    };
+    const view = liveView(snow, daily, slot, new Set(['b', 'c']));
+    expect(view.items.map((i) => [i.stationId, i.share])).toEqual([
+      ['b', 1],
+      ['c', 0.5],
+    ]);
+    expect(view.ranking.map((e) => e.station_id)).toEqual(['b', 'c']);
+    expect(viewFor(liveKpi, 'm', daily, [], () => undefined, slot, new Set(['c']))?.items).toEqual([]);
+  });
+});
+
+describe('names in the tiles', () => {
+  it('flags a resort abroad, never a French one nor the full name', () => {
+    const view = {
+      stations: {
+        baqueira: { short_name: 'Baqueira', name: 'Baqueira Beret' },
+        cauterets: { short_name: 'Cauterets', name: 'Cauterets – Cirque du Lys' },
+      },
+    } as never;
+    const countries = new Map([
+      ['baqueira', 'ES'],
+      ['cauterets', 'FR'],
+    ]);
+    expect(shortName(view, 'baqueira', countries)).toBe('🇪🇸 Baqueira');
+    expect(shortName(view, 'cauterets', countries)).toBe('Cauterets');
+    expect(fullName(view, 'baqueira')).toBe('Baqueira Beret');
+  });
+});
+

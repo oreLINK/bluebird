@@ -6,7 +6,18 @@
   import Icon from './components/Icon.svelte';
   import InfoPage from './components/InfoPage.svelte';
   import MessageCard from './components/MessageCard.svelte';
-  import { filters, layout, massifs, pages, rewindPayload, rewinds, tilesForMassif } from './lib/config';
+  import {
+    filters,
+    layout,
+    massifs,
+    pages,
+    rewindPayload,
+    rewinds,
+    siteDomains,
+    siteStations,
+    tilesForMassif,
+  } from './lib/config';
+  import { geoState, readGeoPath } from './lib/geoLevels';
   import { type MassifDaily, type ServiceStatus, loadMassif, loadStatus } from './lib/data';
   import { i18n } from './lib/i18n/i18n.svelte';
   import { readPref, writePref } from './lib/prefs';
@@ -22,10 +33,14 @@
 
   type Status = 'loading' | 'ready' | 'empty' | 'error';
 
-  const storedMassif = readPref('massif');
-  let massifId = $state(
-    massifs.some((m) => m.id === storedMassif) ? (storedMassif as string) : (massifs[0]?.id ?? ''),
-  );
+  /** Chosen place, level by level (lib/geoLevels.ts): massif, zone, linked area; all remembered. */
+  const storedGeo = readGeoPath(readPref('geo'), readPref('massif'));
+  const initialGeo = storedGeo.length ? storedGeo : massifs[0] ? [massifs[0].id] : [];
+  let geoPath = $state<string[]>(initialGeo);
+  /** The massif kept on the page while no massif chip is chosen. */
+  let lastMassif = $state(initialGeo[0] ?? massifs[0]?.id ?? '');
+  const place = $derived(geoState(geoPath, massifs, siteStations, siteDomains, lastMassif));
+  const massifId = $derived(place.massifId);
   /** Chosen filter chips, level by level (lib/filterLevels.ts); only level 1 is remembered. */
   const storedFilter = readPref('filter');
   let filterPath = $state<string[]>(storedFilter ? [storedFilter] : []);
@@ -119,9 +134,12 @@
     document.documentElement.lang = i18n.locale;
   });
 
-  function selectMassif(id: string) {
-    massifId = id;
-    writePref('massif', id);
+  function selectPlace(key: string) {
+    const chip = place.chips.find((c) => c.key === key);
+    if (!chip) return;
+    geoPath = nextPath(place.path, chip);
+    if (geoPath[0]) lastMassif = geoPath[0];
+    writePref('geo', geoPath.join('/'));
   }
 
   function selectFilter(key: string) {
@@ -135,9 +153,8 @@
 
 <div class="page" inert={menuOpen || sheetOpen}>
   <AppHeader
-    {massifs}
-    selectedMassif={massifId}
-    onselectmassif={selectMassif}
+    places={place.chips}
+    onselectplace={selectPlace}
     filters={filtered.chips}
     onselectfilter={selectFilter}
     {menuOpen}
@@ -187,7 +204,15 @@
         {#each instances as instance, index (instance.id)}
           {@const { tile, kpis, slot } = instance}
           {@const TileComponent = tileComponent(tile.type)}
-          {@const view = viewFor(kpis[0], massifId, payload, rewinds, rewindPayload, slot)}
+          {@const view = viewFor(
+            kpis[0],
+            massifId,
+            payload,
+            rewinds,
+            rewindPayload,
+            slot,
+            place.stationIds,
+          )}
           <div
             class="slot"
             class:tall={tileRows(tile.type) === 2}

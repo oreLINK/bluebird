@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import math
 from datetime import UTC, date, datetime, time, timedelta
+from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo
 
 import polars as pl
@@ -33,6 +34,9 @@ from pydantic import Field, model_validator
 
 from ..config import LocalTime, parse_local_time
 from .base import AggregatorParams
+
+if TYPE_CHECKING:
+    from ..context import PeriodInstance
 
 _HALF_HOUR = timedelta(minutes=30)
 #: Below this clear-sky radiation (W/m²) the sun is too low for the flat-light test.
@@ -61,6 +65,14 @@ class SkiHours(AggregatorParams):
         start = datetime.combine(day, parse_local_time(self.ski_start), tzinfo=tz)
         end = datetime.combine(day, parse_local_time(self.ski_end), tzinfo=tz)
         return start, end
+
+
+def day_or_slot(rule: SkiHours, period: PeriodInstance, tz: ZoneInfo) -> tuple[datetime, datetime]:
+    """Window of a KPI for a period: the ski hours (``ski_start``..``ski_end``) of a
+    day-grain period (``native_window``: today, tomorrow), else the time slot itself."""
+    if period.period.native_window:
+        return rule.ski_window(period.ski_day, tz)
+    return period.start, period.end
 
 
 class WhiteoutRule(SkiHours):

@@ -183,6 +183,56 @@ export const stationNames: Map<string, string> = new Map(
   }),
 );
 
+/** A station of the site with its place in the geography (massif, zone, linked area). */
+export interface SiteStation {
+  id: string;
+  massifId: string;
+  /** Sub-massif (`zones` of config/massifs.yaml), if the massif has zones. */
+  zone?: string | null;
+  /** Linked ski area (`domains` of its stations file), if any. */
+  domain?: string | null;
+}
+
+/** A linked ski area of a massif (config/stations/<massif>.yaml `domains`). */
+export interface SiteDomain {
+  id: string;
+  massifId: string;
+  name: string;
+}
+
+/** Enabled stations of every stations file, in file order. */
+export function siteStationsOf(files: Record<string, StationsFile>): SiteStation[] {
+  return Object.entries(files).flatMap(([path, file]) => {
+    const massifId = path.split('/').at(-1)?.replace(/\.yaml$/, '') ?? '';
+    return file.stations
+      .filter((s) => s.enabled !== false)
+      .map((s) => ({ id: s.id, massifId, zone: s.zone, domain: s.domain }));
+  });
+}
+
+/** Linked ski areas of every stations file. */
+export function siteDomainsOf(files: Record<string, StationsFile>): SiteDomain[] {
+  return Object.entries(files).flatMap(([path, file]) => {
+    const massifId = path.split('/').at(-1)?.replace(/\.yaml$/, '') ?? '';
+    return (file.domains ?? []).map((d) => ({ id: d.id, massifId, name: d.name }));
+  });
+}
+
+export const siteStations: SiteStation[] = siteStationsOf(stationFiles);
+
+/** Country of each station (ISO alpha-2, from its zone; FR without zone). */
+export function stationCountriesOf(list: SiteStation[], massifList: Massif[]): Map<string, string> {
+  const zoneCountry = new Map(
+    massifList.flatMap((m) =>
+      (m.zones ?? []).map((z): [string, string] => [`${m.id}/${z.id}`, z.country ?? 'FR']),
+    ),
+  );
+  return new Map(list.map((s) => [s.id, zoneCountry.get(`${s.massifId}/${s.zone}`) ?? 'FR']));
+}
+
+export const stationCountries: Map<string, string> = stationCountriesOf(siteStations, massifs);
+export const siteDomains: SiteDomain[] = siteDomainsOf(stationFiles);
+
 export function tilesForMassif(massifId: string): ResolvedTile[] {
   return resolveLayout(massifId, layout, tiles, kpis);
 }

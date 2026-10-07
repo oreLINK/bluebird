@@ -1,10 +1,10 @@
 <!--
   Sticky app bar on frosted white: logo and title on the left, menu button on
-  the right; below, the massif bar (large chips, no "all" choice), then the
-  filter bar (small chips, filter levels of lib/filterLevels.ts).
+  the right; below, the massif bar (place levels of lib/geoLevels.ts:
+  massif, département, linked area), then the filter bar (filter levels of
+  lib/filterLevels.ts), both with the same chips.
 -->
 <script lang="ts">
-  import type { Massif } from '../lib/config';
   import type { FilterChip } from '../lib/filterLevels';
   import { i18n } from '../lib/i18n/i18n.svelte';
   import FilterBar from './FilterBar.svelte';
@@ -12,17 +12,16 @@
   import Logo from './Logo.svelte';
 
   let {
-    massifs,
-    selectedMassif,
-    onselectmassif,
+    places,
+    onselectplace,
     filters,
     onselectfilter,
     menuOpen,
     onmenu,
   }: {
-    massifs: Massif[];
-    selectedMassif: string;
-    onselectmassif: (id: string) => void;
+    places: FilterChip[];
+    /** Called with the chip `key`. */
+    onselectplace: (key: string) => void;
     filters: FilterChip[];
     /** Called with the chip `key`. */
     onselectfilter: (key: string) => void;
@@ -47,11 +46,11 @@
       </button>
     </div>
     <div class="bars">
-      {#if massifs.length > 0}
+      {#if places.length > 0}
         <FilterBar
-          size="large"
-          options={massifs.map((m) => ({ ...m, pressed: m.id === selectedMassif }))}
-          onselect={onselectmassif}
+          options={places.map((c) => ({ ...c, removable: c.pressed }))}
+          onselect={onselectplace}
+          resetScroll
           label={i18n.t('massifs.label')}
         />
       {/if}

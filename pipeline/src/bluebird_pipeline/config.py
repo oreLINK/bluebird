@@ -47,8 +47,8 @@ Aspect = Literal["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
 KpiKind = Literal["live", "historical"]
 """live: a probability for today (daily run); historical: a value over a past season (Rewind)."""
 
-FilterLevel = Literal["day", "slot"]
-"""Built-in kinds of the filter levels after level 1: ski day, then time slot."""
+FilterLevel = Literal["group", "day", "slot"]
+"""Built-in kinds of the filter levels after level 1: sub-category, ski day, time slot."""
 
 MAX_FILTER_LEVELS = 4
 """Depth of the filter bar: the topic chip (level 1) plus at most three levels."""
@@ -86,6 +86,18 @@ class Localized(StrictModel):
 # ------------------------------------------------------------------------ massifs
 
 
+class Zone(StrictModel):
+    """A sub-massif (level 2 of the massif bar): a French département, or abroad a
+    country or region (Andorre, Aragon, Valais…)."""
+
+    id: Slug
+    name: Localized
+    country: Annotated[str, StringConstraints(pattern=r"^[A-Z]{2}$")] = Field(
+        default="FR", description="ISO 3166-1 alpha-2 code of the zone's country."
+    )
+    code: str | None = Field(default=None, description="Département number, e.g. '65'.")
+
+
 class Massif(StrictModel):
     """A mountain range grouping several stations."""
 
@@ -100,6 +112,10 @@ class Massif(StrictModel):
     skyline: list[Annotated[float, Field(ge=0, le=1)]] = Field(
         default_factory=list,
         description="Relative ridge heights (0..1), west to east, for the banner illustrations.",
+    )
+    zones: list[Zone] = Field(
+        default_factory=list,
+        description="Sub-massifs (level 2 of the massif bar); every station names one.",
     )
 
     @field_validator("timezone")
@@ -168,6 +184,12 @@ class Station(StrictModel):
     lifts_open: LocalTime | None = Field(default=None, description="Overrides the default.")
     website: str | None = None
     enabled: bool = True
+    zone: Slug | None = Field(
+        default=None, description="Sub-massif of the station (`zones` of config/massifs.yaml)."
+    )
+    domain: Slug | None = Field(
+        default=None, description="Linked ski area it belongs to (`domains` of its file)."
+    )
 
 
 class StationDefaults(StrictModel):
@@ -177,10 +199,19 @@ class StationDefaults(StrictModel):
     lifts_open: LocalTime = "09:00"
 
 
+class Domain(StrictModel):
+    """A linked ski area spanning several stations (Les 3 Vallées, Portes du Soleil…),
+    level 3 of the massif bar; its stations may sit in several zones or countries."""
+
+    id: Slug
+    name: str = Field(min_length=1)
+
+
 class StationsFile(StrictModel):
     """Schema of ``config/stations/<massif>.yaml``."""
 
     defaults: StationDefaults = Field(default_factory=StationDefaults)
+    domains: list[Domain] = Field(default_factory=list)
     stations: list[Station]
 
 
@@ -491,6 +522,15 @@ class TilesFile(StrictModel):
     tiles: list[Tile]
 
 
+class FilterGroup(StrictModel):
+    """A sub-category of a level-1 filter (level `group`), e.g. Poudreuse under Glisse."""
+
+    id: Slug
+    name: Localized
+    icon: str | None = None
+    kpis: list[Slug] = Field(min_length=1, description="KPIs of the sub-category.")
+
+
 class Filter(StrictModel):
     """A level-1 chip of the filter bar: shows the tiles of the KPIs tagged with its id."""
 
@@ -504,9 +544,14 @@ class Filter(StrictModel):
         default_factory=list,
         max_length=MAX_FILTER_LEVELS - 1,
         description=(
-            "Levels offered once this filter is chosen, in order: `day` (today, "
-            "tomorrow), `slot` (morning, evening…). Live KPIs only."
+            "Levels offered once this filter is chosen, in order: `group` (its "
+            "`groups`), `day` (today, tomorrow), `slot` (morning, evening…). Live KPIs only."
         ),
+    )
+
+    groups: list[FilterGroup] = Field(
+        default_factory=list,
+        description="Sub-categories for the `group` level; every KPI of the filter in one.",
     )
 
     @field_validator("levels")
@@ -805,6 +850,26 @@ class Config:
 
         duplicates("massif", [m.id for m in self.massifs])
         duplicates("station", [s.id for f in self.stations.values() for s in f.stations])
+        for massif in self.massifs:
+            duplicates(f"massif '{massif.id}' zone", [z.id for z in massif.zones])
+            stations_file = self.stations.get(massif.id)
+            if stations_file is None:
+                continue
+            zone_ids = {z.id for z in massif.zones}
+            domain_ids = {d.id for d in stations_file.domains}
+            duplicates(f"massif '{massif.id}' domain", [d.id for d in stations_file.domains])
+            for station in stations_file.stations:
+                if zone_ids and station.zone not in zone_ids:
+                    errors.append(
+                        f"station '{station.id}' needs a zone of massif '{massif.id}' "
+                        f"({', '.join(sorted(zone_ids))}), has {station.zone!r}"
+                    )
+                elif not zone_ids and station.zone is not None:
+                    errors.append(f"station '{station.id}': massif '{massif.id}' has no zones")
+                if station.domain is not None and station.domain not in domain_ids:
+                    errors.append(
+                        f"station '{station.id}' references unknown domain '{station.domain}'"
+                    )
         duplicates("KPI", [k.id for k in self.kpis])
         duplicates("tile", [t.id for t in self.tiles])
         duplicates("filter", [f.id for f in self.filters])
@@ -843,6 +908,19 @@ class Config:
             tagged = [k for k in self.kpis if flt.id in k.filters]
             if flt.levels and any(k.kind != "live" for k in tagged):
                 errors.append(f"filter '{flt.id}' has levels but shows historical KPIs")
+            if ("group" in flt.levels) != bool(flt.groups):
+                errors.append(f"filter '{flt.id}': the `group` level and `groups` go together")
+            duplicates(f"filter '{flt.id}' group", [g.id for g in flt.groups])
+            grouped = [kpi_id for g in flt.groups for kpi_id in g.kpis]
+            tagged_ids = {k.id for k in tagged}
+            for kpi_id in sorted(set(grouped) - tagged_ids):
+                errors.append(f"filter '{flt.id}': group KPI '{kpi_id}' is not tagged with it")
+            if flt.groups:
+                for kpi_id in sorted(tagged_ids - set(grouped)):
+                    errors.append(f"filter '{flt.id}': KPI '{kpi_id}' is in no group")
+                for kpi_id, count in Counter(grouped).items():
+                    if count > 1:
+                        errors.append(f"filter '{flt.id}': KPI '{kpi_id}' is in several groups")
 
         errors.extend(f"periods.yaml: {e}" for e in self.periods.errors())
         duplicates("period", [p.id for p in self.periods.periods])

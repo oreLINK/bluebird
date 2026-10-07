@@ -37,9 +37,10 @@
           "type": "string"
         },
         "levels": {
-          "description": "Levels offered once this filter is chosen, in order: `day` (today, tomorrow), `slot` (morning, evening…). Live KPIs only.",
+          "description": "Levels offered once this filter is chosen, in order: `group` (its `groups`), `day` (today, tomorrow), `slot` (morning, evening…). Live KPIs only.",
           "items": {
             "enum": [
+              "group",
               "day",
               "slot"
             ],
@@ -48,6 +49,14 @@
           "maxItems": 3,
           "title": "Levels",
           "type": "array"
+        },
+        "groups": {
+          "description": "Sub-categories for the `group` level; every KPI of the filter in one.",
+          "items": {
+            "$ref": "#/$defs/FilterGroup"
+          },
+          "title": "Groups",
+          "type": "array"
         }
       },
       "required": [
@@ -55,6 +64,49 @@
         "name"
       ],
       "title": "Filter",
+      "type": "object"
+    },
+    "FilterGroup": {
+      "additionalProperties": false,
+      "description": "A sub-category of a level-1 filter (level `group`), e.g. Poudreuse under Glisse.",
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9]+(?:[_-][a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "$ref": "#/$defs/Localized"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "kpis": {
+          "description": "KPIs of the sub-category.",
+          "items": {
+            "pattern": "^[a-z0-9]+(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Kpis",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "kpis"
+      ],
+      "title": "FilterGroup",
       "type": "object"
     },
     "Localized": {

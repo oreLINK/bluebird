@@ -13,15 +13,27 @@ export type Icon = string | null;
  */
 export type Theme = 'default' | 'rewind';
 /**
- * Levels offered once this filter is chosen, in order: `day` (today, tomorrow), `slot` (morning, evening…). Live KPIs only.
+ * Levels offered once this filter is chosen, in order: `group` (its `groups`), `day` (today, tomorrow), `slot` (morning, evening…). Live KPIs only.
  *
  * @maxItems 3
  */
 export type Levels =
   | []
-  | ['day' | 'slot']
-  | ['day' | 'slot', 'day' | 'slot']
-  | ['day' | 'slot', 'day' | 'slot', 'day' | 'slot'];
+  | ['group' | 'day' | 'slot']
+  | ['group' | 'day' | 'slot', 'group' | 'day' | 'slot']
+  | ['group' | 'day' | 'slot', 'group' | 'day' | 'slot', 'group' | 'day' | 'slot'];
+export type Id1 = string;
+export type Icon1 = string | null;
+/**
+ * KPIs of the sub-category.
+ *
+ * @minItems 1
+ */
+export type Kpis = [string, ...string[]];
+/**
+ * Sub-categories for the `group` level; every KPI of the filter in one.
+ */
+export type Groups = FilterGroup[];
 
 /**
  * Schema of ``config/filters.yaml``: the filter bar, in display order.
@@ -38,6 +50,7 @@ export interface Filter {
   icon?: Icon;
   theme?: Theme;
   levels?: Levels;
+  groups?: Groups;
 }
 /**
  * A user-facing string in every supported UI language.
@@ -45,4 +58,13 @@ export interface Filter {
 export interface Localized {
   fr: Fr;
   en: En;
+}
+/**
+ * A sub-category of a level-1 filter (level `group`), e.g. Poudreuse under Glisse.
+ */
+export interface FilterGroup {
+  id: Id1;
+  name: Localized;
+  icon?: Icon1;
+  kpis: Kpis;
 }

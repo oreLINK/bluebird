@@ -12,7 +12,9 @@ morning, until the sun softens it. For each ensemble scenario at ``band``:
 4. **No fresh snow** covering it: less than ``fresh_snow_max_cm`` between
    ``melt_end`` and the end of the slot.
 
-The probability is the share of scenarios meeting all four. Time slots only.
+The probability is the share of scenarios meeting all four.
+Time slots, and the whole ski day (``ski_start``..``ski_end``) for the
+day-grain period ``day``.
 """
 
 from __future__ import annotations
@@ -26,10 +28,13 @@ from pydantic import Field
 from ..config import Band, LocalTime, StationRef, parse_local_time
 from ..context import PeriodInstance, RunContext
 from ._ensemble import member_table, quantile, share
+from ._whiteout import SkiHours, day_or_slot
 from .base import Aggregator, AggregatorParams, KpiResult, register_aggregator
 
 
-class HardSnowParams(AggregatorParams):
+class HardSnowParams(SkiHours):
+    ski_start: LocalTime = "09:00"
+    ski_end: LocalTime = "11:00"
     band: Band = "mid"
     melt_start: LocalTime = "11:00"
     melt_end: LocalTime = "17:00"
@@ -43,26 +48,26 @@ class HardSnowParams(AggregatorParams):
 class AggregatorHardSnowChance(Aggregator):
     """P(melt the day before, refreeze overnight, still frozen during the slot)."""
 
+    version: ClassVar[str] = "2"
     Params: ClassVar[type[AggregatorParams]] = HardSnowParams
     required_datasets: ClassVar[tuple[str, ...]] = ("ensemble_hourly",)
     params: HardSnowParams
 
     def compute(self, ctx: RunContext, ref: StationRef, period: PeriodInstance) -> KpiResult | None:
-        if period.period.native_window:
-            return None
         p = self.params
+        slot_start, slot_end = day_or_slot(p, period, ref.massif.tz)
         ensemble = ctx.silver("ensemble_hourly")
         melt_start = self.on_ski_day(ctx, ref, period, parse_local_time(p.melt_start), -1)
         melt_end = self.on_ski_day(ctx, ref, period, parse_local_time(p.melt_end), -1)
         # Polars compares a UTC column with UTC bounds only (CONTEXT.md §8).
-        slot_start = period.start.astimezone(UTC)
+        slot_start = slot_start.astimezone(UTC)
         common = {"station_id": ref.id, "band": p.band, "required": ["temperature_c"]}
         melt = member_table(
             ensemble, **common, start=melt_start, end=melt_end,
             aggs={"melt_max": pl.col("temperature_c").max()},
         )  # fmt: skip
         night = member_table(
-            ensemble, **common, start=melt_end, end=period.start,
+            ensemble, **common, start=melt_end, end=slot_start,
             aggs={"night_min": pl.col("temperature_c").min()},
         )  # fmt: skip
         slot = member_table(
@@ -70,7 +75,7 @@ class AggregatorHardSnowChance(Aggregator):
             station_id=ref.id,
             band=p.band,
             start=melt_end,
-            end=period.end,
+            end=slot_end,
             aggs={
                 "fresh_snow": pl.col("snowfall_cm").sum(),
                 "slot_max": pl.col("temperature_c").filter(pl.col("time_utc") > slot_start).max(),
@@ -94,7 +99,7 @@ class AggregatorHardSnowChance(Aggregator):
             probability=share(members, icy),
             members=members.height,
             window_start=melt_start,
-            window_end=period.end,
+            window_end=slot_end,
             drivers={
                 "melt_max_c_p50": quantile(members["melt_max"], 0.5, 1),
                 "night_min_c_p50": quantile(members["night_min"], 0.5, 1),

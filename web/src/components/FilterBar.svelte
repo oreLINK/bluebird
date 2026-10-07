@@ -2,14 +2,12 @@
   A horizontally scrollable row of choices in the header (touch swipe,
   trackpad, or mouse wheel on desktop). Edges fade when more choices are
   hidden on that side, and the selected one is scrolled into view.
-  Used twice by AppHeader, with the same chip style in two sizes:
-    size `large`  the massif bar (config/massifs.yaml); one massif is always
-                  selected, there is no "all" choice.
-    size `small`  the filter bar, Spotify-style (lib/filterLevels.ts): chosen
-                  chips are filled with a × (`removable`) and lead the row;
-                  the bar scrolls back to its start after each choice
-                  (`resetScroll`). Chips arriving grow in; the others slide
-                  to their new place (reduced-motion aware).
+  Used twice by AppHeader, with the same chips, Spotify-style levels: the
+  massif bar (places, lib/geoLevels.ts) and the filter bar
+  (lib/filterLevels.ts). Chosen chips are filled with a × (`removable`) and
+  lead the row; the bar scrolls back to its start after each choice, as far
+  as the last chosen chip stays visible (`resetScroll`). Chips arriving grow
+  in; the others slide to their new place (reduced-motion aware).
 -->
 <script lang="ts" module>
   import type { Filter } from '../lib/config';
@@ -42,14 +40,12 @@
     options,
     onselect,
     label,
-    size = 'small',
     resetScroll = false,
   }: {
     options: BarOption[];
     /** Called with the option `key` (or `id`). */
     onselect: (key: string) => void;
     label: string;
-    size?: 'large' | 'small';
     /** Scroll back to the start after a choice (chosen chips lead the row). */
     resetScroll?: boolean;
   } = $props();
@@ -90,7 +86,12 @@
       return;
     }
     await tick(); // the chips of the new level are in place
-    bar?.scrollTo({ left: 0, behavior: motion(1) ? 'smooth' : 'instant' });
+    if (!bar) return;
+    // Back to the start, unless the last chosen chip would then be hidden (deep levels).
+    const chosen = [...bar.querySelectorAll<HTMLElement>('.chip[aria-pressed="true"]')].at(-1);
+    const end = chosen ? chosen.offsetLeft + chosen.offsetWidth - bar.offsetLeft : 0;
+    const left = Math.max(0, end - bar.clientWidth + 24);
+    bar.scrollTo({ left, behavior: motion(1) ? 'smooth' : 'instant' });
   }
 
   $effect(() => {
@@ -103,7 +104,7 @@
 
 <nav
   bind:this={bar}
-  class="bar {size}"
+  class="bar"
   class:fade-start={fadeStart}
   class:fade-end={fadeEnd}
   aria-label={label}
@@ -124,7 +125,7 @@
       animate:flip={{ duration: motion(220), easing: cubicOut }}
       in:grow
     >
-      {#if option.icon}<Icon name={option.icon} size={size === 'small' ? 16 : 18} />{/if}
+      {#if option.icon}<Icon name={option.icon} size={16} />{/if}
       <span>{i18n.pick(option.name)}</span>
       {#if option.removable}<Icon name="close" size={14} class="remove" />{/if}
     </button>
@@ -135,7 +136,7 @@
   .bar {
     --fade: 28px;
     display: flex;
-    gap: 8px;
+    gap: 6px;
     overflow-x: auto;
     overscroll-behavior-x: contain;
     -webkit-overflow-scrolling: touch;
@@ -180,16 +181,16 @@
   .chip {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
+    gap: 5px;
     flex: none;
     scroll-snap-align: start;
-    min-height: 2.5rem;
-    padding: 0 16px 0 12px;
+    min-height: 2.125rem;
+    padding: 0 12px 0 10px;
     border-radius: 999px;
     border: 1px solid var(--line);
     background: var(--surface);
     color: var(--ink-soft);
-    font-size: 0.9375rem;
+    font-size: 0.8125rem;
     font-weight: 700;
     white-space: nowrap;
     cursor: pointer;
@@ -226,25 +227,6 @@
 
   .chip.rewind[aria-pressed='true'] :global(svg) {
     color: inherit;
-  }
-
-  /* Massif bar: larger chips, the main choice of the page. */
-  .large .chip {
-    min-height: 2.75rem;
-    padding: 0 20px;
-    font-size: 1.0625rem;
-  }
-
-  /* Filter bar: smaller chips, secondary to the massif. */
-  .small {
-    gap: 6px;
-  }
-
-  .small .chip {
-    gap: 5px;
-    min-height: 2.125rem;
-    padding: 0 12px 0 10px;
-    font-size: 0.8125rem;
   }
 
   /* Chosen filter: the × after the text says a tap removes it. */

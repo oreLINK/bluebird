@@ -17,7 +17,8 @@
  * label such as the wind chill risk) or `levels` (Oui / Possible / Non from
  * the probability). The ranking order comes from the pipeline.
  */
-import type { DiamondRewind, Kpi, Rewind } from './config';
+import { type DiamondRewind, type Kpi, type Rewind, stationCountries } from './config';
+import { HOME_COUNTRY, flagOf } from './geoLevels';
 import type { MassifDaily, RankingEntry, StationInfo } from './data';
 import type { Slot } from './periods';
 import { formatDriver, formatPercent } from './format';
@@ -137,9 +138,18 @@ function liveItems(kpi: Kpi, ranking: RankingEntry[]): RankItem[] {
   });
 }
 
-export function liveView(kpi: Kpi, payload: MassifDaily, slot: Slot | null = null): LiveView {
+/** Keeps the entries of the chosen place (lib/geoLevels.ts); `null` keeps them all. */
+const within = <T extends { station_id: string }>(entries: T[], only: Set<string> | null): T[] =>
+  only ? entries.filter((e) => only.has(e.station_id)) : entries;
+
+export function liveView(
+  kpi: Kpi,
+  payload: MassifDaily,
+  slot: Slot | null = null,
+  only: Set<string> | null = null,
+): LiveView {
   const period = slot ? payload.kpis[kpi.id]?.periods.find((p) => p.key === slot.key) : undefined;
-  const ranking = period?.ranking ?? [];
+  const ranking = within(period?.ranking ?? [], only);
   return {
     kind: 'live',
     kpi,
@@ -161,8 +171,9 @@ export function historicalView(
   rewind: Rewind,
   massifId: string,
   payload: DiamondRewind | undefined,
+  only: Set<string> | null = null,
 ): HistoricalView {
-  const ranking = payload?.kpis[kpi.id]?.ranking ?? [];
+  const ranking = within(payload?.kpis[kpi.id]?.ranking ?? [], only);
   const full = kpi.value?.max ?? Math.max(0, ...ranking.map((e) => e.value));
   return {
     kind: 'historical',
@@ -221,11 +232,22 @@ export function showsPercent(view: KpiView): boolean {
   return view.kind === 'live' && displayOf(view.kpi).kind === 'percent';
 }
 
-export function shortName(view: KpiView, stationId: string): string {
+/**
+ * Name shown in the tiles: the short name, with its country's flag for a
+ * resort abroad (🇪🇸 Baqueira). `countries` maps station ids to ISO codes.
+ */
+export function shortName(
+  view: KpiView,
+  stationId: string,
+  countries: Map<string, string> = stationCountries,
+): string {
   const station = view.stations[stationId];
-  return station?.short_name ?? station?.name ?? stationId;
+  const name = station?.short_name ?? station?.name ?? stationId;
+  const country = countries.get(stationId) ?? HOME_COUNTRY;
+  return country === HOME_COUNTRY ? name : `${flagOf(country)} ${name}`;
 }
 
+/** Full official name, without flag (accessible labels, station details). */
 export function fullName(view: KpiView, stationId: string): string {
   return view.stations[stationId]?.name ?? stationId;
 }
@@ -234,6 +256,8 @@ export function fullName(view: KpiView, stationId: string): string {
  * The view of a tile's KPI: historical KPIs read their Rewind payload (always
  * available, bundled); live KPIs need the refreshed payload and the period of
  * the tile, so `null` means "not loaded yet" (the tile shows its placeholder).
+ * `only` restricts the ranking to the chosen place (département, linked area):
+ * ranks, bars and the reliability index then describe those stations only.
  */
 export function viewFor(
   kpi: Kpi | undefined,
@@ -242,11 +266,13 @@ export function viewFor(
   rewinds: Rewind[],
   rewindPayload: (rewindId: string, massifId: string) => DiamondRewind | undefined,
   slot: Slot | null = null,
+  only: Set<string> | null = null,
 ): KpiView | null {
   if (!kpi) return null;
   if (kpi.kind === 'historical') {
     const rewind = rewindOfKpi(kpi.id, rewinds);
-    return rewind ? historicalView(kpi, rewind, massifId, rewindPayload(rewind.id, massifId)) : null;
+    const payload = rewind ? rewindPayload(rewind.id, massifId) : undefined;
+    return rewind ? historicalView(kpi, rewind, massifId, payload, only) : null;
   }
-  return live ? liveView(kpi, live, slot) : null;
+  return live ? liveView(kpi, live, slot, only) : null;
 }
