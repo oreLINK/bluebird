@@ -24,6 +24,7 @@
   "menu.title": "Menu",
   "menu.language": "Language",
   "filters.label": "Filter the indicators",
+  "filters.remove": "{name}, selected filter: tap to remove it",
   "massifs.label": "Choose the mountain range",
   "filter.empty": "No indicator for this filter.",
   "tile.info": "About this indicator",

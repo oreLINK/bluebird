@@ -27,8 +27,8 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
   `season_longest_snowfall`, `season_domain_snowfall`, `season_offpiste_snowfall`,
   `season_deep_snow_days` (% of days with > 70 cm on average over the slopes,
   ICON snow depth), `season_white_days` (fewest first, `order: asc`). The info
-  line above the tiles reads "Saison 2025/2026". Shown only under its exclusive
-  Christmas-red filter, right after "All". Rewind tiles are not split by period.
+  line above the tiles reads "Saison 2025/2026". Shown only under its
+  Christmas-red filter, the first level-1 chip (no levels, no overview tile). Rewind tiles are not split by period.
 - The UI mimics a sports-betting page: one tile per live KPI and period (tile
   templates in `tiles.yaml` are expanded per period, "Neige {period}"),
   stations ranked by descending probability. A tile disappears when its
@@ -36,7 +36,11 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
   blue, light blue and white, sober plain background, no background animation.
   Header: "Bluebird" wordmark (text only) left, menu (language) right;
   below, the massif bar (large chips, no "all", the only massif choice) then
-  the filter bar (small chips). Above the tiles, plain text (no card): data date (day of
+  the filter bar (small chips, Spotify-style **filter levels**: level 1 =
+  topics of `filters.yaml`; a chosen chip is filled with a ×, leads the row
+  and hides its siblings, then the next level appears: `day` (Aujourd'hui,
+  Demain) then `slot` (Matin…Nuit), at most 4 levels; no "All": with nothing
+  chosen the home page shows one `overview` tile per filter). Above the tiles, plain text (no card): data date (day of
   `generated_at`) and update time. Station details on tap are off for now
   (tile option `details`, default false): the tiles show the probability only.
 - UI languages: French (default) and English. **All code, comments, docs and
@@ -50,9 +54,9 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 |---|---|
 | `AGENTS.md` | Mandatory rules for AI agents, applied on every prompt. |
 | `CLAUDE.md` | Imports `AGENTS.md` and `CONTEXT.md` for Claude Code. |
-| `config/filters.yaml` | Filter bar chips; KPIs opt in with `filters: [id]` in `kpis.yaml`. |
+| `config/filters.yaml` | Level-1 chips of the filter bar, their `levels` (`day`, `slot`) and home `overview {tile, period}`; KPIs opt in with `filters: [id]` in `kpis.yaml`. Chip labels of the levels: `days` and period `chip` in `periods.yaml`. |
 | `config/periods.yaml` | `day_start` (06:00), `horizon_days`, periods (time slots covering the ski day + `day` with `native_window`) and their labels per day. |
-| `config/rewinds.yaml` | Rewinds: season `start`/`end` (local days, included), massifs, historical KPIs, exclusive filter. |
+| `config/rewinds.yaml` | Rewinds: season `start`/`end` (local days, included), massifs, historical KPIs, its level-1 filter (no levels, no overview). |
 | `config/rewind/<id>/<massif>.hourly.parquet`, `.json` | **Generated** by `bluebird rewind`, committed via PR: the season hour by hour (silver `season_hourly`) and the ranked payload the site bundles. Never edit by hand. |
 | `config/pages.yaml` | Footer (GitHub repository link, page links) and full-window pages (about, legal notice, privacy) with `{fr, en}` sections and built-in blocks. |
 | `config/*.yaml`, `config/stations/*.yaml` | Single source of truth for massifs, stations, KPIs, tiles, layout, sources. Human-edited. |
@@ -96,7 +100,8 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 | `web/src/tiles/FlipCard.svelte`, `KpiBack.svelte` | Two-sided card of every tile; front = banner, title, odds (no description); back = one section each for description, time window, method, reliability, update, sources, photo credit (never on the front). |
 | `web/src/lib/transitions.ts` | `arrive` / `leave` tile transitions, `rise` for sheets, and `motion()` (reduced-motion aware). |
 | `web/src/lib/photos.ts`, `web/src/assets/photos/` | Banner photos `<massif>/<station_id>/<station_id>_<n>.*` (`photo: leader` draws one at random per page load; also `none` / `<path>`) and `credits.yaml`. |
-| `web/src/components/AppMenu.svelte`, `FilterBar.svelte`, `Logo.svelte` | Side menu (language; blur, scroll lock, inert page), scrollable chip bar (`size` `large` = massif bar, `small` = filter bar), text-only wordmark. |
+| `web/src/components/AppMenu.svelte`, `FilterBar.svelte`, `Logo.svelte` | Side menu (language; blur, scroll lock, inert page), scrollable chip bar (`size` `large` = massif bar, `small` = filter bar; options with `pressed`/`removable` (×), `resetScroll`, chips grow in and slide with `animate:flip`), text-only wordmark. |
+| `web/src/lib/filterLevels.ts` | Pure, tested: `filterState(path, …)` → chips, tiles and tile instances of the filter path (home = overview tiles), `LEVEL_KINDS` (`day`, `slot`: options + match), `nextPath` (tap = choose, tap a chosen chip = remove it and the levels after). Only level 1 is stored in `localStorage`. |
 | `web/src/components/Sheet.svelte`, `web/src/lib/sheets.svelte.ts` | Generic full-window sheet (Liquid Glass, close ×, rises from the bottom) and its router (`#<id>` in the URL, back gesture closes). Reuse them for any future over-page. |
 | `web/src/components/InfoPage.svelte`, `AppFooter.svelte` | A `pages.yaml` page in a `Sheet` (blocks `data_sources`, `photo_credits`); footer with the GitHub logo and page links. |
 | `web/src/components/ForecastStatus.svelte` | Plain text above the tiles: data date (day of `generated_at` in the massif timezone) and update time; with a Rewind filter, the season period. |
@@ -212,7 +217,8 @@ with `scripts/ci/fetch-gh-pages-data.sh` before computing (fallback).
     `SeasonAggregator`s (checked against the KPI kind by `bluebird validate`)
     and are only computed by `bluebird rewind`, which refuses a season that is
     not over. `config/rewind/` is generated and committed, never hand-edited.
-    "All" never shows the tiles of an `exclusive` filter. On the site, tiles
+    Rewind tiles only show under their Rewind filter (never on the home
+    page, whose tiles are the filters' `overview`). On the site, tiles
     only read a `KpiView` (`lib/kpiView.ts`) and colours only change through
     tile themes (token overrides, `[data-tile-theme]`): no tile type, prop or
     CSS is specific to one kind of KPI or one Rewind.
@@ -297,11 +303,12 @@ npm run dev
 | Add a tile type | README.md "Tiles on the site" when used, `web/src/tiles/Tile<Xyz>.svelte`, `web/src/tiles/registry.ts` (id `xyz` + `skeletonVariant`), `config/tiles.yaml` | `npm run check`, `npm test`, 390 px screenshots |
 | Change the diamond shape | `diamond/models.py`, displayer, frontend usage | `bluebird schemas`, `npm run gen:types`, `bluebird demo`, all tests |
 | Reorder tiles | `config/layout.yaml`, README.md "Tiles on the site" | `bluebird validate`, `npm test` |
-| Add a filter | `config/filters.yaml`, `filters: [id]` on KPIs in `config/kpis.yaml` | `bluebird validate`, `bluebird schemas`, `npm test` |
+| Add a filter | `config/filters.yaml` (`levels`, `overview`), `filters: [id]` on KPIs in `config/kpis.yaml` | `bluebird validate`, `npm test` |
+| Add a kind of filter level | `FilterLevel` in `config.py`, `LEVEL_KINDS` in `web/src/lib/filterLevels.ts`, its `{fr, en}` chip labels in config, tests (max 4 levels: `MAX_FILTER_LEVELS`) | `bluebird schemas`, `npm run gen:types`, `pytest`, `npm test` |
 | Add a banner photo | `web/src/assets/photos/<path>.webp`, `credits.yaml`, tile `photo` option | `npm run build`, 390 px screenshots |
 | Add a page | `config/pages.yaml` (`pages[]`, optional `footer.pages`) | `bluebird validate`, `npm test`, 390 px screenshots |
 | Add another kind of over-page | content inside `components/Sheet.svelte`, opened with `sheets.open(id)` (`lib/sheets.svelte.ts`) | `npm run check`, `npm test` |
-| Add a Rewind | `config/rewinds.yaml`, exclusive filter (`theme: rewind`) after `all` in `filters.yaml`, KPI tags, tiles of any type + layout (Rewind and theme come from the KPI) | after the season: `bluebird rewind --rewind <id>`, review and commit `config/rewind/<id>/` |
+| Add a Rewind | `config/rewinds.yaml`, its filter (`theme: rewind`, no levels/overview) first in `filters.yaml`, KPI tags, tiles of any type + layout (Rewind and theme come from the KPI) | after the season: `bluebird rewind --rewind <id>`, review and commit `config/rewind/<id>/` |
 | Add a historical KPI | `gold/aggregator_season_<x>.py` (`SeasonAggregator`, value in its native unit), `kpis.yaml` (`kind: historical`, `value {unit, decimals, scale, max}` — snow totals use `m` with `scale: 0.01`, percentages `%` with `scale: 100, max: 100`; method, drivers, filter), PROJECT.md "Available indicators", README.md "Tiles on the site", Rewind `kpis`, tile + layout, tests | `bluebird validate`, `pytest`, `bluebird rewind --no-fetch` |
 | Add a UI string | `web/src/lib/i18n/fr.json` **and** `en.json` | `npm test` |
 
@@ -380,6 +387,10 @@ npm run dev
   `.astimezone(UTC)` first (see `gold/_season.in_window`).
 - **Variable named `window`** in a component shadows the global object; use
   another name (`timeWindow`).
+- **Scrolling a bar whose chips are about to change.** `scrollTo` in the
+  click handler runs before Svelte replaces the chips, so the bar ends up
+  scrolled after a filter level change. `await tick()` first (see
+  `FilterBar.svelte` `choose`).
 - **TypeScript is pinned to 6.x.** svelte-check does not support TypeScript 7
   alone yet.
 - **Headless Chrome** enforces a ~500 px minimum window width; screenshot the
@@ -434,6 +445,13 @@ this file when behaviour, commands or conventions change.
 
 ## 10. Roadmap context
 
+Indicators are grouped into six planned categories (Snow, Snow quality,
+Sky, Comfort, Getting there, Safety; PROJECT.md "Categories" and "Future
+indicators"), not yet the site filters (Snow, Powder, Visibility stay until
+more KPIs exist). Planned filter levels (PROJECT.md "Coming next", README.md
+"Future features"): activity (level 1, next to the Rewind) → category →
+terrain (piste difficulty from `domain_features`, instead of a skier level)
+→ day → time slot, `MAX_FILTER_LEVELS` 5, single-choice levels skipped.
 Reference pistes/lifts are used by the Rewind (domain and off-piste
 sampling points) but not by any live KPI or tile yet. Future KPIs (live,
 Rewind, All Time) are listed in PROJECT.md "Future indicators"; future
@@ -441,7 +459,7 @@ features, their feasibility and the planned tile ordering algorithm
 (`rankTiles`, `ordering` in `layout.yaml`) in README.md "Future features".
 Periods are ready for longer horizons: weekend and week periods (needs
 `horizon_days`/period kinds beyond today and tomorrow, and more forecast
-days), and "Aujourd'hui / Demain" filter chips to shorten the page.
+days, then a `week` filter level kind).
 For the sunniest resort, use the stored `shortwave_wm2`, not `sunshine_s`
 (see §8). Planned next (see PROJECT.md): Météo-France avalanche bulletin (BRA, needs an
 API key), resort opening status (scraper), slope/aspect from an IGN or

@@ -1,34 +1,48 @@
 # yaml-language-server: $schema=./schemas/filters.schema.json
 #
-# Filter bar under the header, in display order. A filter shows the tiles
-# whose KPIs list its id under `filters:` in config/kpis.yaml. A filter with
-# `all: true` shows every tile, except those of `exclusive` filters, which only
-# appear under their own filter (the Rewinds). `theme` colours the chip
-# (default | rewind). The first filter is selected by default.
+# Filter bar under the header, Spotify-style. With nothing selected, the bar
+# shows the level-1 filters below (in this order) and the home page shows one
+# overview tile per filter. Choosing a filter fills its chip, moves it to the
+# left with a small "x", hides the other level-1 chips and offers the next
+# level; each chosen chip joins the row the same way (at most 4 levels).
+#
+#   id, name, icon: the chip. A filter shows the tiles whose KPIs list its id
+#                   under `filters:` in config/kpis.yaml.
+#   theme:          colour of the chip (default | rewind: Christmas red).
+#   levels:         levels offered after this filter, in order (live KPIs only):
+#                     day   today / tomorrow (`days` in config/periods.yaml)
+#                     slot  morning, lunchtime, afternoon, evening, night
+#                           (time slots of config/periods.yaml, `chip` labels);
+#                           whole-day tiles are not under any slot.
+#                   Chips only appear for days and slots that still have tiles.
+#   overview:       the tile shown on the home page: a live tile of this
+#                   filter and one of its periods (today's, or tomorrow's once
+#                   today's is over). No overview: not on the home page.
 #
 # To add a filter: add an entry here, then tag the KPIs it should show with
 # its id in config/kpis.yaml. A filter that matches no enabled KPI is an error.
 filters:
-  - id: all
-    name: { fr: Tout, en: All }
-    icon: sparkle
-    all: true
-
-  # Stays right after "All": the Rewind of the last season (config/rewinds.yaml).
+  # The Rewind of the last season (config/rewinds.yaml): no levels, no overview.
   - id: rewind-2025-26
     name: { fr: Rewind 25/26, en: Rewind 25/26 }
     icon: rewind
-    exclusive: true
     theme: rewind
 
   - id: snow
     name: { fr: Neige, en: Snow }
     icon: snowflake
+    levels: [day, slot]
+    overview: { tile: snowfall_today, period: day }
 
   - id: powder
     name: { fr: Poudreuse, en: Powder }
     icon: mountain
+    levels: [day, slot]
+    overview: { tile: onpiste_powder, period: morning }
 
+  # White days are computed for the whole day only: no `slot` level.
   - id: visibility
     name: { fr: Visibilité, en: Visibility }
     icon: fog
+    levels: [day]
+    overview: { tile: whiteout, period: day }

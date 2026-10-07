@@ -1,10 +1,11 @@
 <!--
   Sticky app bar on frosted white: logo and title on the left, menu button on
   the right; below, the massif bar (large chips, no "all" choice), then the
-  filter bar (small chips).
+  filter bar (small chips, filter levels of lib/filterLevels.ts).
 -->
 <script lang="ts">
-  import type { Filter, Massif } from '../lib/config';
+  import type { Massif } from '../lib/config';
+  import type { FilterChip } from '../lib/filterLevels';
   import { i18n } from '../lib/i18n/i18n.svelte';
   import FilterBar from './FilterBar.svelte';
   import Icon from './Icon.svelte';
@@ -15,7 +16,6 @@
     selectedMassif,
     onselectmassif,
     filters,
-    selectedFilter,
     onselectfilter,
     menuOpen,
     onmenu,
@@ -23,9 +23,9 @@
     massifs: Massif[];
     selectedMassif: string;
     onselectmassif: (id: string) => void;
-    filters: Filter[];
-    selectedFilter: string;
-    onselectfilter: (id: string) => void;
+    filters: FilterChip[];
+    /** Called with the chip `key`. */
+    onselectfilter: (key: string) => void;
     menuOpen: boolean;
     onmenu: () => void;
   } = $props();
@@ -50,17 +50,16 @@
       {#if massifs.length > 0}
         <FilterBar
           size="large"
-          options={massifs}
-          selected={selectedMassif}
+          options={massifs.map((m) => ({ ...m, pressed: m.id === selectedMassif }))}
           onselect={onselectmassif}
           label={i18n.t('massifs.label')}
         />
       {/if}
-      {#if filters.length > 1}
+      {#if filters.length > 0}
         <FilterBar
-          options={filters}
-          selected={selectedFilter}
+          options={filters.map((c) => ({ ...c, removable: c.pressed }))}
           onselect={onselectfilter}
+          resetScroll
           label={i18n.t('filters.label')}
         />
       {/if}

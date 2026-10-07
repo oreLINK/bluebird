@@ -86,6 +86,54 @@ def test_kpi_filters_must_exist_and_every_filter_must_match_a_kpi(tmp_path: Path
     assert "filter 'snow' matches no enabled KPI" in str(error.value)
 
 
+@pytest.mark.parametrize(
+    ("file", "old", "new", "message"),
+    [
+        (
+            "filters.yaml",
+            "overview: { tile: whiteout, period: day }",
+            "overview: { tile: nope, period: day }",
+            "filter 'visibility' overview: unknown tile 'nope'",
+        ),
+        (
+            "filters.yaml",
+            "overview: { tile: whiteout, period: day }",
+            "overview: { tile: snowfall_today, period: day }",
+            "tile 'snowfall_today' has no KPI of this filter",
+        ),
+        (
+            "filters.yaml",
+            "overview: { tile: onpiste_powder, period: morning }",
+            "overview: { tile: onpiste_powder, period: evening }",
+            "tile 'onpiste_powder' is not shown for period 'evening'",
+        ),
+        ("filters.yaml", "levels: [day]\n", "levels: [day, day]\n", "only appear once"),
+        ("filters.yaml", "levels: [day]\n", "levels: [day, week]\n", "Input should be"),
+        ("periods.yaml", "    chip: { fr: Nuit, en: Night }\n", "", "'night' needs a `chip`"),
+        ("periods.yaml", "  - { fr: Demain, en: Tomorrow }\n", "", "`days` needs 2 chip labels"),
+    ],
+)
+def test_invalid_filter_levels_are_rejected(
+    tmp_path: Path, file: str, old: str, new: str, message: str
+) -> None:
+    config_dir = tiny_config_dir(tmp_path)
+    text = (config_dir / file).read_text(encoding="utf-8")
+    assert old in text
+    (config_dir / file).write_text(text.replace(old, new, 1), encoding="utf-8")
+    with pytest.raises(ConfigError, match=message):
+        load_config(config_dir)
+
+
+def test_filters_have_at_most_four_levels(repo_config: Config) -> None:
+    from bluebird_pipeline.config import MAX_FILTER_LEVELS, Filter
+
+    with pytest.raises(ValueError, match="at most 3"):
+        Filter.model_validate(
+            {"id": "x", "name": {"fr": "x", "en": "x"}, "levels": ["day", "slot", "day", "slot"]}
+        )
+    assert all(1 + len(f.levels) <= MAX_FILTER_LEVELS for f in repo_config.filters)
+
+
 def test_method_placeholders_must_be_kpi_params(tmp_path: Path) -> None:
     config_dir = tiny_config_dir(tmp_path)
     kpis = (config_dir / "kpis.yaml").read_text(encoding="utf-8")
@@ -186,7 +234,12 @@ def test_tile_periods_default_to_those_of_its_kpis(repo_config: Config) -> None:
             "      - snowfall_chance\n",
             "KPI 'snowfall_chance' is not historical",
         ),
-        ("filters.yaml", "    exclusive: true\n", "", "filter 'rewind-2025-26' must be exclusive"),
+        (
+            "filters.yaml",
+            "    theme: rewind\n",
+            "    theme: rewind\n    levels: [day]\n",
+            "filter 'rewind-2025-26' cannot have levels or an overview",
+        ),
         ("rewinds.yaml", "    end: 2026-05-01", "    end: 2025-11-01", "end must be after start"),
         ("kpis.yaml", "    value: { unit: h, decimals: 0 }\n", "", "needs `value`"),
     ],

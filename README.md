@@ -23,7 +23,7 @@ closed season, built once from archived forecasts. The first one, *Rewind
 25/26* (1 December 2025 – 1 May 2026, Pyrenees), ranks the resorts on season
 snowfall at the resort, on the slopes and off-piste around them, on the
 longest snowfall and on the share of days with more than 70 cm of snow on the
-slopes. It has its own red filter, right after "All".
+slopes. It has its own red filter, the first chip of the filter bar.
 
 This README is for developers. See [PROJECT.md](PROJECT.md) for the product
 view, [CONTEXT.md](CONTEXT.md) for the AI-assistant briefing and
@@ -379,12 +379,12 @@ Red Hat YAML extension) validates and autocompletes them from `config/schemas/`.
 | `massifs.yaml` | Mountain ranges of the massif bar | `id`, `name {fr,en}`, `timezone`, `enabled`, `order`, `bbox`, `skyline` |
 | `stations/<massif>.yaml` | Resorts of one massif | `defaults {grooming_end, lifts_open}`, `stations[]`: `id`, `name`, `short_name?` (≤ 20 chars, shown in tiles), `lat`, `lon`, `elevation {base, summit, mid?}`, `aspects`, `grooming_end?`, `lifts_open?`, `website?`, `enabled` |
 | `kpis.yaml` | KPI registry | `id`, `aggregator`, `kind` (`live` / `historical`), `order` (`desc` / `asc`: lowest value first, e.g. fewest white days), `value {unit, unit_label, unit_label_one, decimals, scale, max}` (`unit_label {fr,en}` when the unit depends on the language, e.g. jours / days, and `unit_label_one` its singular, chosen with the language's plural rules) (historical; `scale` converts the aggregator's unit, e.g. `0.01` for cm → m; `max` is the value of a full bar, e.g. `100` for a percentage, default the best value), `name`, `description`, `method?` (`{param}` placeholders, shown on the tile back), `params`, `drivers {key: {label, unit, decimals}}`, `filters[]`, `periods[]` (live KPIs; default `[day]`), `enabled` |
-| `periods.yaml` | Time slots of the ski day | `day_start`, `horizon_days`, `periods[]`: `id`, `start`, `end`, `native_window?`, `labels[]` (`{fr,en}` per day: today, tomorrow) |
-| `filters.yaml` | Filter bar chips, in order | `id`, `name {fr,en}`, `icon?`, `all?` (every tile but exclusive ones), `exclusive?` (its tiles only show under it), `theme?` (`default` / `rewind`) |
+| `periods.yaml` | Time slots of the ski day | `day_start`, `horizon_days`, `days[]` (`{fr,en}` chips of the `day` filter level: Aujourd'hui, Demain), `periods[]`: `id`, `start`, `end`, `native_window?`, `labels[]` (`{fr,en}` per day: today, tomorrow), `chip` (`{fr,en}` chip of the `slot` filter level, required for time slots) |
+| `filters.yaml` | Level-1 chips of the filter bar, in order | `id`, `name {fr,en}`, `icon?`, `theme?` (`default` / `rewind`), `levels?[]` (next levels, at most 3: `day`, `slot`; live KPIs only), `overview? {tile, period}` (its tile on the home page) |
 | `tiles.yaml` | KPI containers; a live tile is shown once per period | `id`, `type`, `kpis[]`, `title?` (live: must contain `{period}`; Rewind: must not), `periods?[]` (live), `icon?`, `options` (`details` turns station details on, off by default) |
 | `layout.yaml` | Tile order | `default[]`, `overrides {massif: [tiles]}` |
 | `sources.yaml` | Data sources | `id`, `extractor`, `transformer`, `schedule (daily/on_demand/reference/season)`, `params`, `attribution` |
-| `rewinds.yaml` | Rewinds (closed seasons) | `id` (e.g. `2025-26`), `name`, `start`, `end` (local days, included), `massifs[]`, `kpis[]` (historical), `filter` (exclusive) |
+| `rewinds.yaml` | Rewinds (closed seasons) | `id` (e.g. `2025-26`), `name`, `start`, `end` (local days, included), `massifs[]`, `kpis[]` (historical), `filter` (level-1 filter without levels or overview) |
 | `pages.yaml` | Footer and full-window pages | `footer {repository, pages[]}`, `pages[]`: `id` (URL hash), `title`, `sections[]`: `id`, `title`, `paragraphs[]`, `links[] {label, url}`, `block?` (`data_sources` / `photo_credits` / `service_summary` / `service_sources` / `service_transforms` / `service_kpis` / `service_tiles`) |
 
 Validation is strict: unknown keys, wrong types, duplicate ids, dangling
@@ -502,9 +502,8 @@ No frontend change is needed for a KPI shown in a `banner`, `banner_full`,
 
 1. Add an entry to `config/rewinds.yaml` (`id`, `name`, `start`, `end`,
    `massifs`, `kpis`, `filter`).
-2. Add its exclusive filter to `config/filters.yaml` (`exclusive: true`,
-   `theme: rewind`), right after the `all` filter, and tag its historical KPIs
-   with it.
+2. Add its filter to `config/filters.yaml` (`theme: rewind`, no `levels`, no
+   `overview`), first in the list, and tag its historical KPIs with it.
 3. Add one tile per KPI in `config/tiles.yaml`, of any type (`banner_full`,
    `banner`, `simple`, `ranking`, with `photo: leader` for a banner), and list
    them in `config/layout.yaml`. The tile finds its Rewind from the KPI and
@@ -554,12 +553,25 @@ The site creates its tiles from the payload; no frontend change is needed.
 
 ### Add a filter (filter bar)
 
-1. Add an entry to `config/filters.yaml` (`id`, `name {fr, en}`, `icon`).
+1. Add an entry to `config/filters.yaml` (`id`, `name {fr, en}`, `icon`),
+   with its next `levels` (`[day, slot]`, `[day]` or none) and, to show it on
+   the home page, `overview: {tile, period}` (a live tile of this filter and
+   one of its periods).
 2. Tag the KPIs it should show with its id: `filters: [<id>]` in `config/kpis.yaml`.
-3. `uv run bluebird validate` (a filter matching no enabled KPI is an error).
+3. `uv run bluebird validate` (a filter matching no enabled KPI, an unknown
+   overview tile or period, levels on historical KPIs are errors).
 
-The first filter is selected by default; `all: true` makes a filter show
-every tile. Filters matching no tile of the current layout are hidden.
+Nothing is selected by default: the home page shows the overview tiles.
+Filters matching no tile of the current layout are hidden.
+
+### Add a kind of filter level
+
+Levels after level 1 are built-in kinds (`day`, `slot`). A new kind (a 4th
+level at most, `MAX_FILTER_LEVELS`) is one value of `FilterLevel` in
+`pipeline/.../config.py` and one entry of `LEVEL_KINDS` in
+`web/src/lib/filterLevels.ts` (`options` offered for the current tiles,
+`match` of a tile), plus its chip labels in config (`{fr, en}`) and tests;
+then `uv run bluebird schemas` and `npm run gen:types`.
 
 ### Add a banner photo
 
@@ -666,11 +678,21 @@ Implement `write_bytes`, `read_bytes`, `exists` and `list` of
   `config/massifs.yaml` (no "all" choice: one massif is always shown). It is
   the only place to choose the massif. `components/FilterBar.svelte` with
   `size="large"`; the choice is remembered in `localStorage`.
-- **Filter bar**: under the massif bar, the same component with smaller chips
-  (`size="small"`), from `config/filters.yaml`. A filter shows the tiles whose KPIs carry its id;
-  the choice is remembered in `localStorage`. "All" shows every tile except
-  those of `exclusive` filters (the Rewinds), which only show under their own
-  chip; `theme: rewind` makes a chip Christmas red.
+- **Filter bar** (Spotify-style levels): under the massif bar, the same
+  component with smaller chips (`size="small"`). `lib/filterLevels.ts`
+  (`filterState`, `nextPath`, unit-tested) turns the chosen path (`[]`,
+  `['snow']`, `['snow', 'd0']`, `['snow', 'd0', 'morning']`) into chips and
+  tiles. With nothing chosen, the bar shows the level-1 filters of
+  `config/filters.yaml` and the page one `overview` tile per filter (its
+  fixed period, today's or tomorrow's once today's is over; the Rewind has
+  none). Choosing a filter fills its chip with a × and keeps only it, then
+  offers its `levels`: `day` (Aujourd'hui, Demain: `days` of `periods.yaml`)
+  then `slot` (Matin…Nuit: `chip` of the time slots; whole-day tiles are
+  under no slot), only those that still have tiles. Each choice joins the row
+  and the bar scrolls back to its start; tapping a chosen chip removes it
+  and the levels after it. Unknown or ended path items are dropped. Only
+  level 1 is remembered in `localStorage`. `theme: rewind` makes a chip
+  Christmas red. New chips grow in and the others slide (`animate:flip`).
 - **Design**: betting-app layout (inspired by Betclic) in dark blue, light
   blue and white, on a plain, sober page background with no background
   animation. Colours are role tokens in `styles/tokens.css` (light and dark
@@ -810,10 +832,12 @@ Keep this table in sync when a tile is added, removed or changed.
 | `rewind_2025_26_deep_snow_days` | `banner` | `season_deep_snow_days` (historical, %, bars 0–100 %) | Rewind 25/26 | L'enneigement idéal / Ideal snow cover | `photo: leader`, `scene: piste` |
 | `rewind_2025_26_white_days` | `banner` | `season_white_days` (historical, days, fewest first) | Rewind 25/26 | Le moins de jours blancs / Fewest white days | `photo: leader`, `scene: mountain` |
 
-Live tiles show under "All" and their filter, once per period of today and
-tomorrow not over yet (`{period}` becomes "ce soir", "demain matin"…); Rewind
-tiles only under their exclusive Rewind filter, once, in the Rewind theme with
-a "REWIND 25/26" badge.
+The home page (no filter) shows one overview tile per filter
+(`config/filters.yaml` `overview`): `snowfall_today` (day), `onpiste_powder`
+(morning), `whiteout` (day). Under a filter, live tiles show once per period of
+today and tomorrow not over yet (`{period}` becomes "ce soir", "demain
+matin"…), narrowed by the day and slot chips; Rewind tiles only under their
+Rewind filter, once, in the Rewind theme with a "REWIND 25/26" badge.
 
 ### Future features (roadmap)
 
@@ -837,6 +861,10 @@ AGENTS.md §4; scraping must respect the site's terms).
 | Avalanche bulletin (BRA) | Danger level per massif, archive for Rewind/All Time | Météo-France API (key) or public XML/PDF archive | 🔴 |
 | School holidays | Crowd index, "holiday luck" Rewind | Open data school calendar (education.gouv) | 🟡 |
 | Probability calibration | "Our success rate" (Brier score, reliability diagram) | Gold history on `gh-pages` vs observed snow | 🟢/🟡 |
+| Indicator categories | Six level-2 categories (Snow, Snow quality, Sky, Comfort, Getting there, Safety; PROJECT.md "Categories") replacing the Snow / Powder / Visibility topics | KPI tags and a `category` filter level kind in `lib/filterLevels.ts` | 🟢 |
+| Activity filter (level 1) | Alpine skiing, snowshoeing, cross-country, village, next to the Rewind filter | Activity tags on KPIs; nordic and snowshoe sites (OSM `piste:type=nordic` / `hike`, today only `downhill` is fetched) as a new kind of station | 🟡 |
+| Terrain filter level | Easy pistes (green/blue), steeper pistes (red/black), off-piste, for alpine skiing; replaces a skier-level filter | Piste difficulty already in `domain_features` (`piste_km_by_difficulty`); KPIs sampled along pistes of each difficulty; `terrain` level kind, `MAX_FILTER_LEVELS` 4 → 5 | 🟢 |
+| Skip single-choice levels | A filter level with one option is applied automatically | `filterState` in `lib/filterLevels.ts` | 🟢 |
 
 **Tile ordering algorithm (planned).** The page order would become a score
 per tile, computed in the browser and explained on the tile back ("why this

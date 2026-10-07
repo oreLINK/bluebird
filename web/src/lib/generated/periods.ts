@@ -8,6 +8,12 @@ export type DayStart = string;
  * Ski days published: 1 = today, 2 = + tomorrow.
  */
 export type HorizonDays = number;
+export type Fr = string;
+export type En = string;
+/**
+ * Chips of the `day` filter level, one per day of the horizon: [today, …].
+ */
+export type Days = Localized[];
 /**
  * @minItems 1
  */
@@ -28,8 +34,6 @@ export type NativeWindow = boolean;
  * @minItems 1
  */
 export type Labels = [Localized, ...Localized[]];
-export type Fr = string;
-export type En = string;
 
 /**
  * Schema of ``config/periods.yaml``.
@@ -37,7 +41,15 @@ export type En = string;
 export interface PeriodsFile {
   day_start?: DayStart;
   horizon_days?: HorizonDays;
+  days?: Days;
   periods: Periods;
+}
+/**
+ * A user-facing string in every supported UI language.
+ */
+export interface Localized {
+  fr: Fr;
+  en: En;
 }
 /**
  * A time slot of the ski day a KPI is computed for (morning, evening…).
@@ -48,11 +60,8 @@ export interface Period {
   end: End;
   native_window?: NativeWindow;
   labels: Labels;
-}
-/**
- * A user-facing string in every supported UI language.
- */
-export interface Localized {
-  fr: Fr;
-  en: En;
+  /**
+   * Chip of the `slot` filter level (Matin, Soir…); required for time slots.
+   */
+  chip?: Localized | null;
 }

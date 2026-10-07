@@ -14,6 +14,9 @@
 #                    lifts opening for powder); start/end then only decide when
 #                    the period is shown.
 #     labels:        one per day of the horizon: [today, tomorrow].
+#     chip:          label of the time slot in the `slot` filter level
+#                    (config/filters.yaml); required for time slots.
+#   days:            chips of the `day` filter level, one per day of the horizon.
 #
 # A period is published and displayed until its end: after 12:00 "ce matin" is
 # gone, after 18:00 "ce midi" and "cet après-midi" are gone. The site also hides
@@ -22,6 +25,9 @@
 # KPIs choose their periods with `periods: [...]` in config/kpis.yaml.
 day_start: "06:00"
 horizon_days: 2
+days:
+  - { fr: Aujourd'hui, en: Today }
+  - { fr: Demain, en: Tomorrow }
 periods:
   - id: day
     start: "06:00"
@@ -34,6 +40,7 @@ periods:
   - id: morning
     start: "06:00"
     end: "12:00"
+    chip: { fr: Matin, en: Morning }
     labels:
       - { fr: ce matin, en: this morning }
       - { fr: demain matin, en: tomorrow morning }
@@ -41,6 +48,7 @@ periods:
   - id: midday
     start: "12:00"
     end: "14:00"
+    chip: { fr: Midi, en: Lunchtime }
     labels:
       - { fr: ce midi, en: at lunchtime }
       - { fr: demain midi, en: tomorrow lunchtime }
@@ -48,6 +56,7 @@ periods:
   - id: afternoon
     start: "14:00"
     end: "18:00"
+    chip: { fr: Après-midi, en: Afternoon }
     labels:
       - { fr: cet après-midi, en: this afternoon }
       - { fr: demain après-midi, en: tomorrow afternoon }
@@ -55,6 +64,7 @@ periods:
   - id: evening
     start: "18:00"
     end: "00:00"
+    chip: { fr: Soir, en: Evening }
     labels:
       - { fr: ce soir, en: this evening }
       - { fr: demain soir, en: tomorrow evening }
@@ -62,6 +72,7 @@ periods:
   - id: night
     start: "00:00"
     end: "06:00"
+    chip: { fr: Nuit, en: Night }
     labels:
       - { fr: cette nuit, en: tonight }
       - { fr: la nuit de demain, en: tomorrow night }

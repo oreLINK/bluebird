@@ -75,26 +75,15 @@ export function resolveLayout(
   return resolved;
 }
 
-/**
- * Tiles matching a filter: tiles with a KPI tagged with its id; for an `all`
- * filter, every tile except those tagged with an `exclusive` filter of
- * `allFilters` (the Rewinds only show under their own filter).
- */
-export function filterTiles(
-  resolved: ResolvedTile[],
-  filter: Filter | undefined,
-  allFilters: Filter[] = [],
-): ResolvedTile[] {
-  if (!filter || filter.all) {
-    const exclusive = new Set(allFilters.filter((f) => f.exclusive).map((f) => f.id));
-    return resolved.filter(({ kpis }) => !kpis.some((k) => k.filters?.some((id) => exclusive.has(id))));
-  }
+/** Tiles matching a level-1 filter (a KPI tagged with its id); every tile without a filter. */
+export function filterTiles(resolved: ResolvedTile[], filter: Filter | undefined): ResolvedTile[] {
+  if (!filter) return resolved;
   return resolved.filter(({ kpis }) => kpis.some((kpi) => kpi.filters?.includes(filter.id)));
 }
 
-/** Filters worth showing in the bar: `all` ones, and those matching at least one tile. */
+/** Level-1 filters worth showing in the bar: those matching at least one tile. */
 export function usableFilters(filters: Filter[], resolved: ResolvedTile[]): Filter[] {
-  return filters.filter((f) => f.all || filterTiles(resolved, f, filters).length > 0);
+  return filters.filter((f) => filterTiles(resolved, f).length > 0);
 }
 
 /**
@@ -176,7 +165,7 @@ export function rewindPayload(rewindId: string, massifId: string): DiamondRewind
   return rewindIndex.get(`${rewindId}/${massifId}`);
 }
 
-/** The Rewind shown by a filter (its exclusive filter), if any. */
+/** The Rewind shown by a level-1 filter (config/rewinds.yaml `filter`), if any. */
 export function rewindOfFilter(filterId: string | undefined): Rewind | undefined {
   return rewinds.find((r) => r.filter === filterId);
 }

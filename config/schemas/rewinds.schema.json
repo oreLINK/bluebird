@@ -69,7 +69,7 @@
           "type": "array"
         },
         "filter": {
-          "description": "Exclusive filter (config/filters.yaml) showing its tiles.",
+          "description": "Level-1 filter (config/filters.yaml) showing its tiles (no levels).",
           "pattern": "^[a-z0-9]+(?:[_-][a-z0-9]+)*$",
           "title": "Filter",
           "type": "string"

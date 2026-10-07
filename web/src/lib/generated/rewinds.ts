@@ -25,7 +25,7 @@ export type Massifs = [string, ...string[]];
  */
 export type Kpis = [string, ...string[]];
 /**
- * Exclusive filter (config/filters.yaml) showing its tiles.
+ * Level-1 filter (config/filters.yaml) showing its tiles (no levels).
  */
 export type Filter = string;
 export type Enabled = boolean;

@@ -5,14 +5,24 @@
   Used twice by AppHeader, with the same chip style in two sizes:
     size `large`  the massif bar (config/massifs.yaml); one massif is always
                   selected, there is no "all" choice.
-    size `small`  the filter bar (config/filters.yaml).
+    size `small`  the filter bar, Spotify-style (lib/filterLevels.ts): chosen
+                  chips are filled with a × (`removable`) and lead the row;
+                  the bar scrolls back to its start after each choice
+                  (`resetScroll`). Chips arriving grow in; the others slide
+                  to their new place (reduced-motion aware).
 -->
 <script lang="ts" module>
   import type { Filter } from '../lib/config';
 
-  /** A choice of the bar: a filter, or a massif (no icon). */
+  /** A choice of the bar: a filter chip, or a massif (no icon). */
   export interface BarOption {
     id: string;
+    /** Unique key in the bar when ids can repeat (filter levels); defaults to `id`. */
+    key?: string;
+    /** Selected: filled chip, `aria-pressed`. */
+    pressed: boolean;
+    /** A pressed chip with a ×: tapping it removes the choice. */
+    removable?: boolean;
     name: Filter['name'];
     icon?: string | null;
     /** `rewind`: Christmas-red chip (config/filters.yaml `theme`). */
@@ -21,22 +31,39 @@
 </script>
 
 <script lang="ts">
+  import { tick } from 'svelte';
+  import { flip } from 'svelte/animate';
+  import { cubicOut } from 'svelte/easing';
   import { i18n } from '../lib/i18n/i18n.svelte';
+  import { motion } from '../lib/transitions';
   import Icon from './Icon.svelte';
 
   let {
     options,
-    selected,
     onselect,
     label,
     size = 'small',
+    resetScroll = false,
   }: {
     options: BarOption[];
-    selected: string;
-    onselect: (id: string) => void;
+    /** Called with the option `key` (or `id`). */
+    onselect: (key: string) => void;
     label: string;
     size?: 'large' | 'small';
+    /** Scroll back to the start after a choice (chosen chips lead the row). */
+    resetScroll?: boolean;
   } = $props();
+
+  const keyOf = (option: BarOption) => option.key ?? option.id;
+
+  /** A chip appearing: grows in while fading in. */
+  function grow(_node: Element) {
+    return {
+      duration: motion(200),
+      easing: cubicOut,
+      css: (t: number) => `opacity: ${t}; transform: scale(${0.85 + 0.15 * t});`,
+    };
+  }
 
   let bar = $state<HTMLElement>();
   let fadeStart = $state(false);
@@ -56,9 +83,14 @@
     bar.scrollLeft += event.deltaY;
   }
 
-  function choose(id: string, button: HTMLElement) {
-    onselect(id);
-    button.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+  async function choose(option: BarOption, button: HTMLElement) {
+    onselect(keyOf(option));
+    if (!resetScroll) {
+      button.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      return;
+    }
+    await tick(); // the chips of the new level are in place
+    bar?.scrollTo({ left: 0, behavior: motion(1) ? 'smooth' : 'instant' });
   }
 
   $effect(() => {
@@ -78,16 +110,23 @@
   onscroll={updateFades}
   {onwheel}
 >
-  {#each options as option (option.id)}
+  {#each options as option (keyOf(option))}
     <button
       type="button"
       class="chip"
       class:rewind={option.theme === 'rewind'}
-      aria-pressed={option.id === selected}
-      onclick={(event) => choose(option.id, event.currentTarget)}
+      class:removable={option.removable}
+      aria-pressed={option.pressed}
+      aria-label={option.removable
+        ? i18n.t('filters.remove', { name: i18n.pick(option.name) })
+        : undefined}
+      onclick={(event) => choose(option, event.currentTarget)}
+      animate:flip={{ duration: motion(220), easing: cubicOut }}
+      in:grow
     >
       {#if option.icon}<Icon name={option.icon} size={size === 'small' ? 16 : 18} />{/if}
       <span>{i18n.pick(option.name)}</span>
+      {#if option.removable}<Icon name="close" size={14} class="remove" />{/if}
     </button>
   {/each}
 </nav>
@@ -206,5 +245,15 @@
     min-height: 2.125rem;
     padding: 0 12px 0 10px;
     font-size: 0.8125rem;
+  }
+
+  /* Chosen filter: the × after the text says a tap removes it. */
+  .chip.removable {
+    padding-right: 10px;
+  }
+
+  .chip :global(.remove) {
+    margin-left: 1px;
+    stroke-width: 2.4;
   }
 </style>
