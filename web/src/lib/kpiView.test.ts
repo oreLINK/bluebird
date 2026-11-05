@@ -12,7 +12,7 @@ import {
   viewFor,
 } from './kpiView';
 
-const name = { fr: 'x', en: 'x' };
+const name = { fr: 'x', en: 'x', es: 'x' };
 const nbsp = (s: string) => s.replace(/[  ]/g, ' ');
 const historical: Kpi = {
   id: 'snow',
@@ -66,8 +66,8 @@ describe('kpi views', () => {
       order: 'asc',
       value: {
         unit: 'd',
-        unit_label: { fr: 'jours', en: 'days' },
-        unit_label_one: { fr: 'jour', en: 'day' },
+        unit_label: { fr: 'jours', en: 'days', es: 'days' },
+        unit_label_one: { fr: 'jour', en: 'day', es: 'day' },
         decimals: 0,
       },
     };
@@ -207,9 +207,9 @@ describe('live displays', () => {
         range: ['chill_p10', 'chill_p90'],
         tolerance: 6,
         bands: [
-          { max: -28, label: { fr: 'risque élevé', en: 'high risk' } },
-          { max: -10, label: { fr: 'risque modéré', en: 'moderate risk' } },
-          { label: { fr: 'risque faible', en: 'low risk' } },
+          { max: -28, label: { fr: 'risque élevé', en: 'high risk', es: 'high risk' } },
+          { max: -10, label: { fr: 'risque modéré', en: 'moderate risk', es: 'moderate risk' } },
+          { label: { fr: 'risque faible', en: 'low risk', es: 'low risk' } },
         ],
       },
       { value: { unit: '°C', decimals: 0 }, order: 'asc' },
@@ -225,9 +225,9 @@ describe('live displays', () => {
     const chains = kpi({
       kind: 'levels',
       levels: [
-        { min: 0.6, label: { fr: 'Oui', en: 'Yes' } },
-        { min: 0.25, label: { fr: 'Possible', en: 'Possible' } },
-        { min: 0, label: { fr: 'Non', en: 'No' } },
+        { min: 0.6, label: { fr: 'Oui', en: 'Yes', es: 'Yes' } },
+        { min: 0.25, label: { fr: 'Possible', en: 'Possible', es: 'Possible' } },
+        { min: 0, label: { fr: 'Non', en: 'No', es: 'No' } },
       ],
     });
     const view = liveView(chains, daily([entry('a', 0.7, {}), entry('b', 0.3, {}), entry('c', 0.1, {})]), slot);

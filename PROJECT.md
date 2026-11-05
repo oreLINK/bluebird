@@ -13,14 +13,16 @@ Once a season is over, a **Rewind** looks back at it: which resort got the
 most snow, the longest snowfall, the snowiest slopes and the snowiest
 off-piste terrain around them. The first one is **Rewind 25/26**.
 
-It is built for your phone, in French or English.
+It is built for your phone, in French, English or Spanish.
 
 ---
 
 ## What you see
 
-At the top, the Bluebird name sits on the left and the menu button on the
-right lets you choose your language. Below the name, a first row of buttons
+At the top, the Bluebird logo sits on the left and, on the right, a button
+with the flag of the current language opens a small window to choose
+another language. The site starts in your phone's or computer's language
+when it is French, English or Spanish, in French otherwise. Below the name, a first row of buttons
 lets you choose **where** (see [Places](#places)), and a second row of the
 same buttons narrows the page step by step (see [Filters](#filters)). Just
 above the tiles, a date tells you which day the data are for (the day of
@@ -427,11 +429,18 @@ archive does not include it), on a coarser grid of about 7 km.
   snow, longest snowfall, most snow on the slopes, most off-piste snow, ideal
   snow cover days, fewest white days), behind its own red filter.
 - Place buttons above the filters (mountain range, then département, then
-  linked ski area when there is one), and a menu with the language (French
-  or English), both remembered on your device.
-- Clean dark-blue, light-blue and white design with a sporty typeface, in
+  linked ski area when there is one), and a flag button for the language
+  (French, English or Spanish), both remembered on your device.
+- Clean dark-blue, light-blue and white design with a sporty typeface
+  for the logo and titles (Barlow) and a very legible one for the text and
+  numbers (Inter), both free fonts, in
   light and dark mode following your phone's setting, without background
   animation.
+- A ski goggle logo at the top left whose lens changes colour with the time
+  of day in the resorts: peach and lavender at dawn (from 6 am), orange
+  during the day (from 9 am), pink and violet at dusk (from 5 pm), deep blue
+  at night (from 8 pm). The browser tab icon and the home-screen icon always
+  show the daytime orange lens.
 - Banner photos of the ski areas (photos are added progressively; an
   illustration is shown until then). Each photo is credited on the back of
   its tile and in the legal notice.
@@ -450,6 +459,15 @@ archive does not include it), on a coarser grid of about 7 km.
 - Webcams of the resorts, a comparator of two resorts, a "near me" sort by
   conditions and travel time, a season calendar for the Rewind, and tiles
   ordered by relevance and reliability of the day.
+- **Animated banners**: for a resort without a photo we may publish, the
+  banner of a tile shows a small animation that matches the indicator
+  instead of a still drawing: falling snow, a bright sun, drifting fog,
+  twinkling stars, a setting sun, wind in the lift cables… Still images for
+  people who reduce motion on their phone.
+- **Stories for your place**: a full-screen summary of the day for the place
+  you chose (massif, département or ski area), one screen per highlight
+  (snow tonight, bluebird day tomorrow, the windiest lifts…) with the leading
+  resort, its value and the next two; tap or swipe to go to the next story.
 - Avalanche risk level from the Météo-France bulletin (BERA), next to each resort.
 - Resort opening status (open lifts and pistes).
 - Slope orientation and steepness to refine the powder estimate

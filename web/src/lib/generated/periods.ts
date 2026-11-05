@@ -10,6 +10,7 @@ export type DayStart = string;
 export type HorizonDays = number;
 export type Fr = string;
 export type En = string;
+export type Es = string;
 /**
  * Chips of the `day` filter level, one per day of the horizon: [today, …].
  */
@@ -50,6 +51,7 @@ export interface PeriodsFile {
 export interface Localized {
   fr: Fr;
   en: En;
+  es: Es;
 }
 /**
  * A time slot of the ski day a KPI is computed for (morning, evening…).

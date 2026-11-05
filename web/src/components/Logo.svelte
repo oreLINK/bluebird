@@ -1,16 +1,48 @@
 <!--
-  Bluebird wordmark: text only, no mark. Two-tone italic display type, "bird"
-  with a light-blue gradient and a short underline swoosh. (The favicon,
-  web/public/favicon.svg, keeps the former mountain mark.)
+  Bluebird logo: the ski goggle mark (LogoMark.svelte) followed by the
+  wordmark, two-tone italic display type, "bird" with a light-blue gradient
+  and a short underline swoosh. The lens gradient follows the phase of the
+  day (dawn, day, dusk, night: lib/timeOfDay.ts) in the timezone of the
+  first massif, checked every minute. The favicon and the home-screen icon
+  are static copies of the `day` mark.
 -->
 <script lang="ts">
-  /** Wordmark height scale: 1 is the header size. */
+  import { massifs } from '../lib/config';
+  import { dayPhase } from '../lib/timeOfDay';
+  import LogoMark from './LogoMark.svelte';
+
+  /** Logo height scale: 1 is the header size. */
   let { scale = 1 }: { scale?: number } = $props();
+
+  const timezone = massifs[0]?.timezone ?? 'UTC';
+  let now = $state(new Date());
+  const phase = $derived(dayPhase(now, timezone));
+
+  $effect(() => {
+    const timer = setInterval(() => (now = new Date()), 60_000);
+    return () => clearInterval(timer);
+  });
 </script>
 
-<span class="wordmark" style="--scale: {scale}"><span class="a">Blue</span><span class="b">bird</span></span>
+<span class="logo" style="--scale: {scale}">
+  <span class="mark"><LogoMark {phase} /></span>
+  <span class="wordmark"><span class="a">Blue</span><span class="b">bird</span></span>
+</span>
 
 <style>
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(0.375rem * var(--scale, 1));
+    min-width: 0;
+  }
+
+  .mark {
+    flex: none;
+    width: calc(2.875rem * var(--scale, 1));
+    height: calc(2.875rem * var(--scale, 1));
+  }
+
   .wordmark {
     display: inline-block;
     font-family: var(--font-display);

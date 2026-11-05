@@ -29,4 +29,24 @@ photos/
   banner. A credit line does not give the right to publish: photos from
   resort, tourism or review sites are usually all rights reserved.
 - A missing photo is not an error: the tile shows its illustration instead.
+
+## Where photos come from
+
+Photos are found with [Openverse](https://openverse.org/fr), the search
+engine of openly licensed images (Wikimedia Commons, Flickr…), and are free
+to reuse under their licence. Openverse lists several licences, so check
+each image:
+
+| Licence | Use it? |
+|---|---|
+| CC0, Public Domain Mark | Yes, no credit required (credit it anyway in `credits.yaml`). |
+| CC BY, CC BY-SA | Yes, with the author, licence and source in `credits.yaml` (BY-SA: the resized image stays under BY-SA). |
+| CC BY-NC (-SA) | Only while the site stays non-commercial; prefer another image. |
+| Any ND licence (BY-ND, BY-NC-ND) | No: resizing or cropping is a modification. |
+
+Open the source page (the "Source" link of Openverse, often Wikimedia
+Commons) to confirm the licence and the author before adding the photo, and
+prefer winter photos with snow. Keep the source URL in `credits.yaml`, and
+note any change you made (resized, converted to WebP) in a comment above the
+entry.
 - When you add a station, create its folder (with a `.gitkeep` until it has a photo).

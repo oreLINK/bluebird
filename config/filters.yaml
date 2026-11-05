@@ -32,89 +32,89 @@
 filters:
   # The Rewind of the last season (config/rewinds.yaml): no levels.
   - id: rewind-2025-26
-    name: { fr: Rewind 25/26, en: Rewind 25/26 }
+    name: { fr: Rewind 25/26, en: Rewind 25/26, es: Rewind 25/26 }
     icon: rewind
     theme: rewind
 
   # Will it snow, how much, is there snow on the ground?
   - id: snow
-    name: { fr: Neige, en: Snow }
+    name: { fr: Neige, en: Snow, es: Nieve }
     icon: snowflake
     levels: [group, day, slot]
     groups:
       - id: snowfall
-        name: { fr: Chutes, en: Snowfall }
+        name: { fr: Chutes, en: Snowfall, es: Nevadas }
         kpis: [snowfall_chance, powder_alert_chance]
       - id: snowmaking
-        name: { fr: Canons, en: Snow cannons }
+        name: { fr: Canons, en: Snow cannons, es: Cañones }
         kpis: [snowmaking_chance]
 
   # What will the snow be like under the skis: powder, spring snow, ice?
   - id: snow-quality
-    name: { fr: Glisse, en: Snow quality }
+    name: { fr: Glisse, en: Snow quality, es: Calidad de nieve }
     icon: piste
     levels: [group, day, slot]
     groups:
       - id: powder
-        name: { fr: Poudreuse, en: Powder }
+        name: { fr: Poudreuse, en: Powder, es: Nieve polvo }
         kpis: [onpiste_powder_chance, offpiste_powder_chance]
       - id: snow-state
-        name: { fr: État de la neige, en: Snow condition }
+        name: { fr: État de la neige, en: Snow condition, es: Estado de la nieve }
         kpis: [spring_snow_chance, hard_snow_chance, heavy_snow_chance]
       - id: beginners
-        name: { fr: Débutants, en: Beginners }
+        name: { fr: Débutants, en: Beginners, es: Principiantes }
         kpis: [easy_conditions_chance]
 
   # What will you see: sun, cloud, white day, sunset, stars? Whole-day tiles
   # (white day, bluebird day, sunset) are under Today/Tomorrow, not a slot.
   - id: sky
-    name: { fr: Ciel, en: Sky }
+    name: { fr: Ciel, en: Sky, es: Cielo }
     icon: sun
     levels: [group, day, slot]
     groups:
       - id: sun
-        name: { fr: Soleil, en: Sun }
+        name: { fr: Soleil, en: Sun, es: Sol }
         kpis: [bluebird_day_chance, sunny_slot_chance]
       - id: visibility
-        name: { fr: Visibilité, en: Visibility }
+        name: { fr: Visibilité, en: Visibility, es: Visibilidad }
         kpis: [whiteout_chance]
       - id: show
-        name: { fr: Spectacle, en: Sky show }
+        name: { fr: Spectacle, en: Sky show, es: Espectáculo }
         kpis: [sunset_chance, starry_night_chance]
 
   # How will it feel: cold, wind, a mild day?
   - id: comfort
-    name: { fr: Confort, en: Comfort }
+    name: { fr: Confort, en: Comfort, es: Confort }
     icon: thermometer
     levels: [group, day, slot]
     groups:
       - id: cold
-        name: { fr: Froid, en: Cold }
+        name: { fr: Froid, en: Cold, es: Frío }
         kpis: [wind_chill_chance]
       - id: mild
-        name: { fr: Douceur, en: Mild weather }
+        name: { fr: Douceur, en: Mild weather, es: Tiempo templado }
         kpis: [mild_day_chance]
 
   # Can you drive up, will the lifts run?
   - id: access
-    name: { fr: Accès, en: Getting there }
+    name: { fr: Accès, en: Getting there, es: Acceso }
     icon: car
     levels: [group, day, slot]
     groups:
       - id: road
-        name: { fr: Route, en: Road }
+        name: { fr: Route, en: Road, es: Carretera }
         kpis: [chains_chance]
       - id: lifts
-        name: { fr: Remontées, en: Lifts }
+        name: { fr: Remontées, en: Lifts, es: Remontes }
         kpis: [lift_wind_chance]
 
   # Which mountain hazards to watch? Never instead of the avalanche bulletin.
   # Wind-blown snow is computed for the whole day only: no `slot` level.
   - id: safety
-    name: { fr: Sécurité, en: Safety }
+    name: { fr: Sécurité, en: Safety, es: Seguridad }
     icon: alert
     levels: [group, day]
     groups:
       - id: offpiste
-        name: { fr: Hors-piste, en: Off-piste }
+        name: { fr: Hors-piste, en: Off-piste, es: Fuera de pista }
         kpis: [wind_slab_chance]

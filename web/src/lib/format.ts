@@ -1,7 +1,7 @@
 /** Locale-aware formatting helpers (pure, unit-tested). */
 import { type Locale, interpolate } from './i18n/core';
 
-const INTL_LOCALE: Record<Locale, string> = { fr: 'fr-FR', en: 'en-GB' };
+const INTL_LOCALE: Record<Locale, string> = { fr: 'fr-FR', en: 'en-GB', es: 'es-ES' };
 
 export function formatPercent(probability: number, locale: Locale): string {
   return new Intl.NumberFormat(INTL_LOCALE[locale], {

@@ -11,6 +11,7 @@ export type Pages = string[];
 export type Id = string;
 export type Fr = string;
 export type En = string;
+export type Es = string;
 /**
  * @minItems 1
  */
@@ -63,6 +64,7 @@ export interface Page {
 export interface Localized {
   fr: Fr;
   en: En;
+  es: Es;
 }
 /**
  * A titled section of a page: paragraphs, links and/or a built-in block.

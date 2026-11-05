@@ -1,7 +1,7 @@
 <script lang="ts">
   import AppFooter from './components/AppFooter.svelte';
   import AppHeader from './components/AppHeader.svelte';
-  import AppMenu from './components/AppMenu.svelte';
+  import LanguagePicker from './components/LanguagePicker.svelte';
   import ForecastStatus from './components/ForecastStatus.svelte';
   import Icon from './components/Icon.svelte';
   import InfoPage from './components/InfoPage.svelte';
@@ -19,6 +19,7 @@
   } from './lib/config';
   import { geoState, readGeoPath } from './lib/geoLevels';
   import { type MassifDaily, type ServiceStatus, loadMassif, loadStatus } from './lib/data';
+  import { sameInAll } from './lib/i18n/core';
   import { i18n } from './lib/i18n/i18n.svelte';
   import { readPref, writePref } from './lib/prefs';
   import { sheets } from './lib/sheets.svelte';
@@ -44,7 +45,7 @@
   /** Chosen filter chips, level by level (lib/filterLevels.ts); only level 1 is remembered. */
   const storedFilter = readPref('filter');
   let filterPath = $state<string[]>(storedFilter ? [storedFilter] : []);
-  let menuOpen = $state(false);
+  let languageOpen = $state(false);
   let status = $state<Status>('loading');
   let payload = $state<MassifDaily | null>(null);
   let serviceStatus = $state<ServiceStatus | null>(null);
@@ -151,14 +152,14 @@
 
 </script>
 
-<div class="page" inert={menuOpen || sheetOpen}>
+<div class="page" inert={languageOpen || sheetOpen}>
   <AppHeader
     places={place.chips}
     onselectplace={selectPlace}
     filters={filtered.chips}
     onselectfilter={selectFilter}
-    {menuOpen}
-    onmenu={() => (menuOpen = true)}
+    {languageOpen}
+    onlanguage={() => (languageOpen = true)}
   />
 
   <main class="container main">
@@ -190,7 +191,7 @@
           <div class="slot" class:tall={tileRows(tile.type) === 2}>
             <TileSkeleton
               id={tile.id}
-              title={i18n.pick(instanceTitle(tile, kpis, { fr: '', en: '' })).trim()}
+              title={i18n.pick(instanceTitle(tile, kpis, sameInAll(''))).trim()}
               icon={tile.icon}
               variant={skeletonVariant(tile.type)}
             />
@@ -243,7 +244,7 @@
   <AppFooter status={serviceStatus} {massifId} {now} />
 </div>
 
-<AppMenu open={menuOpen} onclose={() => (menuOpen = false)} />
+<LanguagePicker open={languageOpen} onclose={() => (languageOpen = false)} />
 
 {#each pages as page (page.id)}
   <InfoPage {page} service={serviceContext} />

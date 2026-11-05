@@ -12,13 +12,40 @@
   color-scheme: light;
 
   /* Self-hosted open fonts (OFL), imported in main.ts. */
-  --font-sans: 'Plus Jakarta Sans Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI',
-    Roboto, sans-serif;
-  --font-display: 'Barlow Semi Condensed', 'Plus Jakarta Sans Variable', sans-serif;
+  --font-sans: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Barlow Semi Condensed', 'Inter Variable', sans-serif;
 
   /* Logo wordmark (logotype: decorative, not body text) */
   --logo-a: #0b2a5b;
   --logo-b: #1f7ae0;
+
+  /* Logo mark (ski goggle, components/LogoMark.svelte): frame and strap,
+     glare, and one lens gradient (top → bottom) per phase of the day
+     (lib/timeOfDay.ts). The lens gradients are the same in both modes. */
+  --logo-frame: #0b2a5b;
+  --logo-glare: #ffffff;
+  --logo-lens-dawn-1: #ffdcb5;
+  --logo-lens-dawn-2: #ff9d8c;
+  --logo-lens-dawn-3: #8a6fd8;
+  --logo-lens-day-1: #ffd23f;
+  --logo-lens-day-2: #ff7a1a;
+  --logo-lens-day-3: #d9301c;
+  --logo-lens-dusk-1: #ffb05e;
+  --logo-lens-dusk-2: #f2477a;
+  --logo-lens-dusk-3: #4a2a9a;
+  --logo-lens-night-1: #5a68c0;
+  --logo-lens-night-2: #232c6b;
+  --logo-lens-night-3: #0a0f2e;
+
+  /* Language flags (components/Flag.svelte): national colours, the same in
+     both modes. */
+  --flag-white: #ffffff;
+  --flag-fr-blue: #000091;
+  --flag-fr-red: #e1000f;
+  --flag-gb-blue: #012169;
+  --flag-gb-red: #c8102e;
+  --flag-es-red: #aa151b;
+  --flag-es-yellow: #f1bf00;
 
   /* Menu backdrop */
   --scrim: rgba(4, 14, 32, 0.32);
@@ -155,6 +182,7 @@
     --rewind-line: #5c2030;
     --logo-a: #ffffff;
     --logo-b: #5db4ff;
+    --logo-frame: #ffffff;
     --scrim: rgba(1, 6, 16, 0.5);
     --scrim-solid: rgba(1, 6, 16, 0.85);
     --focus: #7cc4ff;
@@ -215,6 +243,7 @@
   --rewind-line: #5c2030;
   --logo-a: #ffffff;
   --logo-b: #5db4ff;
+  --logo-frame: #ffffff;
   --scrim: rgba(1, 6, 16, 0.5);
   --scrim-solid: rgba(1, 6, 16, 0.85);
   --focus: #7cc4ff;

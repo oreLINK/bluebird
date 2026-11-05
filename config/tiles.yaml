@@ -44,7 +44,7 @@ tiles:
   - id: snowfall_today
     type: banner_full
     kpis: [snowfall_chance]
-    title: { fr: "Neige {period}", en: "Snow {period}" }
+    title: { fr: "Neige {period}", en: "Snow {period}", es: "Nieve {period}" }
     icon: snowflake
     options:
       top: 3
@@ -55,7 +55,7 @@ tiles:
   - id: onpiste_powder
     type: banner
     kpis: [onpiste_powder_chance]
-    title: { fr: "Poudreuse sur piste {period}", en: "On-piste powder {period}" }
+    title: { fr: "Poudreuse sur piste {period}", en: "On-piste powder {period}", es: "Nieve polvo en pista {period}" }
     icon: piste
     options:
       top: 3
@@ -66,7 +66,7 @@ tiles:
   - id: offpiste_powder
     type: simple
     kpis: [offpiste_powder_chance]
-    title: { fr: "Poudreuse hors-piste {period}", en: "Off-piste powder {period}" }
+    title: { fr: "Poudreuse hors-piste {period}", en: "Off-piste powder {period}", es: "Nieve polvo fuera de pista {period}" }
     icon: mountain
     options:
       top: 3
@@ -76,7 +76,7 @@ tiles:
   - id: whiteout
     type: simple
     kpis: [whiteout_chance]
-    title: { fr: "Jour blanc {period}", en: "White day {period}" }
+    title: { fr: "Jour blanc {period}", en: "White day {period}", es: "Día blanco {period}" }
     icon: fog
     options:
       top: 3
@@ -85,7 +85,7 @@ tiles:
   - id: bluebird_day
     type: banner
     kpis: [bluebird_day_chance]
-    title: { fr: "Journée bluebird {period}", en: "Bluebird day {period}" }
+    title: { fr: "Journée bluebird {period}", en: "Bluebird day {period}", es: "Día bluebird {period}" }
     icon: sun
     options:
       top: 3
@@ -96,7 +96,7 @@ tiles:
   - id: powder_alert
     type: simple
     kpis: [powder_alert_chance]
-    title: { fr: "Alerte neige {period}", en: "Snow alert {period}" }
+    title: { fr: "Alerte neige {period}", en: "Snow alert {period}", es: "Alerta de nieve {period}" }
     icon: snowflake
     options:
       top: 3
@@ -104,7 +104,7 @@ tiles:
   - id: snowmaking
     type: simple
     kpis: [snowmaking_chance]
-    title: { fr: "Canons à neige {period}", en: "Snow cannons {period}" }
+    title: { fr: "Canons à neige {period}", en: "Snow cannons {period}", es: "Cañones de nieve {period}" }
     icon: snowflake
     options:
       top: 3
@@ -112,7 +112,7 @@ tiles:
   - id: spring_snow
     type: simple
     kpis: [spring_snow_chance]
-    title: { fr: "Neige de printemps {period}", en: "Spring snow {period}" }
+    title: { fr: "Neige de printemps {period}", en: "Spring snow {period}", es: "Nieve primavera {period}" }
     icon: piste
     options:
       top: 3
@@ -120,7 +120,7 @@ tiles:
   - id: hard_snow
     type: simple
     kpis: [hard_snow_chance]
-    title: { fr: "Neige dure {period}", en: "Hard snow {period}" }
+    title: { fr: "Neige dure {period}", en: "Hard snow {period}", es: "Nieve dura {period}" }
     icon: piste
     options:
       top: 3
@@ -128,7 +128,7 @@ tiles:
   - id: heavy_snow
     type: simple
     kpis: [heavy_snow_chance]
-    title: { fr: "Neige lourde {period}", en: "Heavy snow {period}" }
+    title: { fr: "Neige lourde {period}", en: "Heavy snow {period}", es: "Nieve pesada {period}" }
     icon: piste
     options:
       top: 3
@@ -136,7 +136,7 @@ tiles:
   - id: easy_conditions
     type: simple
     kpis: [easy_conditions_chance]
-    title: { fr: "Conditions faciles {period}", en: "Easy conditions {period}" }
+    title: { fr: "Conditions faciles {period}", en: "Easy conditions {period}", es: "Condiciones fáciles {period}" }
     icon: piste
     options:
       top: 3
@@ -144,7 +144,7 @@ tiles:
   - id: sunset
     type: banner
     kpis: [sunset_chance]
-    title: { fr: "Coucher de soleil {period}", en: "Sunset {period}" }
+    title: { fr: "Coucher de soleil {period}", en: "Sunset {period}", es: "Puesta de sol {period}" }
     icon: sunset
     options:
       top: 3
@@ -154,7 +154,7 @@ tiles:
   - id: starry_night
     type: simple
     kpis: [starry_night_chance]
-    title: { fr: "Nuit étoilée {period}", en: "Starry night {period}" }
+    title: { fr: "Nuit étoilée {period}", en: "Starry night {period}", es: "Noche estrellada {period}" }
     icon: moon
     options:
       top: 3
@@ -162,7 +162,7 @@ tiles:
   - id: sunny_slot
     type: simple
     kpis: [sunny_slot_chance]
-    title: { fr: "Grand soleil {period}", en: "Full sun {period}" }
+    title: { fr: "Grand soleil {period}", en: "Full sun {period}", es: "Pleno sol {period}" }
     icon: sun
     options:
       top: 3
@@ -170,7 +170,7 @@ tiles:
   - id: wind_chill
     type: simple
     kpis: [wind_chill_chance]
-    title: { fr: "Froid ressenti {period}", en: "Wind chill {period}" }
+    title: { fr: "Froid ressenti {period}", en: "Wind chill {period}", es: "Sensación térmica {period}" }
     icon: thermometer
     options:
       top: 3
@@ -178,7 +178,7 @@ tiles:
   - id: mild_day
     type: simple
     kpis: [mild_day_chance]
-    title: { fr: "Journée douce {period}", en: "Mild day {period}" }
+    title: { fr: "Journée douce {period}", en: "Mild day {period}", es: "Día templado {period}" }
     icon: sun
     options:
       top: 3
@@ -186,7 +186,7 @@ tiles:
   - id: chains
     type: simple
     kpis: [chains_chance]
-    title: { fr: "Chaînes nécessaires {period}", en: "Chains needed {period}" }
+    title: { fr: "Chaînes nécessaires {period}", en: "Chains needed {period}", es: "Cadenas necesarias {period}" }
     icon: car
     options:
       top: 3
@@ -194,7 +194,7 @@ tiles:
   - id: lift_wind
     type: simple
     kpis: [lift_wind_chance]
-    title: { fr: "Remontées au vent {period}", en: "Lifts in the wind {period}" }
+    title: { fr: "Remontées au vent {period}", en: "Lifts in the wind {period}", es: "Remontes y viento {period}" }
     icon: wind
     options:
       top: 3
@@ -202,7 +202,7 @@ tiles:
   - id: wind_slab
     type: simple
     kpis: [wind_slab_chance]
-    title: { fr: "Neige ventée {period}", en: "Wind-blown snow {period}" }
+    title: { fr: "Neige ventée {period}", en: "Wind-blown snow {period}", es: "Nieve venteada {period}" }
     icon: alert
     options:
       top: 3
@@ -213,7 +213,7 @@ tiles:
   - id: rewind_2025_26_total_snowfall
     type: banner_full
     kpis: [season_total_snowfall]
-    title: { fr: Le plus de neige, en: Most snow }
+    title: { fr: Le plus de neige, en: Most snow, es: Más nieve }
     icon: snowflake
     options:
       photo: leader
@@ -222,7 +222,7 @@ tiles:
   - id: rewind_2025_26_longest_snowfall
     type: banner
     kpis: [season_longest_snowfall]
-    title: { fr: La plus longue chute de neige, en: Longest snowfall }
+    title: { fr: La plus longue chute de neige, en: Longest snowfall, es: Nevada más larga }
     icon: snowflake
     options:
       photo: leader
@@ -231,7 +231,7 @@ tiles:
   - id: rewind_2025_26_domain_snowfall
     type: banner
     kpis: [season_domain_snowfall]
-    title: { fr: Le plus de neige sur le domaine, en: Most snow on the slopes }
+    title: { fr: Le plus de neige sur le domaine, en: Most snow on the slopes, es: Más nieve en el dominio }
     icon: piste
     options:
       photo: leader
@@ -240,7 +240,7 @@ tiles:
   - id: rewind_2025_26_offpiste_snowfall
     type: banner
     kpis: [season_offpiste_snowfall]
-    title: { fr: Le plus de neige hors-piste, en: Most off-piste snow }
+    title: { fr: Le plus de neige hors-piste, en: Most off-piste snow, es: Más nieve fuera de pista }
     icon: mountain
     options:
       photo: leader
@@ -249,7 +249,7 @@ tiles:
   - id: rewind_2025_26_deep_snow_days
     type: banner
     kpis: [season_deep_snow_days]
-    title: { fr: L'enneigement idéal, en: Ideal snow cover }
+    title: { fr: L'enneigement idéal, en: Ideal snow cover, es: Innivación ideal }
     icon: piste
     options:
       photo: leader
@@ -258,7 +258,7 @@ tiles:
   - id: rewind_2025_26_white_days
     type: banner
     kpis: [season_white_days]
-    title: { fr: Le moins de jours blancs, en: Fewest white days }
+    title: { fr: Le moins de jours blancs, en: Fewest white days, es: Menos días blancos }
     icon: fog
     options:
       photo: leader

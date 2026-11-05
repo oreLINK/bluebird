@@ -7,6 +7,7 @@ export type Filters = [Filter, ...Filter[]];
 export type Id = string;
 export type Fr = string;
 export type En = string;
+export type Es = string;
 export type Icon = string | null;
 /**
  * Colour of the chip (rewind: Christmas red).
@@ -58,6 +59,7 @@ export interface Filter {
 export interface Localized {
   fr: Fr;
   en: En;
+  es: Es;
 }
 /**
  * A sub-category of a level-1 filter (level `group`), e.g. Poudreuse under Glisse.

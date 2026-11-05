@@ -28,11 +28,13 @@ pages:
     title:
       fr: À propos
       en: About
+      es: Acerca de
     sections:
       - id: what
         title:
           fr: Ce qu'est Bluebird
           en: What Bluebird is
+          es: Qué es Bluebird
         paragraphs:
           - fr: >-
               Chaque matin, Bluebird estime pour chaque station la probabilité de
@@ -42,10 +44,15 @@ pages:
               Every morning, Bluebird estimates for each resort the probability of
               good skiing conditions: snow during the day, powder on piste and
               off-piste powder.
+            es: >-
+              Cada mañana, Bluebird estima para cada estación la probabilidad de buenas
+              condiciones de esquí: nieve durante el día, nieve polvo en pista y nieve
+              polvo fuera de pista.
       - id: method
         title:
           fr: Comment c'est calculé
           en: How it is computed
+          es: Cómo se calcula
         paragraphs:
           - fr: >-
               Chaque probabilité est la part des scénarios de prévision d'ensemble
@@ -55,10 +62,15 @@ pages:
               Each probability is the share of ensemble forecast scenarios that
               meet the condition. The back of each tile details the method and
               today's reliability.
+            es: >-
+              Cada probabilidad es la proporción de escenarios de la predicción por
+              conjuntos que cumplen la condición. El reverso de cada tarjeta detalla el
+              método y la fiabilidad del día.
       - id: disclaimer
         title:
           fr: Avertissement
           en: Disclaimer
+          es: Aviso
         paragraphs:
           - fr: >-
               Bluebird aide à préparer sa journée, ce n'est pas un bulletin
@@ -68,26 +80,34 @@ pages:
               Bluebird helps you plan your day; it is not an avalanche bulletin.
               Before going off-piste, check the Météo-France avalanche risk
               bulletin.
+            es: >-
+              Bluebird ayuda a preparar la jornada, no es un boletín de aludes. Antes de
+              salir fuera de pista, consulta el boletín de riesgo de aludes de
+              Météo-France.
         links:
           - label:
               fr: Bulletins montagne de Météo-France
               en: Météo-France mountain bulletins
+              es: Boletines de montaña de Météo-France
             url: https://meteofrance.com/meteo-montagne
       - id: sources
         title:
           fr: Sources des données
           en: Data sources
+          es: Fuentes de datos
         block: data_sources
 
   - id: legal
     title:
       fr: Mentions légales
       en: Legal notice
+      es: Aviso legal
     sections:
       - id: publisher
         title:
           fr: Éditeur
           en: Publisher
+          es: Editor
         paragraphs:
           - fr: >-
               Bluebird est un site personnel, gratuit et non commercial, édité par
@@ -95,19 +115,26 @@ pages:
             en: >-
               Bluebird is a personal, free and non-commercial website published by
               Aurélien Bertrand, who is also its publication director.
+            es: >-
+              Bluebird es un sitio personal, gratuito y sin ánimo de lucro, editado por
+              Aurélien Bertrand, que es también su director de publicación.
           - fr: >-
               Contact : par une « issue » sur le dépôt GitHub du projet.
             en: >-
               Contact: through an issue on the project's GitHub repository.
+            es: >-
+              Contacto: mediante una «issue» en el repositorio GitHub del proyecto.
         links:
           - label:
               fr: Contacter l'éditeur (GitHub)
               en: Contact the publisher (GitHub)
+              es: Contactar con el editor (GitHub)
             url: https://github.com/oreLINK/bluebird/issues
       - id: host
         title:
           fr: Hébergeur
           en: Host
+          es: Proveedor de alojamiento
         paragraphs:
           - fr: >-
               GitHub, Inc. (service GitHub Pages), 88 Colin P. Kelly Jr. Street,
@@ -115,15 +142,20 @@ pages:
             en: >-
               GitHub, Inc. (GitHub Pages service), 88 Colin P. Kelly Jr. Street,
               San Francisco, CA 94107, United States.
+            es: >-
+              GitHub, Inc. (servicio GitHub Pages), 88 Colin P. Kelly Jr. Street, San
+              Francisco, CA 94107, Estados Unidos.
         links:
           - label:
               fr: github.com
               en: github.com
+              es: github.com
             url: https://github.com/
       - id: property
         title:
           fr: Propriété intellectuelle
           en: Intellectual property
+          es: Propiedad intelectual
         paragraphs:
           - fr: >-
               Les photos appartiennent à leurs auteurs et sont publiées selon leur
@@ -133,21 +165,28 @@ pages:
               Photos belong to their authors and are published under their licence,
               listed below. Weather data and ski area maps come from the sources
               listed in "About".
+            es: >-
+              Las fotos pertenecen a sus autores y se publican según su licencia,
+              indicada a continuación. Los datos meteorológicos y los trazados de los
+              dominios esquiables proceden de las fuentes citadas en «Acerca de».
       - id: photos
         title:
           fr: Crédits photo
           en: Photo credits
+          es: Créditos de las fotos
         block: photo_credits
 
   - id: status
     title:
       fr: État du service
       en: Service status
+      es: Estado del servicio
     sections:
       - id: summary
         title:
           fr: Dernière mise à jour
           en: Last update
+          es: Última actualización
         paragraphs:
           - fr: >-
               Bluebird met à jour ses données toutes les 6 heures (vers 0 h, 6 h,
@@ -157,44 +196,56 @@ pages:
               Bluebird updates its data every 6 hours (around midnight, 6 am, noon
               and 6 pm, Paris time, from November to May). This page tells how the
               last update went.
+            es: >-
+              Bluebird actualiza sus datos cada 6 horas (hacia las 0 h, 6 h, 12 h y 18
+              h, hora de París, de noviembre a mayo). Esta página indica cómo fue la
+              última actualización.
         block: service_summary
 
       - id: sources
         title:
           fr: Sources de données (API)
           en: Data sources (APIs)
+          es: Fuentes de datos (API)
         block: service_sources
 
       - id: transforms
         title:
           fr: Transformations
           en: Data processing
+          es: Procesamiento de datos
         block: service_transforms
 
       - id: kpis
         title:
           fr: Indicateurs
           en: Indicators
+          es: Indicadores
         block: service_kpis
 
       - id: tiles
         title:
           fr: Tuiles
           en: Tiles
+          es: Tarjetas
         paragraphs:
           - fr: Les tuiles du massif affiché, pour les créneaux qui ne sont pas encore passés.
             en: The tiles of the mountain range shown, for the time slots not over yet.
+            es: Las tarjetas del macizo mostrado, para las franjas que aún no han pasado.
         block: service_tiles
 
       - id: states
         title:
           fr: Comprendre les états
           en: Understanding the states
+          es: Entender los estados
         paragraphs:
           - fr: "Disponible : données fraîches et complètes."
             en: "Available: fresh and complete data."
+            es: "Disponible: datos recientes y completos."
           - fr: "Partiel : données fraîches, mais certaines stations manquent."
             en: "Partial: fresh data, but some resorts are missing."
+            es: "Parcial: datos recientes, pero faltan algunas estaciones."
           - fr: >-
               Ancien : les valeurs affichées viennent d'une mise à jour précédente
               (par exemple « données de 06:00 »), car la dernière n'a pas pu les
@@ -203,18 +254,25 @@ pages:
               Outdated: the values shown come from an earlier update (for example
               "data from 06:00"), because the last one could not compute them. The
               tile then carries a badge with that time.
+            es: >-
+              Antiguo: los valores mostrados proceden de una actualización anterior (por
+              ejemplo «datos de las 06:00»), porque la última no pudo calcularlos. La
+              tarjeta lleva entonces una etiqueta con esa hora.
           - fr: "Indisponible : aucune valeur pour l'instant."
             en: "Unavailable: no value for now."
+            es: "No disponible: ningún valor por ahora."
 
   - id: privacy
     title:
       fr: Confidentialité
       en: Privacy
+      es: Privacidad
     sections:
       - id: no-data
         title:
           fr: Aucune donnée collectée
           en: No data collected
+          es: Ningún dato recogido
         paragraphs:
           - fr: >-
               Bluebird ne collecte aucune donnée personnelle : pas de compte, pas de
@@ -226,10 +284,16 @@ pages:
               analytics, no advertising and no cookies. Fonts, images and forecasts
               are served by the site itself, without calling any third-party
               service.
+            es: >-
+              Bluebird no recoge ningún dato personal: ni cuenta, ni formulario, ni
+              medición de audiencia, ni publicidad, ni cookies. Las fuentes
+              tipográficas, las imágenes y las previsiones las sirve el propio sitio,
+              sin llamar a ningún servicio externo.
       - id: device
         title:
           fr: Préférences sur votre appareil
           en: Preferences on your device
+          es: Preferencias en tu dispositivo
         paragraphs:
           - fr: >-
               La langue, le massif et le filtre choisis sont enregistrés dans le
@@ -241,10 +305,15 @@ pages:
               browser's local storage so they are kept for your next visit. They
               never leave your device, and you can clear them in your browser
               settings.
+            es: >-
+              El idioma, el macizo y el filtro elegidos se guardan en el almacenamiento
+              local de tu navegador para recuperarlos en la próxima visita. Nunca salen
+              de tu dispositivo y puedes borrarlos desde los ajustes del navegador.
       - id: hosting
         title:
           fr: Hébergement
           en: Hosting
+          es: Alojamiento
         paragraphs:
           - fr: >-
               Le site est servi par GitHub Pages. Comme tout hébergeur, GitHub peut
@@ -254,15 +323,21 @@ pages:
               The site is served by GitHub Pages. Like any host, GitHub may log
               visitors' IP addresses for the security and operation of its service,
               under its own responsibility.
+            es: >-
+              El sitio lo sirve GitHub Pages. Como cualquier proveedor de alojamiento,
+              GitHub puede registrar la dirección IP de los visitantes para la seguridad
+              y el funcionamiento de su servicio, bajo su propia responsabilidad.
         links:
           - label:
               fr: Déclaration de confidentialité de GitHub
               en: GitHub privacy statement
+              es: Declaración de privacidad de GitHub
             url: https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement
       - id: rights
         title:
           fr: Vos droits
           en: Your rights
+          es: Tus derechos
         paragraphs:
           - fr: >-
               Pour toute question, contactez l'éditeur sur le dépôt GitHub. Vous
@@ -271,8 +346,13 @@ pages:
               For any question, contact the publisher on the GitHub repository. You
               may also lodge a complaint with the CNIL, the French data protection
               authority.
+            es: >-
+              Para cualquier pregunta, contacta con el editor en el repositorio GitHub.
+              También puedes presentar una reclamación ante la CNIL, la autoridad
+              francesa de protección de datos.
         links:
           - label:
               fr: cnil.fr
               en: cnil.fr
+              es: cnil.fr
             url: https://www.cnil.fr/

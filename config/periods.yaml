@@ -26,16 +26,16 @@
 day_start: "06:00"
 horizon_days: 2
 days:
-  - { fr: Aujourd'hui, en: Today }
-  - { fr: Demain, en: Tomorrow }
+  - { fr: Aujourd'hui, en: Today, es: Hoy }
+  - { fr: Demain, en: Tomorrow, es: Mañana }
 periods:
   - id: day
     start: "06:00"
     end: "18:00"
     native_window: true
     labels:
-      - { fr: aujourd'hui, en: today }
-      - { fr: demain, en: tomorrow }
+      - { fr: aujourd'hui, en: today, es: hoy }
+      - { fr: demain, en: tomorrow, es: mañana }
 
   # The sunset of the day (sunset_chance KPI): its own window, computed for each
   # resort; shown until 22:00 since spring sunsets come after 18:00.
@@ -44,8 +44,8 @@ periods:
     end: "22:00"
     native_window: true
     labels:
-      - { fr: ce soir, en: tonight }
-      - { fr: demain soir, en: tomorrow evening }
+      - { fr: ce soir, en: tonight, es: esta tarde }
+      - { fr: demain soir, en: tomorrow evening, es: mañana por la tarde }
 
   # The night of the ski day as a whole (snowmaking KPI): day-grain version of
   # the `night` slot, shown all day until the night ends (06:00 the next day).
@@ -54,45 +54,45 @@ periods:
     end: "06:00"
     native_window: true
     labels:
-      - { fr: cette nuit, en: tonight }
-      - { fr: la nuit de demain, en: tomorrow night }
+      - { fr: cette nuit, en: tonight, es: esta noche }
+      - { fr: la nuit de demain, en: tomorrow night, es: mañana por la noche }
 
   - id: morning
     start: "06:00"
     end: "12:00"
-    chip: { fr: Matin, en: Morning }
+    chip: { fr: Matin, en: Morning, es: Por la mañana }
     labels:
-      - { fr: ce matin, en: this morning }
-      - { fr: demain matin, en: tomorrow morning }
+      - { fr: ce matin, en: this morning, es: esta mañana }
+      - { fr: demain matin, en: tomorrow morning, es: mañana por la mañana }
 
   - id: midday
     start: "12:00"
     end: "14:00"
-    chip: { fr: Midi, en: Lunchtime }
+    chip: { fr: Midi, en: Lunchtime, es: A mediodía }
     labels:
-      - { fr: ce midi, en: at lunchtime }
-      - { fr: demain midi, en: tomorrow lunchtime }
+      - { fr: ce midi, en: at lunchtime, es: a mediodía }
+      - { fr: demain midi, en: tomorrow lunchtime, es: mañana a mediodía }
 
   - id: afternoon
     start: "14:00"
     end: "18:00"
-    chip: { fr: Après-midi, en: Afternoon }
+    chip: { fr: Après-midi, en: Afternoon, es: Por la tarde }
     labels:
-      - { fr: cet après-midi, en: this afternoon }
-      - { fr: demain après-midi, en: tomorrow afternoon }
+      - { fr: cet après-midi, en: this afternoon, es: esta tarde }
+      - { fr: demain après-midi, en: tomorrow afternoon, es: mañana por la tarde }
 
   - id: evening
     start: "18:00"
     end: "00:00"
-    chip: { fr: Soir, en: Evening }
+    chip: { fr: Soir, en: Evening, es: Por la noche }
     labels:
-      - { fr: ce soir, en: this evening }
-      - { fr: demain soir, en: tomorrow evening }
+      - { fr: ce soir, en: this evening, es: esta noche }
+      - { fr: demain soir, en: tomorrow evening, es: mañana por la noche }
 
   - id: night
     start: "00:00"
     end: "06:00"
-    chip: { fr: Nuit, en: Night }
+    chip: { fr: Nuit, en: Night, es: De madrugada }
     labels:
-      - { fr: cette nuit, en: tonight }
-      - { fr: la nuit de demain, en: tomorrow night }
+      - { fr: cette nuit, en: tonight, es: esta madrugada }
+      - { fr: la nuit de demain, en: tomorrow night, es: la madrugada de mañana }

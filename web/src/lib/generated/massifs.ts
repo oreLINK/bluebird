@@ -3,6 +3,7 @@
 export type Id = string;
 export type Fr = string;
 export type En = string;
+export type Es = string;
 export type Timezone = string;
 export type Enabled = boolean;
 /**
@@ -60,6 +61,7 @@ export interface Massif {
 export interface Localized {
   fr: Fr;
   en: En;
+  es: Es;
 }
 /**
  * A sub-massif (level 2 of the massif bar): a French département, or abroad a
