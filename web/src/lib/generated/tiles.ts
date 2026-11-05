@@ -8,6 +8,7 @@ export type Type = string;
 export type Kpis = string[];
 export type Fr = string;
 export type En = string;
+export type Es = string;
 export type Icon = string | null;
 /**
  * Periods to show a tile of live KPIs for; defaults to every period of its KPIs.
@@ -42,6 +43,7 @@ export interface Tile {
 export interface Localized {
   fr: Fr;
   en: En;
+  es: Es;
 }
 export interface Options {
   [k: string]: unknown;

@@ -170,8 +170,18 @@ def test_kpi_filters_must_exist_and_every_filter_must_match_a_kpi(tmp_path: Path
             "group KPI 'chains_chance' is not tagged with it",
         ),
         ("filters.yaml", "levels: [group, day]\n", "levels: [day]\n", "`group` level and `groups`"),
-        ("periods.yaml", "    chip: { fr: Nuit, en: Night }\n", "", "'night' needs a `chip`"),
-        ("periods.yaml", "  - { fr: Demain, en: Tomorrow }\n", "", "`days` needs 2 chip labels"),
+        (
+            "periods.yaml",
+            "    chip: { fr: Nuit, en: Night, es: De madrugada }\n",
+            "",
+            "'night' needs a `chip`",
+        ),
+        (
+            "periods.yaml",
+            "  - { fr: Demain, en: Tomorrow, es: Mañana }\n",
+            "",
+            "`days` needs 2 chip labels",
+        ),
     ],
 )
 def test_invalid_filter_levels_and_home_tiles_are_rejected(
@@ -190,7 +200,11 @@ def test_filters_have_at_most_four_levels(repo_config: Config) -> None:
 
     with pytest.raises(ValueError, match="at most 3"):
         Filter.model_validate(
-            {"id": "x", "name": {"fr": "x", "en": "x"}, "levels": ["day", "slot", "day", "slot"]}
+            {
+                "id": "x",
+                "name": {"fr": "x", "en": "x", "es": "x"},
+                "levels": ["day", "slot", "day", "slot"],
+            }
         )
     assert all(1 + len(f.levels) <= MAX_FILTER_LEVELS for f in repo_config.filters)
 
@@ -244,7 +258,11 @@ def test_footer_pages_must_exist(tmp_path: Path) -> None:
     [
         ('start: "12:00"\n    end: "14:00"', 'start: "12:00"\n    end: "13:00"', "leaves a gap"),
         ('start: "14:00"\n    end: "18:00"', 'start: "13:00"\n    end: "18:00"', "overlaps"),
-        ("      - { fr: demain soir, en: tomorrow evening }\n", "", "needs 2 labels"),
+        (
+            "      - { fr: demain soir, en: tomorrow evening, es: mañana por la tarde }\n",
+            "",
+            "needs 2 labels",
+        ),
     ],
 )
 def test_time_slots_must_tile_the_day(tmp_path: Path, old: str, new: str, message: str) -> None:
@@ -375,13 +393,15 @@ def test_service_status_page_is_linked_from_the_footer(repo_config: Config) -> N
             "display driver 'snow_cm_p75' is not in `drivers`",
         ),
         (
-            '        - { min: 0, label: { fr: Non, en: "No" } }\n',
-            '        - { min: 0.1, label: { fr: Non, en: "No" } }\n',
+            '        - { min: 0, label: { fr: Non, en: "No", es: "No" } }\n',
+            '        - { min: 0.1, label: { fr: Non, en: "No", es: "No" } }\n',
             "the last at 0",
         ),
         (
-            "        - { max: -48, label: { fr: risque grave, en: severe risk } }\n",
-            "        - { max: -60, label: { fr: risque grave, en: severe risk } }\n",
+            "        - { max: -48, label:"
+            " { fr: risque grave, en: severe risk, es: riesgo severo } }\n",
+            "        - { max: -60, label:"
+            " { fr: risque grave, en: severe risk, es: riesgo severo } }\n",
             "increasing `max`",
         ),
     ],

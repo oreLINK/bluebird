@@ -44,8 +44,12 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
   templates in `tiles.yaml` are expanded per period, "Neige {period}"),
   stations ranked by descending probability. A tile disappears when its
   period ends. A full-window page (`#status`, linked from the footer) shows the service status of the last refresh. Style: betting-app look (Betclic-like) in dark
-  blue, light blue and white, sober plain background, no background animation.
-  Header: "Bluebird" wordmark (text only) left, menu (language) right;
+  blue, light blue and white, sober plain background, no background animation;
+  fonts Inter (text) and Barlow Semi Condensed ExtraBold Italic (logo,
+  titles, percentages), self-hosted (`@fontsource`, imported in `main.ts`).
+  Header: logo left (ski goggle mark, lens gradient by phase of the day,
+  then the "Bluebird" wordmark), flag of the current language right (opens
+  the language popup; default language from the browser);
   below, the massif bar (place levels of `lib/geoLevels.ts`:
   massif → zone = département or foreign country/region (`zones` of
   `massifs.yaml`, one mixed list: French zones first, foreign ones after
@@ -63,8 +67,9 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
   order: bluebird day today first). Above the tiles, plain text (no card): data date (day of
   `generated_at`) and update time. Station details on tap are off for now
   (tile option `details`, default false): the tiles show the probability only.
-- UI languages: French (default) and English. **All code, comments, docs and
-  commit messages are in English.** User-facing strings are in both languages.
+- UI languages: French (default), English and Spanish (`LOCALES` in
+  `web/src/lib/i18n/core.ts`). **All code, comments, docs and commit
+  messages are in English.** User-facing strings exist in all three.
 - Hosting and storage: **GitHub only** (Pages + the `gh-pages` branch). No
   server, no database, no cloud bucket.
 
@@ -78,7 +83,7 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 | `config/periods.yaml` | `day_start` (06:00), `horizon_days`, periods (time slots covering the ski day + `day` with `native_window`) and their labels per day. Day-grain periods (`native_window`): `day`, `sunset` (06:00–22:00), `overnight` (06:00 → 06:00). |
 | `config/rewinds.yaml` | Rewinds: season `start`/`end` (local days, included), massifs, historical KPIs, its level-1 filter (no levels). |
 | `config/rewind/<id>/<massif>.hourly.parquet`, `.json` | **Generated** by `bluebird rewind`, committed via PR: the season hour by hour (silver `season_hourly`) and the ranked payload the site bundles. Never edit by hand. |
-| `config/pages.yaml` | Footer (GitHub repository link, page links) and full-window pages (about, legal notice, privacy) with `{fr, en}` sections and built-in blocks. |
+| `config/pages.yaml` | Footer (GitHub repository link, page links) and full-window pages (about, legal notice, privacy) with `{fr, en, es}` sections and built-in blocks. |
 | `config/*.yaml`, `config/stations/*.yaml` | Single source of truth for massifs, stations, KPIs, tiles, layout, sources. Human-edited. |
 | `config/reference/<dataset>/<massif>.geojson` | **Fetched** reference data (pistes, lifts) written by `bluebird reference`, committed via PR. Never edit by hand. |
 | `config/schemas/*.schema.json` | **Generated** by `uv run bluebird schemas`. Never edit by hand. |
@@ -109,7 +114,7 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 | `web/src/lib/periods.ts` | Pure: ski day, slots of the payload, labels, `expandTiles` (one tile per period), `massifView`, `nextBoundary` (tested). |
 | `web/src/lib/status.ts` | Pure: service status view (`statusView`, `worstState`, period labels), hides ended periods (tested). |
 | `web/src/components/ServiceStatus.svelte`, `StaleBadge.svelte` | `service_*` blocks of the "Service status" page (`config/pages.yaml`, rendered by `InfoPage`); "data from HH:MM" badge on tiles with values of an earlier refresh. |
-| `web/src/lib/i18n/` | `core.ts` (pure), `i18n.svelte.ts` (reactive store), `fr.json`, `en.json`. |
+| `web/src/lib/i18n/` | `core.ts` (pure: `LOCALES`, `LOCALE_NAMES`, `LOCALE_FLAGS`, `localizedFrom`, `sameInAll`), `i18n.svelte.ts` (reactive store), `fr.json`, `en.json`, `es.json`. |
 | `web/src/lib/generated/` | **Generated** TS types (`npm run gen:types`). Never edit by hand. |
 | `web/src/tiles/registry.ts` | Tile type id → Svelte component (`xyz` → `TileXyz.svelte`, tested). |
 | `web/src/tiles/TileBanner.svelte` | Type `banner`: banner (photo or illustration), top stations as odds buttons, "see all". |
@@ -122,7 +127,10 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 | `web/src/tiles/FlipCard.svelte`, `KpiBack.svelte` | Two-sided card of every tile; front = banner, title, odds (no description); back = one section each for description, time window, method, reliability, update, sources, photo credit (never on the front). |
 | `web/src/lib/transitions.ts` | `arrive` / `leave` tile transitions, `rise` for sheets, and `motion()` (reduced-motion aware). |
 | `web/src/lib/photos.ts`, `web/src/assets/photos/` | Banner photos `<massif>/<station_id>/<station_id>_<n>.*` (`photo: leader` draws one at random per page load; also `none` / `<path>`) and `credits.yaml`. |
-| `web/src/components/AppMenu.svelte`, `FilterBar.svelte`, `Logo.svelte` | Side menu (language; blur, scroll lock, inert page), scrollable chip bar, the same chips for the massif bar and the filter bar (options with `pressed`/`removable` (×), `resetScroll`, chips grow in and slide with `animate:flip`), text-only wordmark. |
+| `web/src/components/LanguagePicker.svelte`, `Flag.svelte` | Language popup under the header's flag button (flag + endonym per locale, `LOCALE_FLAGS`/`LOCALE_NAMES` in `lib/i18n/core.ts`; blur, scroll lock, inert page, focus back to the button via `$effect.pre`); SVG flags with `--flag-*` tokens (no emoji: Windows shows letters). |
+| `web/src/components/FilterBar.svelte`, `Logo.svelte` | Scrollable chip bar, the same chips for the massif bar and the filter bar (options with `pressed`/`removable` (×), `resetScroll`, chips grow in and slide with `animate:flip`), logo (goggle mark + wordmark; phase of the day of the first massif's timezone, checked every minute). |
+| `web/src/components/LogoMark.svelte`, `web/src/lib/timeOfDay.ts` | Ski goggle mark (three-quarter view): only the lens gradient changes, tokens `--logo-lens-<phase>-<1..3>` (`--logo-frame`, `--logo-glare`); pure `dayPhase(now, timezone)` (dawn 06, day 09, dusk 17, night 20), tested. |
+| `web/public/favicon.svg`, `web/public/apple-touch-icon.png`, `web/scripts/apple-touch-icon.svg`, `web/scripts/make-apple-icon.sh` | Static copies of the `day` mark: favicon, and the 180 px home-screen icon rendered from its SVG source (headless Chrome + `sips`, macOS). `src/lib/brandIcons.test.ts` checks shapes, day colours and links stay in sync with `LogoMark.svelte`. |
 | `web/src/lib/filterLevels.ts` | Pure, tested: `filterState(path, …)` → chips, tiles and tile instances of the filter path (home = `homeTiles`: `layout.yaml` `home` in priority order), `LEVEL_KINDS` (`group`, `day`, `slot`: options + match; a single group is skipped), `isDayGrain` (grain rule: day-grain tiles until a slot is chosen), `nextPath` (tap = choose, tap a chosen chip = remove it and the levels after). Only level 1 is stored in `localStorage`. |
 | `web/src/lib/geoLevels.ts` | Pure, tested: `geoState(path, massifs, siteStations, siteDomains, fallback)` → chips of the massif bar (massif, zone skipped below two, linked area with 2+ stations), the massif shown and the station subset (`null` = all) passed to `viewFor(…, only)`; `readGeoPath` (preference `geo`, migrated from `massif`).; French zones first, foreign ones after with `flagOf` (ISO code → flag emoji). `stationCountries` (`lib/config.ts`) feeds the flag of `shortName` in `lib/kpiView.ts`. |
 | `web/src/components/Sheet.svelte`, `web/src/lib/sheets.svelte.ts` | Generic full-window sheet (Liquid Glass, close ×, rises from the bottom) and its router (`#<id>` in the URL, back gesture closes). Reuse them for any future over-page. |
@@ -198,8 +206,10 @@ with `scripts/ci/fetch-gh-pages-data.sh` before computing (fallback).
    commit both, and bump `schema_version` for breaking changes (the frontend
    refuses unknown versions).
 8. **Labels live in config.** KPI, tile, massif and driver labels are
-   `{fr, en}` objects in YAML. UI chrome strings live in
-   `web/src/lib/i18n/{fr,en}.json` with identical keys (tested).
+   `{fr, en, es}` objects in YAML (`Localized` in `config.py`, every field
+   required). UI chrome strings live in `web/src/lib/i18n/{fr,en,es}.json`
+   with identical keys and placeholders (tested). Code that builds a label
+   uses `localizedFrom` / `sameInAll`, never a literal `{ fr, en }`.
 9. **Configuration is strict.** Unknown YAML keys are errors. Plugin `Params`
    models use `extra="forbid"`. Run `uv run bluebird validate` after edits.
 10. **Never fetch live data for a past date.** (Rewinds fetch an *archive*
@@ -221,7 +231,10 @@ with `scripts/ci/fetch-gh-pages-data.sh` before computing (fallback).
     colours. No background animation; the page background stays plain.
 15. **Fonts and photos are self-hosted.** Fonts come from `@fontsource`
     packages, never a CDN. Every photo needs publication rights and a
-    `credits.yaml` entry; never commit a photo without them.
+    `credits.yaml` entry; never commit a photo without them. Photos come
+    from Openverse (https://openverse.org/fr) under a reusable licence
+    (CC0, PDM, CC BY, CC BY-SA; never ND); photos from resort or tourism
+    sites are all rights reserved unless the owner agrees.
 16. **Equal tiles, two faces.** Banner tiles keep the same collapsed size
     (`--tile-*` tokens in `base.css`), `simple` tiles the shorter
     `--tile-simple-h`, derived in `base.css` so that two simple tiles plus
@@ -339,13 +352,15 @@ npm run dev
 | Change the diamond shape | `diamond/models.py`, displayer, frontend usage | `bluebird schemas`, `npm run gen:types`, `bluebird demo`, all tests |
 | Reorder tiles | `config/layout.yaml` (`home` = home page in priority order, `default`/`overrides` = order under a filter), README.md "Tiles on the site" | `bluebird validate`, `npm test` |
 | Add a filter | `config/filters.yaml` (`levels`, `groups`), `filters: [id]` on KPIs in `config/kpis.yaml` | `bluebird validate`, `npm test` |
-| Add a kind of filter level | `FilterLevel` in `config.py`, `LEVEL_KINDS` in `web/src/lib/filterLevels.ts`, its `{fr, en}` chip labels in config, tests (max 4 levels: `MAX_FILTER_LEVELS`) | `bluebird schemas`, `npm run gen:types`, `pytest`, `npm test` |
-| Add a banner photo | `web/src/assets/photos/<path>.webp`, `credits.yaml`, tile `photo` option | `npm run build`, 390 px screenshots |
+| Add a kind of filter level | `FilterLevel` in `config.py`, `LEVEL_KINDS` in `web/src/lib/filterLevels.ts`, its `{fr, en, es}` chip labels in config, tests (max 4 levels: `MAX_FILTER_LEVELS`) | `bluebird schemas`, `npm run gen:types`, `pytest`, `npm test` |
+| Add a banner photo | found on [Openverse](https://openverse.org/fr) under a reusable licence (CC0, PDM, CC BY, CC BY-SA; never ND), checked on its source page; `web/src/assets/photos/<path>.webp` (≤ 300 KB), `credits.yaml` (author, licence, source URL, changes made), tile `photo` option | `npm test`, `npm run build`, 390 px screenshots |
 | Add a page | `config/pages.yaml` (`pages[]`, optional `footer.pages`) | `bluebird validate`, `npm test`, 390 px screenshots |
 | Add another kind of over-page | content inside `components/Sheet.svelte`, opened with `sheets.open(id)` (`lib/sheets.svelte.ts`) | `npm run check`, `npm test` |
 | Add a Rewind | `config/rewinds.yaml`, its filter (`theme: rewind`, no levels) first in `filters.yaml`, KPI tags, tiles of any type + layout (Rewind and theme come from the KPI) | after the season: `bluebird rewind --rewind <id>`, review and commit `config/rewind/<id>/` |
 | Add a historical KPI | `gold/aggregator_season_<x>.py` (`SeasonAggregator`, value in its native unit), `kpis.yaml` (`kind: historical`, `value {unit, decimals, scale, max}` — snow totals use `m` with `scale: 0.01`, percentages `%` with `scale: 100, max: 100`; method, drivers, filter), PROJECT.md "Available indicators", README.md "Tiles on the site", Rewind `kpis`, tile + layout, tests | `bluebird validate`, `pytest`, `bluebird rewind --no-fetch` |
-| Add a UI string | `web/src/lib/i18n/fr.json` **and** `en.json` | `npm test` |
+| Add a UI string | `web/src/lib/i18n/fr.json`, `en.json` **and** `es.json` | `npm test` |
+| Add a UI language | `LOCALES`, `LOCALE_NAMES`, `LOCALE_FLAGS` in `web/src/lib/i18n/core.ts` (+ its flag in `Flag.svelte`, `--flag-*` tokens), `<locale>.json`, `INTL_LOCALE` in `lib/format.ts`, the field in `Localized` (`config.py`), the label in every `{…}` object of `config/`, test fixtures (web and the YAML snippets of `pipeline/tests/test_config.py`) | `bluebird validate`, `bluebird schemas`, `npm run gen:types`, `pytest`, `npm test` |
+| Change the logo or its colours | `web/src/components/LogoMark.svelte`, lens/frame tokens in `web/src/styles/tokens.css`, phase hours in `web/src/lib/timeOfDay.ts`, the `day` copies `web/public/favicon.svg` and `web/scripts/apple-touch-icon.svg` | `web/scripts/make-apple-icon.sh`, `npm test`, 390 px screenshots |
 
 ## 8. Pitfalls already met
 
@@ -383,7 +398,12 @@ npm run dev
 - **`inert` blurs the opener.** App makes the page `inert` in the same update
   that renders a sheet, so `document.activeElement` read in the sheet's
   `$effect` is already `<body>` and focus cannot return to the footer link.
-  Capture the opener in `$effect.pre` (see `Sheet.svelte`).
+  Capture the opener in `$effect.pre` (see `Sheet.svelte`,
+  `LanguagePicker.svelte`; the former side menu had this bug).
+- **`element.click()` does not focus.** A DevTools-protocol check of
+  "focus returns to the opener" must `focus()` the button before the
+  scripted `click()`, as a keyboard user would; otherwise the opener is
+  `<body>` and the check fails for the wrong reason.
 - **Headless virtual time and sheets.** Like tiles, a closed `Sheet` stays in
   the DOM under `--virtual-time-budget` (its `out:` transition never ends).
   Check opening and closing with the DevTools protocol in real time.
@@ -433,6 +453,22 @@ npm run dev
   site's YAML plugin refuses it: a KPI inserted in the middle of another
   one's `drivers` passed `bluebird validate` but broke `npm test`. The config
   loader now rejects duplicate keys (`_StrictLoader` in `config.py`).
+- **`$props.id()` placement.** It must be the whole initializer of a
+  top-level `const` (`const uid = $props.id();`); inside a template literal
+  svelte-check reports `props_id_invalid_placement` and the build fails.
+- **Logo copies.** The favicon and the home-screen icon are hand-kept copies
+  of `LogoMark.svelte` (`day` lens). Change all three together, rerun
+  `web/scripts/make-apple-icon.sh`; `brandIcons.test.ts` fails otherwise.
+- **Adding a language to `config/`.** About 300 `{fr, en}` objects, most in
+  flow style: insert the new key as text next to `en` (a YAML round-trip
+  reformats the files and wraps or joins long lines). Two traps met with
+  Spanish: automatic wrapping of folded scalars split "Météo-France" at the
+  hyphen (shown "Météo- France"; wrap without breaking on hyphens), and
+  `pipeline/tests/test_config.py` edits `config/*.yaml` by exact line
+  (`{ fr: Non, en: "No" }`…), so its snippets need the new key too. Some
+  period labels are shared by two periods but need different words in the
+  new language ("demain soir": sunset → "mañana por la tarde", evening slot →
+  "mañana por la noche").
 - **Variable named `window`** in a component shadows the global object; use
   another name (`timeWindow`).
 - **Scrolling a bar whose chips are about to change.** `scrollTo` in the
@@ -488,7 +524,7 @@ cd ../web && npm run gen:types && git diff --exit-code -- src/lib/generated \
 ```
 
 …and, for UI changes, the page was looked at on a 390 px wide viewport in
-light and dark mode, in French and English. Update README.md, PROJECT.md and
+light and dark mode, in French, English and Spanish. Update README.md, PROJECT.md and
 this file when behaviour, commands or conventions change.
 
 ## 10. Roadmap context
@@ -514,6 +550,14 @@ features, their feasibility and the planned tile ordering algorithm
 Periods are ready for longer horizons: weekend and week periods (needs
 `horizon_days`/period kinds beyond today and tomorrow, and more forecast
 days, then a `week` filter level kind).
+Animated KPI banners (README.md "Roadmap"): when `photo: leader` finds no
+free photo, `BannerArt.svelte` would animate a scene per KPI (falling snow,
+sun rays, fog, stars…) in SVG/CSS, inside the banner only (invariant 14:
+the page background stays plain), paused off screen and static with
+reduced motion; photos stay the first choice (Openverse, CC licences).
+Place stories (full-screen highlights of the day for the chosen place,
+README.md "Future features") reuse `viewFor(…, only)` and the planned
+`rankTiles`; the current tile design stays (a 2026-11 redesign study kept it).
 For the sunniest resort, use the stored `shortwave_wm2`, not `sunshine_s`
 (see §8). Planned next (see PROJECT.md): Météo-France avalanche bulletin (BRA, needs an
 API key), resort opening status (scraper), slope/aspect from an IGN or

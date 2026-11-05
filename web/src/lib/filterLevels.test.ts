@@ -3,7 +3,7 @@ import { type Filter, type Kpi, type ResolvedTile, type Tile, layout } from './c
 import type { MassifDaily } from './data';
 import { filterState, nextPath } from './filterLevels';
 
-const name = { fr: 'x', en: 'x' };
+const name = { fr: 'x', en: 'x', es: 'x' };
 const kpi = (id: string, filter: string, periods?: Kpi['periods'], kind?: 'historical'): Kpi => ({
   id,
   aggregator: id,
@@ -29,15 +29,15 @@ const home = [
 ];
 
 const filters: Filter[] = [
-  { id: 'rewind', name: { fr: 'Rewind', en: 'Rewind' }, theme: 'rewind' },
+  { id: 'rewind', name: { fr: 'Rewind', en: 'Rewind', es: 'Rewind' }, theme: 'rewind' },
   {
     id: 'snow',
-    name: { fr: 'Neige', en: 'Snow' },
+    name: { fr: 'Neige', en: 'Snow', es: 'Snow' },
     levels: ['day', 'slot'],
   },
   {
     id: 'sky',
-    name: { fr: 'Ciel', en: 'Sky' },
+    name: { fr: 'Ciel', en: 'Sky', es: 'Sky' },
     levels: ['day'],
   },
   { id: 'unused', name },
@@ -169,18 +169,18 @@ describe('sub-categories', () => {
   const grouped: Filter[] = [
     {
       id: 'snow',
-      name: { fr: 'Neige', en: 'Snow' },
+      name: { fr: 'Neige', en: 'Snow', es: 'Snow' },
       levels: ['group', 'day', 'slot'],
       groups: [
-        { id: 'falls', name: { fr: 'Chutes', en: 'Snowfall' }, kpis: ['snow_k'] },
-        { id: 'alerts', name: { fr: 'Alertes', en: 'Alerts' }, kpis: ['alert_k'] },
+        { id: 'falls', name: { fr: 'Chutes', en: 'Snowfall', es: 'Snowfall' }, kpis: ['snow_k'] },
+        { id: 'alerts', name: { fr: 'Alertes', en: 'Alerts', es: 'Alerts' }, kpis: ['alert_k'] },
       ],
     },
     {
       id: 'sky',
-      name: { fr: 'Ciel', en: 'Sky' },
+      name: { fr: 'Ciel', en: 'Sky', es: 'Sky' },
       levels: ['group', 'day'],
-      groups: [{ id: 'white', name: { fr: 'Visibilité', en: 'Visibility' }, kpis: ['white_k'] }],
+      groups: [{ id: 'white', name: { fr: 'Visibilité', en: 'Visibility', es: 'Visibility' }, kpis: ['white_k'] }],
     },
   ];
   const withAlert = [...resolved, tile('alert_t', alertKpi)];

@@ -1,6 +1,6 @@
 <!--
-  Sticky app bar on frosted white: logo and title on the left, menu button on
-  the right; below, the massif bar (place levels of lib/geoLevels.ts:
+  Sticky app bar on frosted white: logo on the left, the flag of the current
+  language on the right (opens LanguagePicker.svelte); below, the massif bar (place levels of lib/geoLevels.ts:
   massif, département, linked area), then the filter bar (filter levels of
   lib/filterLevels.ts), both with the same chips.
 -->
@@ -8,7 +8,8 @@
   import type { FilterChip } from '../lib/filterLevels';
   import { i18n } from '../lib/i18n/i18n.svelte';
   import FilterBar from './FilterBar.svelte';
-  import Icon from './Icon.svelte';
+  import { LOCALE_FLAGS, LOCALE_NAMES } from '../lib/i18n/core';
+  import Flag from './Flag.svelte';
   import Logo from './Logo.svelte';
 
   let {
@@ -16,8 +17,8 @@
     onselectplace,
     filters,
     onselectfilter,
-    menuOpen,
-    onmenu,
+    languageOpen,
+    onlanguage,
   }: {
     places: FilterChip[];
     /** Called with the chip `key`. */
@@ -25,8 +26,8 @@
     filters: FilterChip[];
     /** Called with the chip `key`. */
     onselectfilter: (key: string) => void;
-    menuOpen: boolean;
-    onmenu: () => void;
+    languageOpen: boolean;
+    onlanguage: () => void;
   } = $props();
 </script>
 
@@ -36,13 +37,13 @@
       <h1 class="brand"><Logo /></h1>
       <button
         type="button"
-        class="menu-button"
-        aria-label={i18n.t('menu.open')}
+        class="language-button"
+        aria-label={i18n.t('language.open', { language: LOCALE_NAMES[i18n.locale] })}
         aria-haspopup="dialog"
-        aria-expanded={menuOpen}
-        onclick={onmenu}
+        aria-expanded={languageOpen}
+        onclick={onlanguage}
       >
-        <Icon name="menu" size={24} />
+        <Flag country={LOCALE_FLAGS[i18n.locale]} width={26} />
       </button>
     </div>
     <div class="bars">
@@ -98,7 +99,7 @@
     min-width: 0;
   }
 
-  .menu-button {
+  .language-button {
     display: grid;
     place-items: center;
     flex: none;

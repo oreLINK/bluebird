@@ -81,6 +81,7 @@ class Localized(StrictModel):
 
     fr: str = Field(min_length=1)
     en: str = Field(min_length=1)
+    es: str = Field(min_length=1)
 
 
 # ------------------------------------------------------------------------ massifs

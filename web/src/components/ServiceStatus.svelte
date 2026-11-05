@@ -31,6 +31,7 @@
 <script lang="ts">
   import { kpis, sources, tiles } from '../lib/config';
   import { formatLongDate, formatTime } from '../lib/format';
+  import { sameInAll } from '../lib/i18n/core';
   import { i18n } from '../lib/i18n/i18n.svelte';
   import { instanceTitle } from '../lib/periods';
   import {
@@ -59,7 +60,7 @@
   function tileName(tileId: string, period: StatusPeriod): string {
     const tile = tiles.find((t) => t.id === tileId);
     if (!tile || !status) return tileId;
-    const label = periodLabel(status, period, context.timezone, context.now) ?? { fr: '', en: '' };
+    const label = periodLabel(status, period, context.timezone, context.now) ?? sameInAll('');
     const tileKpis = kpis.filter((k) => tile.kpis?.includes(k.id));
     return i18n.pick(instanceTitle(tile, tileKpis, label)).trim();
   }

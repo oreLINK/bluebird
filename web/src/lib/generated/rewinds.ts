@@ -6,6 +6,7 @@
 export type Id = string;
 export type Fr = string;
 export type En = string;
+export type Es = string;
 /**
  * First day of the season (local), included.
  */
@@ -56,4 +57,5 @@ export interface Rewind {
 export interface Localized {
   fr: Fr;
   en: En;
+  es: Es;
 }

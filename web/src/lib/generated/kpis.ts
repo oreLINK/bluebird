@@ -17,6 +17,7 @@ export type Decimals = number;
 export type Scale = number;
 export type Fr = string;
 export type En = string;
+export type Es = string;
 /**
  * Value (in `unit`) of a full bar in the tiles, e.g. 100 for a percentage. Default: the best value of the ranking.
  */
@@ -115,6 +116,7 @@ export interface ValueSpec {
 export interface Localized {
   fr: Fr;
   en: En;
+  es: Es;
 }
 /**
  * Live KPIs: shown as a percent (default), a value or levels.

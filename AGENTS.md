@@ -44,9 +44,10 @@ before you report the work as done.
 - **English** for code, comments, docstrings, documentation files, commit
   messages, pull request texts and log messages.
 - **French** for replies to the user in the conversation.
-- User-facing site text exists in **French and English**: UI strings in
-  `web/src/lib/i18n/fr.json` and `en.json` (same keys), content labels as
-  `{fr, en}` objects in `config/`. Never add a string in only one language.
+- User-facing site text exists in **French, English and Spanish**: UI
+  strings in `web/src/lib/i18n/fr.json`, `en.json` and `es.json` (same keys
+  and placeholders), content labels as `{fr, en, es}` objects in `config/`.
+  Never add a string without all three languages.
 
 ## 3. Git and GitHub
 
@@ -98,7 +99,7 @@ before you report the work as done.
   0 errors and 0 warnings, `npm test`, `npm run build`, and actionlint for
   workflow changes.
 - UI changes are checked on a 390 px wide viewport, in light and dark mode,
-  in French and English.
+  in French, English and Spanish.
 - Report failures honestly: if a check fails or was skipped, say so.
 
 ## 6. End-of-task checklist
@@ -109,7 +110,7 @@ Before your final reply, confirm each line:
 - [ ] New pitfalls added to CONTEXT.md §8.
 - [ ] Tests added or updated; all checks of CONTEXT.md §9 pass.
 - [ ] Generated files regenerated, not hand-edited.
-- [ ] No string added in only one language.
+- [ ] Every new string exists in French, English and Spanish.
 - [ ] Nothing committed or pushed unless the user asked.
 - [ ] Final reply, in French, says what changed, which documents were
       updated, and what is left to do.

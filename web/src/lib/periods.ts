@@ -15,6 +15,7 @@ import periodsYaml from '@config/periods.yaml';
 import type { Kpi, ResolvedTile, Tile } from './config';
 import type { MassifDaily } from './data';
 import type { Localized, Period, PeriodsFile } from './generated/periods';
+import { localizedFrom } from './i18n/core';
 
 export type { Period };
 
@@ -142,14 +143,8 @@ export function tilePeriods(tile: Tile, kpis: Kpi[]): string[] {
 /** Title of a tile for a period: its template with `{period}` filled in. */
 export function instanceTitle(tile: Tile, kpis: Kpi[], label: Localized): Localized {
   const name = kpis[0]?.name;
-  const template = tile.title ?? {
-    fr: `${name?.fr ?? ''} {period}`.trim(),
-    en: `${name?.en ?? ''} {period}`.trim(),
-  };
-  return {
-    fr: template.fr.replace('{period}', label.fr),
-    en: template.en.replace('{period}', label.en),
-  };
+  const template = tile.title ?? localizedFrom((l) => `${name?.[l] ?? ''} {period}`.trim());
+  return localizedFrom((l) => template[l].replace('{period}', label[l]));
 }
 
 /**

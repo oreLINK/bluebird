@@ -18,6 +18,7 @@
 import type { Massif, SiteDomain, SiteStation } from './config';
 import type { FilterChip } from './filterLevels';
 import type { Localized } from './generated/massifs';
+import { localizedFrom, sameInAll } from './i18n/core';
 
 export interface GeoState {
   /** The path actually applied: `[massif]`, `[massif, zone]`, `[massif, zone, domain]`. */
@@ -43,7 +44,7 @@ function zoneLabel(zone: { name: Localized; country?: string | null }): Localize
   const country = zone.country ?? HOME_COUNTRY;
   if (country === HOME_COUNTRY) return zone.name;
   const flag = flagOf(country);
-  return { fr: `${flag} ${zone.name.fr}`, en: `${flag} ${zone.name.en}` };
+  return localizedFrom((l) => `${flag} ${zone.name[l]}`);
 }
 
 const chip = (level: number, id: string, name: Localized, pressed: boolean): FilterChip => ({
@@ -116,7 +117,7 @@ export function geoState(
   if (areas.length === 0) return done(inZoneIds);
   const area = areas.find((d) => d.id === path[kept.length]);
   const level = kept.length + 1;
-  const label = (name: string): Localized => ({ fr: name, en: name });
+  const label = (name: string): Localized => sameInAll(name);
   if (!area) {
     chips.push(...areas.map((d) => chip(level, d.id, label(d.name), false)));
     return done(inZoneIds);

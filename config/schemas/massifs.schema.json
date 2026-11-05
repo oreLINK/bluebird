@@ -15,11 +15,17 @@
           "minLength": 1,
           "title": "En",
           "type": "string"
+        },
+        "es": {
+          "minLength": 1,
+          "title": "Es",
+          "type": "string"
         }
       },
       "required": [
         "fr",
-        "en"
+        "en",
+        "es"
       ],
       "title": "Localized",
       "type": "object"

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Kpi, ResolvedTile, Tile } from './config';
 import type { MassifDaily } from './data';
+import type { Localized } from './generated/periods';
 import { liveView } from './kpiView';
 import {
   addDays,
@@ -15,7 +16,7 @@ import {
   slotLabel,
 } from './periods';
 
-const name = { fr: 'Neige', en: 'Snow' };
+const name = { fr: 'Neige', en: 'Snow', es: 'Snow' };
 const snowKpi: Kpi = {
   id: 'snow',
   aggregator: 'snow',
@@ -26,11 +27,11 @@ const snowKpi: Kpi = {
 const powderKpi: Kpi = {
   id: 'powder',
   aggregator: 'powder',
-  name: { fr: 'Poudreuse', en: 'Powder' },
+  name: { fr: 'Poudreuse', en: 'Powder', es: 'Powder' },
   description: name,
   periods: ['morning', 'midday', 'afternoon'],
 };
-const tile = (id: string, kpi: Kpi, title?: { fr: string; en: string }): ResolvedTile => ({
+const tile = (id: string, kpi: Kpi, title?: Localized): ResolvedTile => ({
   tile: { id, type: 'banner', kpis: [kpi.id], ...(title ? { title } : {}) } as Tile,
   kpis: [kpi],
 });
@@ -135,11 +136,12 @@ describe('periods', () => {
   });
 
   it('fills the {period} placeholder, or appends the label to the KPI name', () => {
-    const label = { fr: 'ce soir', en: 'this evening' };
-    const titled = tile('t', snowKpi, { fr: 'Chute {period}', en: 'Fall {period}' });
+    const label = { fr: 'ce soir', en: 'this evening', es: 'esta noche' };
+    const titled = tile('t', snowKpi, { fr: 'Chute {period}', en: 'Fall {period}', es: 'Caída {period}' });
     expect(instanceTitle(titled.tile, titled.kpis, label)).toEqual({
       fr: 'Chute ce soir',
       en: 'Fall this evening',
+      es: 'Caída esta noche',
     });
     const plain = tile('t', snowKpi);
     expect(instanceTitle(plain.tile, plain.kpis, label).en).toBe('Snow this evening');

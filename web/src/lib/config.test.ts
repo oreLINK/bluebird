@@ -27,7 +27,7 @@ import type { Kpi } from './generated/kpis';
 import type { Massif } from './generated/massifs';
 import type { Tile } from './generated/tiles';
 
-const name = { fr: 'x', en: 'x' };
+const name = { fr: 'x', en: 'x', es: 'x' };
 const kpi = (id: string, enabled = true): Kpi => ({ id, aggregator: id, enabled, name, description: name });
 const tile = (id: string, kpiIds: string[]): Tile => ({ id, type: 'ranking', kpis: kpiIds });
 
@@ -80,7 +80,7 @@ describe('repository configuration', () => {
 });
 
 describe('filters', () => {
-  const name = { fr: 'x', en: 'x' };
+  const name = { fr: 'x', en: 'x', es: 'x' };
   const snowKpi: Kpi = { id: 'k1', aggregator: 'a', name, description: name, filters: ['snow'] };
   const powderKpi: Kpi = { id: 'k2', aggregator: 'a', name, description: name, filters: ['powder'] };
   const resolved = [
@@ -105,7 +105,7 @@ describe('filters', () => {
 });
 
 describe('pages and footer', () => {
-  const title = { fr: 'x', en: 'x' };
+  const title = { fr: 'x', en: 'x', es: 'x' };
   const page = (id: string) => ({ id, title, sections: [{ id: 's', title, paragraphs: [title] }] });
 
   it('lists footer pages in footer order and skips unknown ids', () => {

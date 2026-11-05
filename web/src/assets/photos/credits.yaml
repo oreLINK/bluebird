@@ -11,9 +11,24 @@
 #   license: CC BY-SA 4.0
 #   url: https://commons.wikimedia.org/wiki/File:Example.jpg
 
-# Commons, CC BY-SA 2.5 (La Mongie village from the Pourteilh gondola, 2006).
-# Resized (1310 × 900 → 960 × 660) and converted to WebP, otherwise unchanged.
+# Commons, CC BY-SA 3.0 (La Mongie ski area, February 2012).
+# Resized (2048 × 1536 → 1600 × 1200) and converted to WebP, otherwise unchanged.
 pyrenees/grand-tourmalet/grand-tourmalet_1:
-  author: Christophe Jacquet
-  license: CC BY-SA 2.5
-  url: https://commons.wikimedia.org/wiki/File:La_Mongie_ski_resort_-_The_village.jpg
+  author: Kuruma33
+  license: CC BY-SA 3.0
+  url: https://commons.wikimedia.org/wiki/File:Lamongie1.jpg
+
+# Commons, CC BY-SA 3.0 (a piste of Ax 3 Domaines, December 2009).
+# Resized (2560 × 1920 → 1600 × 1200) and converted to WebP, otherwise unchanged.
+pyrenees/ax-3-domaines/ax-3-domaines_1:
+  author: Antoine Blondin
+  license: CC BY-SA 3.0
+  url: https://commons.wikimedia.org/wiki/File:Pisteax.jpg
+
+# Commons, CC BY-SA 3.0 (the Pic d'Arlas above the ski area, March 2005;
+# uploaded to the French Wikipedia by Larrousiney, moved to Commons).
+# Resized (2272 × 1704 → 1600 × 1200) and converted to WebP, otherwise unchanged.
+pyrenees/la-pierre-saint-martin/la-pierre-saint-martin_1:
+  author: Larrousiney
+  license: CC BY-SA 3.0
+  url: https://commons.wikimedia.org/wiki/File:Arlas.JPG

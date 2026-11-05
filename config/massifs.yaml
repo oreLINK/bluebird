@@ -11,7 +11,7 @@
 #   3. Run `uv run bluebird validate` from pipeline/.
 massifs:
   - id: pyrenees
-    name: { fr: Pyrénées, en: Pyrenees }
+    name: { fr: Pyrénées, en: Pyrenees, es: Pirineos }
     timezone: Europe/Paris
     enabled: true
     order: 10
@@ -29,8 +29,8 @@ massifs:
     #   - { id: navarre, name: { fr: Navarre, en: Navarre }, country: ES }
     #   - { id: andorre, name: { fr: Andorre, en: Andorra }, country: AD }
     zones:
-      - { id: pyrenees-atlantiques, name: { fr: Pyrénées-Atlantiques, en: Pyrénées-Atlantiques }, code: "64" }
-      - { id: hautes-pyrenees, name: { fr: Hautes-Pyrénées, en: Hautes-Pyrénées }, code: "65" }
-      - { id: haute-garonne, name: { fr: Haute-Garonne, en: Haute-Garonne }, code: "31" }
-      - { id: ariege, name: { fr: Ariège, en: Ariège }, code: "09" }
-      - { id: pyrenees-orientales, name: { fr: Pyrénées-Orientales, en: Pyrénées-Orientales }, code: "66" }
+      - { id: pyrenees-atlantiques, name: { fr: Pyrénées-Atlantiques, en: Pyrénées-Atlantiques, es: Pyrénées-Atlantiques }, code: "64" }
+      - { id: hautes-pyrenees, name: { fr: Hautes-Pyrénées, en: Hautes-Pyrénées, es: Hautes-Pyrénées }, code: "65" }
+      - { id: haute-garonne, name: { fr: Haute-Garonne, en: Haute-Garonne, es: Haute-Garonne }, code: "31" }
+      - { id: ariege, name: { fr: Ariège, en: Ariège, es: Ariège }, code: "09" }
+      - { id: pyrenees-orientales, name: { fr: Pyrénées-Orientales, en: Pyrénées-Orientales, es: Pyrénées-Orientales }, code: "66" }

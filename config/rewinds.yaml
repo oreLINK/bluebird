@@ -14,7 +14,7 @@
 # (or the "Build a Rewind" workflow) the day after `end`.
 rewinds:
   - id: 2025-26
-    name: { fr: Rewind 25/26, en: Rewind 25/26 }
+    name: { fr: Rewind 25/26, en: Rewind 25/26, es: Rewind 25/26 }
     start: 2025-12-01
     end: 2026-05-01
     massifs: [pyrenees]
