@@ -21,11 +21,26 @@
 # never computed by the refresh.
 # `method` explains the computation on the back of the tiles; `{param}`
 # placeholders are filled with the values of `params`, so text and maths agree.
+#
+# `visibility` (live KPIs, required by the scored home page of
+# config/layout.yaml) sets how the KPI competes for the home page; the score is
+# never shown to visitors. README.md "Home page visibility score" has the formula.
+#   priority  editorial weight (0..1]: what matters most to a skier
+#   measure   value (median of the display driver) or probability (0..1);
+#             default: value for a `value` display, probability otherwise
+#   floor     below it (mean of the top 3 stations of the chosen place) the
+#             tile is not significant and is hidden from the home page
+#   strong    at or beyond it the impact is full; below `floor` = lower is
+#             stronger (wind chill)
+#   alert     optional: at or beyond it the tile is an alert (right after the
+#             pinned tiles; Access alerts of tomorrow from noon)
+#   slots     optional `floor` / `strong` of the time slots (morning…)
 kpis:
   - id: snowfall_chance
     aggregator: snowfall_chance
     filters: [snow]
     periods: [day, morning, midday, afternoon, evening, night]
+    visibility: { priority: 1.0, floor: 5, strong: 30, slots: { floor: 2, strong: 15 } }
     name: { fr: Chute de neige, en: Snowfall, es: Nevada }
     description:
       fr: Neige attendue pendant le créneau affiché, à mi-altitude.
@@ -70,6 +85,7 @@ kpis:
     aggregator: offpiste_powder_chance
     filters: [snow-quality]
     periods: [day, morning, midday, afternoon]
+    visibility: { priority: 0.9, floor: 0.3, strong: 0.7 }
     name: { fr: Poudreuse hors-piste, en: Off-piste powder, es: Nieve polvo fuera de pista }
     description:
       fr: Probabilité de trouver de la poudreuse fraîche hors-piste au début du créneau, au sommet.
@@ -118,6 +134,7 @@ kpis:
     aggregator: onpiste_powder_chance
     filters: [snow-quality]
     periods: [day, morning, midday, afternoon]
+    visibility: { priority: 0.95, floor: 5, strong: 20 }
     name: { fr: Poudreuse sur piste, en: On-piste powder, es: Nieve polvo en pista }
     description:
       fr: Neige tombée sur les pistes depuis la fin du damage, au début du créneau, à mi-altitude.
@@ -161,6 +178,7 @@ kpis:
     aggregator: whiteout_chance
     filters: [sky]
     periods: [day]   # a white *day*: today and tomorrow
+    visibility: { priority: 0.75, floor: 0.4, strong: 0.8 }
     name: { fr: Jour blanc, en: White day, es: Día blanco }
     description:
       fr: Probabilité d'un jour blanc (sans relief visible) pendant la journée de ski, à mi-altitude.
@@ -208,6 +226,7 @@ kpis:
     aggregator: bluebird_day_chance
     filters: [sky]
     periods: [day]   # a bluebird *day*: today and tomorrow
+    visibility: { priority: 1.0, floor: 0.25, strong: 0.7 }
     name: { fr: Journée bluebird, en: Bluebird day, es: Día bluebird }
     description:
       fr: Probabilité d'une journée de grand beau juste après une chute de neige, à mi-altitude.
@@ -262,6 +281,7 @@ kpis:
     aggregator: powder_alert_chance
     filters: [snow]
     periods: [day]
+    visibility: { priority: 1.0, floor: 20, strong: 50 }
     name: { fr: Alerte neige, en: Snow alert, es: Alerta de nieve }
     description:
       fr: Neige attendue à mi-altitude sur 36 heures à partir du matin.
@@ -311,6 +331,7 @@ kpis:
     aggregator: snowmaking_chance
     filters: [snow]
     periods: [overnight, night]
+    visibility: { priority: 0.45, floor: 3, strong: 8 }
     name: { fr: Canons à neige, en: Snow cannons, es: Cañones de nieve }
     description:
       fr: Heures de la nuit assez froides et sèches pour fabriquer de la neige sur les pistes.
@@ -360,6 +381,7 @@ kpis:
     aggregator: spring_snow_chance
     filters: [snow-quality]
     periods: [day, morning, midday, afternoon]
+    visibility: { priority: 0.7, floor: 0.4, strong: 0.8 }
     name: { fr: Neige de printemps, en: Spring snow, es: Nieve primavera }
     description:
       fr: Probabilité d'une neige transformée qui ramollit pendant le créneau après avoir regelé la nuit.
@@ -407,6 +429,7 @@ kpis:
     aggregator: hard_snow_chance
     filters: [snow-quality]
     periods: [day, morning]
+    visibility: { priority: 0.7, floor: 0.25, strong: 0.6 }
     name: { fr: Neige dure, en: Hard snow, es: Nieve dura }
     description:
       fr: Probabilité d'une neige dure et glacée le matin, après un redoux la veille et un regel la nuit.
@@ -463,6 +486,7 @@ kpis:
     aggregator: heavy_snow_chance
     filters: [snow-quality]
     periods: [day, midday, afternoon]
+    visibility: { priority: 0.6, floor: 0.4, strong: 0.8 }
     name: { fr: Neige lourde, en: Heavy snow, es: Nieve pesada }
     description:
       fr: Probabilité d'une neige lourde et collante pendant le créneau (redoux ou neige mouillée).
@@ -502,6 +526,7 @@ kpis:
     aggregator: easy_conditions_chance
     filters: [snow-quality]
     periods: [day, morning, midday, afternoon]
+    visibility: { priority: 0.55, floor: 0.5, strong: 0.9 }
     name: { fr: Conditions faciles, en: Easy conditions, es: Condiciones fáciles }
     description:
       fr: Probabilité de conditions faciles pour débuter pendant le créneau, à mi-altitude.
@@ -547,6 +572,7 @@ kpis:
     aggregator: sunset_chance
     filters: [sky]
     periods: [sunset]
+    visibility: { priority: 0.5, floor: 0.5, strong: 0.9 }
     name: { fr: Coucher de soleil, en: Sunset, es: Puesta de sol }
     description:
       fr: Probabilité d'un coucher de soleil visible depuis le haut du domaine skiable.
@@ -586,6 +612,7 @@ kpis:
     aggregator: starry_night_chance
     filters: [sky]
     periods: [sunset, evening]
+    visibility: { priority: 0.4, floor: 0.5, strong: 0.9 }
     name: { fr: Nuit étoilée, en: Starry night, es: Noche estrellada }
     description:
       fr: Probabilité d'un ciel dégagé et étoilé en soirée.
@@ -624,6 +651,7 @@ kpis:
     aggregator: sunny_slot_chance
     filters: [sky]
     periods: [day, morning, midday, afternoon]
+    visibility: { priority: 0.75, measure: probability, floor: 0.5, strong: 0.9 }
     name: { fr: Grand soleil, en: Full sun, es: Pleno sol }
     description:
       fr: Heures de soleil pendant le créneau, à mi-altitude.
@@ -675,6 +703,7 @@ kpis:
     aggregator: wind_chill_chance
     filters: [comfort]
     periods: [day, morning, midday, afternoon]
+    visibility: { priority: 0.7, floor: -15, strong: -30, alert: -28 }
     name: { fr: Froid ressenti, en: Wind chill, es: Sensación térmica }
     description:
       fr: Température ressentie la plus froide au sommet pendant le créneau, à cause du vent.
@@ -737,6 +766,7 @@ kpis:
     aggregator: mild_day_chance
     filters: [comfort]
     periods: [day]
+    visibility: { priority: 0.55, floor: 0.5, strong: 0.9 }
     name: { fr: Journée douce, en: Mild day, es: Día templado }
     description:
       fr: Probabilité d'une journée douce, ensoleillée et sans vent à mi-altitude (temps de pique-nique).
@@ -781,6 +811,7 @@ kpis:
     aggregator: chains_chance
     filters: [access]
     periods: [day]
+    visibility: { priority: 0.85, floor: 0.25, strong: 0.6, alert: 0.6 }
     name: { fr: Chaînes nécessaires, en: Chains needed, es: Cadenas necesarias }
     description:
       fr: Probabilité de neige sur la route d'accès le matin, au niveau du bas de la station.
@@ -836,6 +867,7 @@ kpis:
     aggregator: lift_wind_chance
     filters: [access]
     periods: [day, morning, midday, afternoon]
+    visibility: { priority: 0.85, floor: 45, strong: 70, alert: 60 }
     name: { fr: Remontées au vent, en: Lifts in the wind, es: Remontes y viento }
     description:
       fr: "Vent moyen le plus fort au sommet pendant le créneau : les remontées ralentissent ou s'arrêtent dans les fortes rafales."
@@ -895,6 +927,7 @@ kpis:
     aggregator: wind_slab_chance
     filters: [safety]
     periods: [day]
+    visibility: { priority: 0.85, floor: 0.25, strong: 0.6, alert: 0.6 }
     name: { fr: Neige ventée, en: Wind-blown snow, es: Nieve venteada }
     description:
       fr: Probabilité que le vent transporte la neige fraîche au sommet, signe d'alerte hors-piste. Ne remplace jamais le bulletin d'avalanche.

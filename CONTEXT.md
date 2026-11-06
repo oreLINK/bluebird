@@ -86,8 +86,11 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
   `slot` (Matin…Nuit), at most 4 levels; above the slot level only
   day-grain tiles are shown, time-slot tiles only once a slot is chosen;
   no "All": with nothing
-  chosen the home page shows the `home` tiles of `layout.yaml`, in priority
-  order: bluebird day today first). Above the tiles, plain text (no card): data date (day of
+  chosen the home page shows the **home feed** (`lib/homeFeed.ts`): the
+  pinned bluebird day first, then the live tiles of today and tomorrow
+  ranked by an invisible **visibility score** = priority × impact ×
+  relevance × reliability (KPI `visibility` in `kpis.yaml`, `home` in
+  `layout.yaml`, README.md "Home page visibility score"), at most 50). Above the tiles, plain text (no card): data date (day of
   `generated_at`) and update time. Station details on tap are off for now
   (tile option `details`, default false): the tiles show the probability only.
 - UI languages: French (default), English and Spanish (`LOCALES` in
@@ -159,7 +162,8 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 | `web/src/components/FilterBar.svelte`, `Logo.svelte` | Scrollable chip bar, the same chips for the massif bar and the filter bar (options with `pressed`/`removable` (×), `resetScroll`, chips grow in and slide with `animate:flip`), logo (goggle mark + wordmark; phase of the day of the first massif's timezone, checked every minute). |
 | `web/src/components/LogoMark.svelte`, `web/src/lib/timeOfDay.ts` | Ski goggle mark (three-quarter view): only the lens gradient changes, tokens `--logo-lens-<phase>-<1..3>` (`--logo-frame`, `--logo-glare`); pure `dayPhase(now, timezone)` (dawn 06, day 09, dusk 17, night 20), tested. |
 | `web/public/favicon.svg`, `web/public/apple-touch-icon.png`, `web/scripts/apple-touch-icon.svg`, `web/scripts/make-apple-icon.sh` | Static copies of the `day` mark: favicon, and the 180 px home-screen icon rendered from its SVG source (headless Chrome + `sips`, macOS). `src/lib/brandIcons.test.ts` checks shapes, day colours and links stay in sync with `LogoMark.svelte`. |
-| `web/src/lib/filterLevels.ts` | Pure, tested: `filterState(path, …)` → chips, tiles and tile instances of the filter path (home = `homeTiles`: `layout.yaml` `home` in priority order), `LEVEL_KINDS` (`group`, `day`, `slot`: options + match; a single group is skipped), `isDayGrain` (grain rule: day-grain tiles until a slot is chosen), `nextPath` (tap = choose, tap a chosen chip = remove it and the levels after). Only level 1 is stored in `localStorage`. |
+| `web/src/lib/homeFeed.ts` | Pure, tested: the home page. `homeFeed(resolved, payload, now, { config: layout.home, only, rankAt })` → pinned instances, then alerts, then the others by visibility score (`visibilityOf`: priority × `impactOf` (top-`top` mean of the place vs `floor`/`strong`, both directions) × `relevanceOf` (ski day clock `skiClock`/`clockOf`, `stepFactor`; slots current/next/later, today steps per day-grain period, tomorrow steps, `early_alerts`) × `reliabilityOf`), one per KPI, diversity among the first ones, `limit`; fallback when nothing is significant; `mode: fixed` = pinned + fallback. Defaults mirror `HomePage` in `config.py` (`DEFAULTS`). Never displayed. |
+| `web/src/lib/filterLevels.ts` | Pure, tested: `filterState(path, …)` → chips, tiles and tile instances of the filter path (home = `homeFeed` of `lib/homeFeed.ts`), `LEVEL_KINDS` (`group`, `day`, `slot`: options + match; a single group is skipped), `isDayGrain` (grain rule: day-grain tiles until a slot is chosen), `nextPath` (tap = choose, tap a chosen chip = remove it and the levels after). Only level 1 is stored in `localStorage`. |
 | `web/src/lib/geoLevels.ts` | Pure, tested: `geoState(path, massifs, siteStations, siteDomains, fallback)` → chips of the massif bar (massif, zone skipped below two, linked area with 2+ stations), the massif shown and the station subset (`null` = all) passed to `viewFor(…, only)`; `readGeoPath` (preference `geo`, migrated from `massif`).; French zones first, foreign ones after with `flagOf` (ISO code → flag emoji). `stationCountries` (`lib/config.ts`) feeds the flag of `shortName` in `lib/kpiView.ts`. |
 | `web/src/components/Sheet.svelte`, `web/src/lib/sheets.svelte.ts` | Generic full-window sheet (Liquid Glass, close ×, rises from the bottom) and its router (`#<id>` in the URL, back gesture closes). Reuse them for any future over-page. |
 | `web/src/components/InfoPage.svelte`, `LocalData.svelte`, `TileGuide.svelte`, `AppFooter.svelte` | A `pages.yaml` page in a `Sheet` (blocks `data_sources`, `photo_credits`, `local_data`, `tile_front` / `tile_back` / `time_badges`, `service_*`); `TileGuide` (page `guide`, "Lire une tuile") draws an example front (marks 1–8) and back (marks 1–9) from the real tile parts and lists every time badge (`timeLegend`), the marks being explained by the numbered paragraphs of `front-marks` / `back-marks` (a pytest checks the counts: change both together); `local_data` (privacy page) lists the `localStorage` preferences (`PREF_KEYS`, `storedPrefs` in `lib/prefs.ts`) and deletes them (`clearPrefs`: only `bluebird:` keys), then reloads; footer with the GitHub logo and page links. A new preference key goes in `PREF_KEYS`, its label in `LocalData.svelte` (`localData.*` strings) and the privacy page text. |
@@ -287,7 +291,7 @@ with `scripts/ci/fetch-gh-pages-data.sh` before computing (fallback).
     and are only computed by `bluebird rewind`, which refuses a season that is
     not over. `config/rewind/` is generated and committed, never hand-edited.
     Rewind tiles only show under their Rewind filter (never on the home
-    page, whose tiles are the live `home` entries of `layout.yaml`). On the site, tiles
+    page, whose tiles are live: the home feed of `lib/homeFeed.ts`). On the site, tiles
     only read a `KpiView` (`lib/kpiView.ts`) and colours only change through
     tile themes (token overrides, `[data-tile-theme]`): no tile format, prop or
     CSS is specific to one kind of KPI or one Rewind.
@@ -336,6 +340,13 @@ with `scripts/ci/fetch-gh-pages-data.sh` before computing (fallback).
     present, never a forecast. Never display, download or store a webcam
     image (resort webcams are all rights reserved) until the owner agrees;
     `visual: webcam` is the planned background (README.md "Roadmap").
+
+26. **The visibility score is invisible.** It only orders the home page
+    (`lib/homeFeed.ts`); never show it, its factors or "why this tile" on a
+    tile front or back. Every enabled live KPI has a `visibility` block
+    (validated); the bluebird day stays pinned first; at most `home.limit`
+    (50) tiles so the footer stays reachable; the ranking clock (`rankAt`)
+    moves only on new data, period ends and tab return, never every minute.
 
 ## 5. Git rules for agents
 
@@ -389,12 +400,13 @@ npm run dev
 | Add a massif | `config/massifs.yaml` (with its `zones`), new `config/stations/<id>.yaml`, optional `layout.yaml` override | `bluebird reference --massif <id>`, `bluebird validate`, `bluebird demo` |
 | Add reference data | `bronze/extractor_<x>.py`, `silver/transformer_<x>.py` with `reference_suffix`, `reference_file`, `read_reference`; source with `schedule: reference` | `bluebird reference`, `pytest`, commit `config/reference/` |
 | Add a source | `bronze/extractor_<x>.py` (one grouped request if the API allows), `silver/transformer_<x>.py`, `config/sources.yaml` (+ attribution), tests | `bluebird validate`, `pytest` |
-| Add a KPI | `gold/aggregator_<x>.py` (live: `compute(ctx, ref, period)`), PROJECT.md "Available indicators", README.md "Tiles on the site", `config/kpis.yaml` (name, description, `method` with `{param}` placeholders, params, drivers, filters, `periods` for live KPIs, including a day-grain one (`day`, with `day_or_slot` for KPIs that also have slots), `display`: percent / value / levels), `config/tiles.yaml` (title without the period), its group in `config/filters.yaml`, `config/layout.yaml`, tests, TILES.md §7 | `bluebird validate`, `pytest`, `bluebird demo` |
+| Add a KPI | `gold/aggregator_<x>.py` (live: `compute(ctx, ref, period)`), PROJECT.md "Available indicators", README.md "Tiles on the site", `config/kpis.yaml` (name, description, `method` with `{param}` placeholders, params, drivers, filters, `periods` for live KPIs, including a day-grain one (`day`, with `day_or_slot` for KPIs that also have slots), `display`: percent / value / levels, `visibility`: priority, floor, strong, optional alert and slots, also in README.md "Home page visibility score" and PROJECT.md "How the home page is chosen"), `config/tiles.yaml` (title without the period), its group in `config/filters.yaml`, `config/layout.yaml`, tests, TILES.md §7 | `bluebird validate`, `pytest`, `bluebird demo` |
 | Add a period | `config/periods.yaml` (slot + labels per day + short `badge` and `tone`, none for a whole-day period; keep slots tiling the day), `periods` of the KPIs | `bluebird validate`, `pytest`, `bluebird demo` |
 | Add a tile format | TILES.md (§2, a picture in `docs/tiles/render.mjs`, §7), README.md "Tiles on the site" when used, `web/src/tiles/Tile<Xyz>.svelte`, `web/src/tiles/registry.ts` (id `xyz` + `skeletonVariant` + `tileRows`), `TileFormat` in `config.py`, `config/tiles.yaml` (`format: xyz`) | `bluebird schemas`, `npm run gen:types`, `npm run check`, `npm test`, 390 px screenshots |
 | Link a station webcam | TILES.md §5/§7, `webcams` of the station in `config/stations/<massif>.yaml` (`position`, `provider`, official `url`), tile `webcam: { positions, min_probability }` (live `full`/`banner` only) | `bluebird validate`, `npm test`, 390 px screenshot with a frozen clock (the badge only shows while the period is in progress) |
 | Change the diamond shape | `diamond/models.py`, displayer, frontend usage | `bluebird schemas`, `npm run gen:types`, `bluebird demo`, all tests |
-| Reorder tiles | `config/layout.yaml` (`home` = home page in priority order, `default`/`overrides` = order under a filter), README.md "Tiles on the site", TILES.md §7 (layout order) | `bluebird validate`, `npm test` |
+| Reorder tiles | `config/layout.yaml` (`default`/`overrides` = order under a filter), README.md "Tiles on the site", TILES.md §7 (layout order) | `bluebird validate`, `npm test` |
+| Tune the home page | KPI `visibility` in `config/kpis.yaml` (priority, floor, strong, alert, slots), `home` in `config/layout.yaml` (pinned, fallback, limit, relevance steps, reliability, diversity), the tables of README.md "Home page visibility score" and PROJECT.md "How the home page is chosen", `homeFeed.test.ts` when the rules change | `bluebird validate`, `pytest`, `npm test` |
 | Add a filter | `config/filters.yaml` (`levels`, `groups`), `filters: [id]` on KPIs in `config/kpis.yaml` | `bluebird validate`, `npm test` |
 | Add a kind of filter level | `FilterLevel` in `config.py`, `LEVEL_KINDS` in `web/src/lib/filterLevels.ts`, its `{fr, en, es}` chip labels in config, tests (max 4 levels: `MAX_FILTER_LEVELS`) | `bluebird schemas`, `npm run gen:types`, `pytest`, `npm test` |
 | Add a banner photo | found on [Openverse](https://openverse.org/fr) or Wikimedia Commons (its API gives licence, author, date and categories) under a reusable licence (CC0, PDM, CC BY, CC BY-SA; never ND), checked on its source page; `web/src/assets/photos/<path>.webp` (≤ 300 KB), `credits.yaml` (author, licence, source URL, changes made), tile `visual: photo` | `npm test`, `npm run build`, 390 px screenshots |
@@ -623,6 +635,14 @@ npm run dev
   151px); compact titles stay on one line (a smaller font when long), since
   two lines no longer fit. Check `getBoundingClientRect()` heights of the
   `.slot`s (416 / 199 px at 390 px) after any change to a tile part.
+- **Config defaults are not applied on the site.** The site imports the raw
+  YAML (`@rollup/plugin-yaml`): pydantic defaults (`home.limit`, `top`,
+  `reliability`, `diversity`…) do not exist there. `lib/homeFeed.ts` repeats
+  them in `DEFAULTS`; change both together, or write the value in the YAML.
+- **Sunset relevance after sunset.** The `sunset` period runs to 22:00 (for
+  the starry night), so the sunset tile kept full relevance at 21:00; the
+  `sunset` steps drop to 0.4 at 20:00 (the real sunset moves from ~17:20 to
+  ~21:00 over the season).
 - **Tile option `photo` is gone.** It is rejected by `bluebird validate`
   (use `visual: photo`); `compact` tiles reject `visual` and `webcam`.
 
@@ -659,8 +679,10 @@ terrain (piste difficulty from `domain_features`, instead of a skier level)
 Reference pistes/lifts are used by the Rewind (domain and off-piste
 sampling points) but not by any live KPI or tile yet. Future KPIs (live,
 Rewind, All Time) are listed in PROJECT.md "Future indicators"; future
-features, their feasibility and the planned tile ordering algorithm
-(`rankTiles`, `ordering` in `layout.yaml`) in README.md "Future features".
+features and their feasibility in README.md "Future features". The home
+page is ranked by the visibility score (`lib/homeFeed.ts`); still to come
+for it: popularity (local preferences only) and novelty (needs the
+day-to-day history).
 Periods are ready for longer horizons: weekend and week periods (needs
 `horizon_days`/period kinds beyond today and tomorrow, and more forecast
 days, then a `week` filter level kind); the time badge then needs two
@@ -705,8 +727,8 @@ outcome, append-only per-season files on `gh-pages`) also feeding
 probability calibration. An MCP connector for AI assistants is much later and
 not a priority; no open-data page is planned.
 Place stories (full-screen highlights of the day for the chosen place,
-README.md "Future features") reuse `viewFor(…, only)` and the planned
-`rankTiles`; the current tile design stays (a 2026-11 redesign study kept it).
+README.md "Future features") reuse `viewFor(…, only)` and the visibility
+score of `lib/homeFeed.ts`; the current tile design stays (a 2026-11 redesign study kept it).
 For the sunniest resort, use the stored `shortwave_wm2`, not `sunshine_s`
 (see §8). Planned next (see PROJECT.md): Météo-France avalanche bulletin (BRA, needs an
 API key), resort opening status (scraper), slope/aspect from an IGN or

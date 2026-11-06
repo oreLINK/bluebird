@@ -373,6 +373,51 @@ class KpiDisplay(StrictModel):
         return [d for d in [self.driver, *(self.range or []), self.note] if d]
 
 
+class SlotThresholds(StrictModel):
+    """Significance thresholds of a live KPI for its time slots (morning, afternoon…)."""
+
+    floor: float = Field(description="Below it (top-3 mean) the tile is not significant.")
+    strong: float = Field(description="At or beyond it the impact is full (1).")
+
+    @model_validator(mode="after")
+    def _distinct(self) -> SlotThresholds:
+        if self.floor == self.strong:
+            raise ValueError("`floor` and `strong` must differ")
+        return self
+
+    @property
+    def lower_is_stronger(self) -> bool:
+        return self.strong < self.floor
+
+
+class KpiVisibility(SlotThresholds):
+    """How a live KPI competes for the home page (visibility score, README.md).
+
+    The measure is the mean of the top 3 stations of the chosen place: the
+    median value of the display `driver` (`value`) or the probability
+    (`probability`, 0..1). Impact = (measure - floor) / (strong - floor),
+    clamped to 0..1; `strong` below `floor` means lower is stronger (e.g. a
+    colder wind chill). Below `floor` the tile is hidden from the home page.
+    """
+
+    priority: float = Field(gt=0, le=1, description="Editorial weight of the KPI (0..1].")
+    measure: Literal["value", "probability"] | None = Field(
+        default=None,
+        description="value (needs a `value` display) or probability; default from the display.",
+    )
+    alert: float | None = Field(
+        default=None,
+        description=(
+            "Measure at or beyond which the tile is an alert: shown right after the pinned "
+            "tiles (and, for the `early_alerts` filters of layout.yaml, tomorrow from noon)."
+        ),
+    )
+    slots: SlotThresholds | None = Field(
+        default=None,
+        description="`floor` and `strong` for the time slots, when they differ from the day's.",
+    )
+
+
 class Kpi(StrictModel):
     """A KPI computed by a gold-layer Aggregator."""
 
@@ -423,6 +468,39 @@ class Kpi(StrictModel):
             "ignored for historical KPIs."
         ),
     )
+    visibility: KpiVisibility | None = Field(
+        default=None,
+        description=(
+            "Live KPIs: priority and significance thresholds of the home page visibility "
+            "score; without it the KPI is never ranked on the home page."
+        ),
+    )
+
+    @property
+    def visibility_measure(self) -> Literal["value", "probability"]:
+        """What the visibility thresholds compare: the display value or the probability."""
+        if self.visibility and self.visibility.measure:
+            return self.visibility.measure
+        return "value" if self.display.kind == "value" else "probability"
+
+    @model_validator(mode="after")
+    def _visibility(self) -> Kpi:
+        vis = self.visibility
+        if vis is None:
+            return self
+        if self.kind == "historical":
+            raise ValueError(f"historical KPI '{self.id}' cannot have `visibility`")
+        measure = self.visibility_measure
+        if measure == "value" and self.display.kind != "value":
+            raise ValueError(f"KPI '{self.id}': visibility measure `value` needs a `value` display")
+        thresholds = [vis.floor, vis.strong, *([vis.alert] if vis.alert is not None else [])]
+        if vis.slots:
+            thresholds += [vis.slots.floor, vis.slots.strong]
+            if vis.slots.lower_is_stronger != vis.lower_is_stronger:
+                raise ValueError(f"KPI '{self.id}': `slots` thresholds go the other way")
+        if measure == "probability" and not all(0 <= t <= 1 for t in thresholds):
+            raise ValueError(f"KPI '{self.id}': probability thresholds are between 0 and 1")
+        return self
 
     @model_validator(mode="after")
     def _value_for_historical(self) -> Kpi:
@@ -713,12 +791,114 @@ class HomeTile(StrictModel):
     period: Slug = Field(description="Period shown (today's, or tomorrow's once today's is over).")
 
 
+class RelevanceStep(StrictModel):
+    """From local time `from`, the relevance factor is `factor` (until the next step)."""
+
+    from_: LocalTime = Field(alias="from", description="Local time, on the ski day clock.")
+    factor: float = Field(ge=0, le=1)
+
+
+Steps = Annotated[list[RelevanceStep], Field(min_length=1)]
+
+
+class SlotRelevance(StrictModel):
+    """Relevance of today's time slots: in progress, the next one, the later ones."""
+
+    current: float = Field(default=1.0, ge=0, le=1)
+    next: float = Field(default=0.9, ge=0, le=1)
+    later: float = Field(default=0.7, ge=0, le=1)
+
+
+class TomorrowSlots(StrictModel):
+    """Factor of tomorrow's time slots: the first one of the day, the others."""
+
+    first: float = Field(default=0.9, ge=0, le=1)
+    later: float = Field(default=0.6, ge=0, le=1)
+
+
+class TomorrowRelevance(StrictModel):
+    """Relevance of tomorrow's tiles: 0 before the first step, then step x period factor."""
+
+    steps: Steps
+    slots: TomorrowSlots = Field(default_factory=TomorrowSlots)
+
+
+class EarlyAlerts(StrictModel):
+    """Tomorrow's alerts of these filters show from `from` (before the tomorrow steps)."""
+
+    filters: list[Slug] = Field(min_length=1)
+    from_: LocalTime = Field(alias="from")
+    factor: float = Field(gt=0, le=1)
+
+
+class HomeRelevance(StrictModel):
+    """Relevance factor of a candidate tile by the time of day (ski day clock)."""
+
+    slots: SlotRelevance = Field(default_factory=SlotRelevance)
+    today: dict[Slug, Steps] = Field(
+        description="Steps of today's day-grain periods (day, sunset, overnight) by local time."
+    )
+    tomorrow: TomorrowRelevance
+    early_alerts: EarlyAlerts | None = None
+
+
+class HomeReliability(StrictModel):
+    """Reliability factor: confidence of the top stations, stale data, station coverage."""
+
+    high: float = Field(default=1.0, ge=0, le=1)
+    medium: float = Field(default=0.85, ge=0, le=1)
+    low: float = Field(default=0.65, ge=0, le=1)
+    stale: float = Field(default=0.7, ge=0, le=1, description="Multiplier for stale values.")
+    coverage_min: float = Field(
+        default=0.5, ge=0, le=1, description="Share of the place's stations with a value."
+    )
+    coverage: float = Field(default=0.8, ge=0, le=1, description="Multiplier below `coverage_min`.")
+
+
+class HomeDiversity(StrictModel):
+    """At most `per_category` tiles of one category among the first `first` ranked tiles."""
+
+    first: int = Field(default=6, ge=1)
+    per_category: int = Field(default=2, ge=1)
+
+
+class HomePage(StrictModel):
+    """The home page (no filter selected): pinned tiles, then tiles by visibility score."""
+
+    mode: Literal["scored", "fixed"] = Field(
+        default="scored",
+        description="scored: pinned tiles, alerts, then by visibility; fixed: pinned + fallback.",
+    )
+    pinned: list[HomeTile] = Field(
+        default_factory=list, description="Always first, whatever their score, in this order."
+    )
+    fallback: list[HomeTile] = Field(
+        default_factory=list,
+        description="Shown after the pinned tiles in `fixed` mode, or when no tile is significant.",
+    )
+    limit: int = Field(
+        default=50,
+        ge=1,
+        description="Most tiles on the home page, pinned included (the footer stays reachable).",
+    )
+    top: int = Field(default=3, ge=1, description="Stations averaged by the measure.")
+    relevance: HomeRelevance | None = None
+    reliability: HomeReliability = Field(default_factory=HomeReliability)
+    diversity: HomeDiversity = Field(default_factory=HomeDiversity)
+
+    @model_validator(mode="after")
+    def _scored_needs_relevance(self) -> HomePage:
+        if self.mode == "scored" and self.relevance is None:
+            raise ValueError("the `scored` home page needs `relevance`")
+        return self
+
+
 class LayoutFile(StrictModel):
     """Schema of ``config/layout.yaml``: home page and tile order, optionally per massif."""
 
-    home: list[HomeTile] = Field(
-        default_factory=list,
-        description="Home page tiles in priority order: the first one is shown first.",
+    home: HomePage = Field(
+        default_factory=lambda: HomePage(mode="fixed"),
+        description="Home page: pinned tiles, then tiles ranked by their visibility score.",
     )
     default: list[Slug]
     overrides: dict[str, list[Slug]] = Field(default_factory=dict)
@@ -1111,17 +1291,7 @@ class Config:
             if massif_id not in massif_ids:
                 errors.append(f"layout override for unknown massif '{massif_id}'")
         tiles_by_id = {t.id: t for t in self.tiles}
-        duplicates("layout 'home' entry", [f"{h.tile}@{h.period}" for h in self.layout.home])
-        for home in self.layout.home:
-            tile = tiles_by_id.get(home.tile)
-            if tile is None:
-                errors.append(f"layout 'home' references unknown tile '{home.tile}'")
-            elif not self.is_live_tile(tile):
-                errors.append(f"layout 'home': Rewind tile '{tile.id}' cannot be on the home page")
-            elif home.period not in self.tile_periods(tile):
-                errors.append(
-                    f"layout 'home': tile '{tile.id}' is not shown for period '{home.period}'"
-                )
+        errors.extend(self._home_errors(tiles_by_id, filter_ids))
 
         kpis_by_id = {k.id: k for k in self.kpis}
         filters_by_id = {f.id: f for f in self.filters}
@@ -1154,6 +1324,68 @@ class Config:
             if page_id not in page_ids:
                 errors.append(f"footer references unknown page '{page_id}'")
 
+        return errors
+
+    def _home_errors(self, tiles_by_id: dict[str, Tile], filter_ids: set[str]) -> list[str]:
+        """Inconsistencies of the home page (layout.yaml `home`) with tiles, periods, KPIs."""
+        errors: list[str] = []
+        home = self.layout.home
+        for kind, entries in (("pinned", home.pinned), ("fallback", home.fallback)):
+            keys = [f"{h.tile}@{h.period}" for h in entries]
+            for value, count in Counter(keys).items():
+                if count > 1:
+                    errors.append(f"duplicate layout 'home.{kind}' entry id '{value}'")
+            for entry in entries:
+                tile = tiles_by_id.get(entry.tile)
+                if tile is None:
+                    errors.append(f"layout 'home.{kind}' references unknown tile '{entry.tile}'")
+                elif not self.is_live_tile(tile):
+                    errors.append(
+                        f"layout 'home.{kind}': Rewind tile '{tile.id}' cannot be on the home page"
+                    )
+                elif entry.period not in self.tile_periods(tile):
+                    errors.append(
+                        f"layout 'home.{kind}': tile '{tile.id}' is not shown for period "
+                        f"'{entry.period}'"
+                    )
+        relevance = home.relevance
+        if home.mode != "scored" or relevance is None:
+            return errors
+
+        clock = self.periods.minutes_after_day_start
+
+        def increasing(name: str, steps: list[RelevanceStep]) -> None:
+            times = [clock(step.from_) for step in steps]
+            if times != sorted(set(times)):
+                errors.append(f"layout '{name}': steps must follow the ski day clock (from 06:00)")
+
+        day_grain = {p.id for p in self.periods.periods if p.native_window}
+        for period_id, steps in relevance.today.items():
+            if period_id not in day_grain:
+                errors.append(f"layout 'home.relevance.today': '{period_id}' is not day-grain")
+            increasing(f"home.relevance.today.{period_id}", steps)
+        increasing("home.relevance.tomorrow", relevance.tomorrow.steps)
+        early = relevance.early_alerts
+        if early is not None:
+            for filter_id in early.filters:
+                if filter_id not in filter_ids:
+                    errors.append(
+                        f"layout 'home.relevance.early_alerts': unknown filter '{filter_id}'"
+                    )
+            if clock(early.from_) >= clock(relevance.tomorrow.steps[0].from_):
+                errors.append(
+                    "layout 'home.relevance.early_alerts': `from` must come before the "
+                    "first tomorrow step"
+                )
+        for kpi in self.enabled_kpis(kind="live"):
+            if kpi.visibility is None:
+                errors.append(f"live KPI '{kpi.id}' needs `visibility` (scored home page)")
+                continue
+            for period_id in sorted(set(kpi.periods) & day_grain - relevance.today.keys()):
+                errors.append(
+                    f"layout 'home.relevance.today' needs steps for period '{period_id}' "
+                    f"(KPI '{kpi.id}')"
+                )
         return errors
 
 

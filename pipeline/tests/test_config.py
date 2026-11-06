@@ -124,7 +124,7 @@ def test_kpi_filters_must_exist_and_every_filter_must_match_a_kpi(tmp_path: Path
             "layout.yaml",
             "{ tile: whiteout, period: day }",
             "{ tile: nope, period: day }",
-            "layout 'home' references unknown tile 'nope'",
+            "layout 'home.fallback' references unknown tile 'nope'",
         ),
         (
             "layout.yaml",
@@ -141,8 +141,8 @@ def test_kpi_filters_must_exist_and_every_filter_must_match_a_kpi(tmp_path: Path
         (
             "layout.yaml",
             "{ tile: whiteout, period: day }",
-            "{ tile: bluebird_day, period: day }",
-            "duplicate layout 'home' entry id 'bluebird_day@day'",
+            "{ tile: onpiste_powder, period: day }",
+            "duplicate layout 'home.fallback' entry id 'onpiste_powder@day'",
         ),
         (
             "filters.yaml",
@@ -210,8 +210,94 @@ def test_filters_have_at_most_four_levels(repo_config: Config) -> None:
 
 
 def test_bluebird_today_leads_the_home_page(repo_config: Config) -> None:
-    first = repo_config.layout.home[0]
+    home = repo_config.layout.home
+    first = home.pinned[0]
     assert (first.tile, first.period) == ("bluebird_day", "day")
+    assert home.mode == "scored"
+    assert home.limit == 50
+
+
+def test_every_live_kpi_competes_for_the_home_page(repo_config: Config) -> None:
+    for kpi in repo_config.enabled_kpis(kind="live"):
+        assert kpi.visibility is not None, kpi.id
+        assert 0 < kpi.visibility.priority <= 1
+    assert all(k.visibility is None for k in repo_config.enabled_kpis(kind="historical"))
+
+
+@pytest.mark.parametrize(
+    ("file", "old", "new", "message"),
+    [
+        (
+            "kpis.yaml",
+            "    visibility: { priority: 0.75, floor: 0.4, strong: 0.8 }\n",
+            "",
+            "live KPI 'whiteout_chance' needs `visibility`",
+        ),
+        (
+            "kpis.yaml",
+            "visibility: { priority: 0.75, floor: 0.4, strong: 0.8 }",
+            "visibility: { priority: 0.75, floor: 40, strong: 80 }",
+            "probability thresholds are between 0 and 1",
+        ),
+        (
+            "kpis.yaml",
+            "visibility: { priority: 0.75, floor: 0.4, strong: 0.8 }",
+            "visibility: { priority: 0.75, measure: value, floor: 0.4, strong: 0.8 }",
+            "measure `value` needs a `value` display",
+        ),
+        (
+            "kpis.yaml",
+            "visibility: { priority: 0.75, floor: 0.4, strong: 0.8 }",
+            "visibility: { priority: 0.75, floor: 0.4, strong: 0.4 }",
+            "`floor` and `strong` must differ",
+        ),
+        (
+            "kpis.yaml",
+            "slots: { floor: 2, strong: 15 }",
+            "slots: { floor: 15, strong: 2 }",
+            "`slots` thresholds go the other way",
+        ),
+        (
+            "layout.yaml",
+            '        - { from: "20:00", factor: 1.0 }\n',
+            '        - { from: "16:00", factor: 1.0 }\n',
+            "steps must follow the ski day clock",
+        ),
+        (
+            "layout.yaml",
+            '      from: "12:00"\n',
+            '      from: "18:00"\n',
+            "`from` must come before the first tomorrow step",
+        ),
+        (
+            "layout.yaml",
+            "      filters: [access]\n",
+            "      filters: [acces]\n",
+            "unknown filter 'acces'",
+        ),
+        (
+            "layout.yaml",
+            "      overnight:\n",
+            "      morning:\n",
+            "'morning' is not day-grain",
+        ),
+        (
+            "layout.yaml",
+            "  relevance:\n",
+            "  relevanc:\n",
+            "relevanc",
+        ),
+    ],
+)
+def test_invalid_visibility_settings_are_rejected(
+    tmp_path: Path, file: str, old: str, new: str, message: str
+) -> None:
+    config_dir = tiny_config_dir(tmp_path)
+    text = (config_dir / file).read_text(encoding="utf-8")
+    assert old in text
+    (config_dir / file).write_text(text.replace(old, new, 1), encoding="utf-8")
+    with pytest.raises(ConfigError, match=message):
+        load_config(config_dir)
 
 
 def test_method_placeholders_must_be_kpi_params(tmp_path: Path) -> None:

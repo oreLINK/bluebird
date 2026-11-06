@@ -21,12 +21,17 @@ const tile = (id: string, k: Kpi): ResolvedTile => ({
   kpis: [k],
 });
 const resolved = [tile('snow_t', snowKpi), tile('white_t', whiteKpi), tile('season_t', seasonKpi)];
-/** Home page in priority order: the white day first, then snow; `gone_t` is not in the layout. */
-const home = [
-  { tile: 'white_t', period: 'day' },
-  { tile: 'gone_t', period: 'day' },
-  { tile: 'snow_t', period: 'day' },
-];
+/** Fixed home page: the white day pinned, then snow; `gone_t` is not in the layout. */
+const home = {
+  config: {
+    mode: 'fixed' as const,
+    pinned: [{ tile: 'white_t', period: 'day' }],
+    fallback: [
+      { tile: 'gone_t', period: 'day' },
+      { tile: 'snow_t', period: 'day' },
+    ],
+  },
+};
 
 const filters: Filter[] = [
   { id: 'rewind', name: { fr: 'Rewind', en: 'Rewind', es: 'Rewind' }, theme: 'rewind' },
@@ -88,7 +93,7 @@ const keys = (state: ReturnType<typeof filterState>) => state.chips.map((c) => `
 const ids = (state: ReturnType<typeof filterState>) => state.instances.map((i) => i.id);
 
 describe('filterState', () => {
-  it('shows every usable level-1 filter and the home tiles in priority order', () => {
+  it('shows every usable level-1 filter and the fixed home tiles in order', () => {
     const state = filterState([], filters, resolved, payload, morning, home);
     expect(keys(state)).toEqual(['1:rewind', '1:snow', '1:sky']);
     expect(ids(state)).toEqual(['white_t--day-2026-12-14', 'snow_t--day-2026-12-14']);
@@ -104,8 +109,10 @@ describe('filterState', () => {
     ]);
   });
 
-  it('puts the bluebird day of today first on the repository home page', () => {
-    expect(layout.home?.[0]).toEqual({ tile: 'bluebird_day', period: 'day' });
+  it('pins the bluebird day first on the repository home page, at most 50 tiles', () => {
+    expect(layout.home?.pinned?.[0]).toEqual({ tile: 'bluebird_day', period: 'day' });
+    expect(layout.home?.mode).toBe('scored');
+    expect(layout.home?.limit).toBe(50);
   });
 
   it('narrows a topic by day then by time slot, slot tiles only at the slot level', () => {

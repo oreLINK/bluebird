@@ -264,8 +264,14 @@ the horizon, with its day tone), `badge_tonight`, and per period a short
 ## 7. Inventory
 
 Every tile of `config/tiles.yaml`, in the order of `config/layout.yaml`
-(`default`). Titles, filters and periods are in README.md "Tiles on the
-site". Checked by `web/src/lib/tilesDoc.test.ts`.
+(`default`, the order under a filter). Titles, filters and periods are in
+README.md "Tiles on the site". Checked by `web/src/lib/tilesDoc.test.ts`.
+
+The home page does not follow this order: the bluebird day is pinned first,
+then live tiles are ranked by an invisible visibility score (KPI
+`visibility` in `config/kpis.yaml`, `home` in `config/layout.yaml`, at most
+50 tiles; README.md "Home page visibility score"). Nothing about it is drawn
+on a tile.
 
 | Tile | KPI | Scope | Format | Visual | Kind | Webcam |
 |---|---|---|---|---|---|---|
@@ -302,7 +308,7 @@ Totals: 25 tiles — 2 `full`, 8 `banner`, 15 `compact`; 19 live, 6 historical;
 
 | Task | Where |
 |---|---|
-| Add or change a tile | `config/tiles.yaml`, `config/layout.yaml`, this file (§7), README.md "Tiles on the site" |
+| Add or change a tile | `config/tiles.yaml`, `config/layout.yaml`, this file (§7), README.md "Tiles on the site"; a tile of a new live KPI needs the KPI `visibility` block to reach the home page |
 | Add a format | `TileFormat` in `pipeline/src/bluebird_pipeline/config.py`, `web/src/tiles/Tile<Xyz>.svelte`, `registry.ts`, this file (§2 + a picture in `render.mjs`) |
 | Add a visual or a scope | the `Tile*` literal in `config.py`, the components, this file (§1/§3 + a picture) |
 | Link a station webcam | `webcams` in `config/stations/<massif>.yaml`, tile `webcam` rule, this file (§5, §7) |

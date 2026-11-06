@@ -16,8 +16,9 @@
  * slot tiles appear at the slot level only, so the page stays short.
  * The bar shows the chosen chips (pressed, removable), then the options of the
  * next level, only those that still have tiles. With nothing chosen it shows
- * every level-1 filter and the page shows the `home` tiles of
- * config/layout.yaml, in their priority order (the first one at the top).
+ * every level-1 filter and the page shows the home feed (lib/homeFeed.ts):
+ * the pinned tiles of config/layout.yaml `home`, then the tiles ranked by
+ * their visibility score (never shown), at most `limit` tiles.
  *
  * A new kind of level is one entry of LEVEL_KINDS plus its value in
  * `FilterLevel` (pipeline config.py).
@@ -32,7 +33,7 @@ import {
 } from './config';
 import type { MassifDaily } from './data';
 import type { Localized } from './generated/filters';
-import type { HomeTile } from './generated/layout';
+import { type HomeOptions, homeFeed } from './homeFeed';
 import {
   type Period,
   type TileInstance,
@@ -131,31 +132,6 @@ const chip = (filter: Filter, pressed: boolean): FilterChip => ({
   pressed,
 });
 
-/**
- * The home page: each `home` tile for its period (today's, or tomorrow's once
- * today's is over), in priority order. Tiles missing from the layout are skipped.
- */
-export function homeTiles(
-  home: HomeTile[],
-  resolved: ResolvedTile[],
-  payload: MassifDaily | null,
-  now: number,
-  periods: Period[] = periodsFile.periods,
-): Pick<FilterState, 'tiles' | 'instances'> {
-  const tiles: ResolvedTile[] = [];
-  const instances: TileInstance[] = [];
-  for (const entry of home) {
-    const tile = resolved.find((r) => r.tile.id === entry.tile);
-    if (!tile) continue;
-    if (!tiles.includes(tile)) tiles.push(tile);
-    const instance = expandTiles([tile], payload, now, periods).find(
-      (i) => i.slot?.periodId === entry.period,
-    );
-    if (instance) instances.push(instance);
-  }
-  return { tiles, instances };
-}
-
 /** What the filter bar and the page show for a selection path. */
 export function filterState(
   path: string[],
@@ -163,7 +139,7 @@ export function filterState(
   resolved: ResolvedTile[],
   payload: MassifDaily | null,
   now: number,
-  home: HomeTile[] = [],
+  home: HomeOptions = {},
   periods: Period[] = periodsFile.periods,
   days: Localized[] = periodsFile.days ?? [],
 ): FilterState {
@@ -172,7 +148,7 @@ export function filterState(
 
   if (!topic) {
     const chips = bar.map((f) => chip(f, false));
-    return { path: [], chips, ...homeTiles(home, resolved, payload, now, periods) };
+    return { path: [], chips, ...homeFeed(resolved, payload, now, home, periods) };
   }
 
   let tiles = filterTiles(resolved, topic);

@@ -55,13 +55,23 @@
   let attempt = $state(0);
   /** The visitor's clock: periods disappear when they end, without a reload. */
   let now = $state(Date.now());
+  /**
+   * Clock of the home ranking (lib/homeFeed.ts): moved on new data, at the end
+   * of a period and when the tab comes back, not every minute, so the home
+   * page never reshuffles under the visitor's eyes.
+   */
+  let rankAt = $state(Date.now());
 
   const resolvedTiles = $derived(tilesForMassif(massifId));
   /** A full-window page is open (`#<page id>` in the URL): the page behind is inert. */
   const sheetOpen = $derived(pages.some((p) => p.id === sheets.current));
-  /** Chips of the filter bar and tiles of the page for the chosen filters (home: layout.yaml `home`). */
+  /** Chips of the filter bar and tiles of the page for the chosen filters (home: lib/homeFeed.ts). */
   const filtered = $derived(
-    filterState(filterPath, filters, resolvedTiles, payload, now, layout.home ?? []),
+    filterState(filterPath, filters, resolvedTiles, payload, now, {
+      config: layout.home,
+      only: place.stationIds,
+      rankAt,
+    }),
   );
   const visibleTiles = $derived(filtered.tiles);
   /** The Rewind of the chosen filter: its tiles do not depend on the live forecasts. */
@@ -88,6 +98,7 @@
       .then((result) => {
         if (cancelled) return;
         payload = result;
+        rankAt = Date.now();
         status = result ? 'ready' : 'empty';
       })
       .catch((error: unknown) => {
@@ -120,11 +131,12 @@
   // the tab comes back to the foreground.
   $effect(() => {
     const tick = () => (now = Date.now());
+    const rerank = () => (now = rankAt = Date.now());
     const next = nextBoundary(payload, now);
-    const timeout = next === null ? undefined : setTimeout(tick, Math.max(0, next - now) + 250);
+    const timeout = next === null ? undefined : setTimeout(rerank, Math.max(0, next - now) + 250);
     const interval = setInterval(tick, 60_000);
     const onVisible = () => {
-      if (!document.hidden) tick();
+      if (!document.hidden) rerank();
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => {
