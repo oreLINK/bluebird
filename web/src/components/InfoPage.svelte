@@ -3,6 +3,7 @@
   entry, with its paragraphs, its links and its built-in block:
     data_sources   attribution of every enabled source (config/sources.yaml)
     photo_credits  credit of every banner photo (assets/photos/credits.yaml)
+    local_data     settings stored on the device, with a button to delete them
     service_*      status of the last refresh (ServiceStatus.svelte)
   Open while `#<page id>` is in the URL (lib/sheets.svelte.ts).
 -->
@@ -11,6 +12,7 @@
   import { i18n } from '../lib/i18n/i18n.svelte';
   import { photoCredits } from '../lib/photos';
   import { sheets } from '../lib/sheets.svelte';
+  import LocalData from './LocalData.svelte';
   import ServiceStatus, { type ServiceBlock, type ServiceContext } from './ServiceStatus.svelte';
   import Sheet from './Sheet.svelte';
 
@@ -61,6 +63,8 @@
         {:else}
           <p class="muted">{i18n.t('page.noPhotos')}</p>
         {/if}
+      {:else if section.block === 'local_data'}
+        <LocalData />
       {:else if section.block?.startsWith('service_')}
         <ServiceStatus block={section.block as ServiceBlock} context={service} />
       {/if}

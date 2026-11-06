@@ -499,7 +499,7 @@ User-facing labels are `{fr, en, es}` objects; every language is required.
 | `layout.yaml` | Home page and tile order | `home[] {tile, period}` (home page tiles in priority order, live only; first = top), `default[]`, `overrides {massif: [tiles]}` |
 | `sources.yaml` | Data sources | `id`, `extractor`, `transformer`, `schedule` (`daily` / `on_demand` / `reference` / `season`), `params`, `attribution` |
 | `rewinds.yaml` | Rewinds (closed seasons) | `id` (e.g. `2025-26`), `name`, `start`, `end` (local days, included), `massifs[]`, `kpis[]` (historical), `filter` (level-1 filter without levels) |
-| `pages.yaml` | Footer and full-window pages | `footer {repository, pages[]}`, `pages[]`: `id` (URL hash), `title`, `sections[]`: `id`, `title`, `paragraphs[]`, `links[] {label, url}`, `block?` (`data_sources` / `photo_credits` / `service_summary` / `service_sources` / `service_transforms` / `service_kpis` / `service_tiles`) |
+| `pages.yaml` | Footer and full-window pages | `footer {repository, pages[]}`, `pages[]`: `id` (URL hash), `title`, `sections[]`: `id`, `title`, `paragraphs[]`, `links[] {label, url}`, `block?` (`data_sources` / `photo_credits` / `local_data` / `service_summary` / `service_sources` / `service_transforms` / `service_kpis` / `service_tiles`) |
 
 > [!IMPORTANT]
 > Validation is strict: unknown keys, wrong types, duplicate ids or YAML keys,
@@ -788,7 +788,7 @@ Crêtes).
 1. Add an entry under `pages:` in `config/pages.yaml`: `id` (also the URL
    hash, `#<id>`), `title {fr, en, es}` and `sections`, each with
    `paragraphs`, `links` and/or a built-in `block` (`data_sources`,
-   `photo_credits`, `service_*`).
+   `photo_credits`, `local_data`, `service_*`).
 2. List its id in `footer.pages` to link it from the footer.
 3. `uv run bluebird validate` (unknown footer pages, duplicate ids and empty
    sections are errors).
@@ -1062,7 +1062,15 @@ the data is unavailable.
   `lib/sheets.svelte.ts` keeps the open sheet in the URL hash (`#legal`), so
   pages can be linked to and the phone back gesture closes them.
   `components/InfoPage.svelte` renders each page of `config/pages.yaml` with
-  the built-in blocks `data_sources`, `photo_credits` and `service_*`.
+  the built-in blocks `data_sources`, `photo_credits`, `local_data` and
+  `service_*`. `local_data` (`components/LocalData.svelte`, on the privacy
+  page) lists the settings kept in `localStorage` (`bluebird:locale`,
+  `theme`, `geo`, `filter`; `storedPrefs` in `lib/prefs.ts`) and deletes
+  them with `clearPrefs` (only the site's own `bluebird:` keys), then
+  reloads the page so every setting goes back to its default. The privacy
+  page also says how long browsers keep them (no expiry; Safari clears them
+  after 7 days without a visit unless the site is on the home screen;
+  private browsing clears them on close).
 - **Service status** (`#status`): `components/ServiceStatus.svelte` renders
   `status.json` (`lib/status.ts`): overall state with the number of degraded
   items and the refresh time, then one line per data source, transformation,

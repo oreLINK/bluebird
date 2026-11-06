@@ -474,7 +474,8 @@ archive does not include it), on a coarser grid of about 7 km.
   photo is found. Each photo is credited on the back of its tile and in the
   legal notice.
 - A short footer: the GitHub logo (link to the project's source code) and
-  small links to **About**, **Legal notice** and **Privacy**. Each opens as
+  small links to **About**, **Legal notice** and **Privacy** (which lists the
+  settings kept on your device and can delete them). Each opens as
   a full-screen page over a blurred background, sliding up from the bottom;
   close it with the **×**, the Escape key or your phone's back gesture.
 - Works on any modern phone browser; add it to your home screen for an
@@ -611,6 +612,8 @@ Yes. It uses free, openly licensed data (Open-Meteo, CC BY 4.0;
 OpenStreetMap, ODbL) for non-commercial use.
 
 **Does it track me?**
-No account, no analytics, no cookies. Your language, last mountain range
-and filter are stored only in your browser. See the **Privacy** page (link
-at the bottom of the site).
+No account, no analytics, no cookies. Your language, appearance, place and
+filter are stored only in your browser, never sent anywhere. They have no
+expiry date, but Safari clears them after 7 days without a visit (unless the
+site is on your home screen). The **Privacy** page (link at the bottom of the
+site) explains it and has a button to delete them at once.
