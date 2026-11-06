@@ -646,6 +646,17 @@ passes excluded) precomputed by `bluebird reference` and committed as
 reference data; the site tests the browser position against them locally,
 never sends or stores it, and narrows views with `viewFor(…, only)`
 (invariant 24). No routing API at runtime.
+Other planned features (README.md "Roadmap"): odds that move (↑/↓ against
+the previous refresh, a `previous`/`delta` in the payload), calendar alerts
+(static `.ics` feeds written by the `publish` job), favourite resorts (a
+place level kind), sharing a tile (canvas image, place and filters in the URL
+hash), offline mode (manifest + service worker), a phrase of the day at the
+top of the future station view (rule-based templates), and yesterday's
+verdict, which needs a **day-to-day history per station per KPI** (each
+refresh's probability and median value per period, with the observed
+outcome, append-only per-season files on `gh-pages`) also feeding
+probability calibration. An MCP connector for AI assistants is much later and
+not a priority; no open-data page is planned.
 Place stories (full-screen highlights of the day for the chosen place,
 README.md "Future features") reuse `viewFor(…, only)` and the planned
 `rankTiles`; the current tile design stays (a 2026-11 redesign study kept it).
