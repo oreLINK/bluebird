@@ -1,7 +1,9 @@
 <!--
-  Tile type `banner`: a betting-app style card for one KPI, on a FlipCard.
+  Tile format `banner`: a betting-app style card for one KPI, on a FlipCard.
   Front:
-    1. Banner: the tile photo or an illustration, with the "?" button.
+    1. Banner: the tile photo or an illustration (`visual`), with the "?"
+       button, and in the top left corner the LIVE webcam link (`webcam`
+       rule), the Rewind badge or the "data from HH:MM" badge.
     2. Title (the description is on the back).
     3. The best stations as "odds buttons" (short name, percentage,
        reliability dots) with a probability bar below each. With the option
@@ -14,12 +16,14 @@
     show_odds: also show decimal odds 1/p (default false)
     details:   tapping a station shows its details (default false for now)
     scene:     illustration (snowfall, piste, offpiste, mountain); default from icon
-    photo:     none (default) | leader (ski area ranked first) | <path> (lib/photos.ts)
+  Tile fields: visual (scene | photo of the leading station), webcam (rule).
 -->
 <script lang="ts">
   import BannerMedia from '../components/BannerMedia.svelte';
   import StaleBadge from '../components/StaleBadge.svelte';
+  import WebcamBadge from '../components/WebcamBadge.svelte';
   import { i18n } from '../lib/i18n/i18n.svelte';
+  import { shortName } from '../lib/kpiView';
   import FlipCard from './FlipCard.svelte';
   import KpiBack from './KpiBack.svelte';
   import OddsRow from './OddsRow.svelte';
@@ -28,7 +32,7 @@
   import TileBadge from './TileBadge.svelte';
   import { tileModel } from './tileModel';
 
-  let { tile, view }: TileProps = $props();
+  let { tile, view, webcam = null }: TileProps = $props();
 
   const model = $derived(tileModel(tile, view));
   const title = $derived(i18n.pick(tile.title ?? view.kpi.name));
@@ -47,10 +51,15 @@
   {#snippet front()}
     <header class="banner">
       <BannerMedia scene={model.scene} skyline={model.skyline} photo={model.photo} />
-      {#if model.badge}
-        <span class="badge-slot"><TileBadge label={i18n.pick(model.badge)} icon="rewind" /></span>
-      {:else if model.staleSince}
-        <span class="badge-slot"><StaleBadge since={model.staleSince} timezone={view.timezone} /></span>
+      {#if webcam || model.badge || model.staleSince}
+        <span class="badge-slot">
+          {#if webcam}<WebcamBadge live={webcam} station={shortName(view, webcam.stationId)} />{/if}
+          {#if model.badge}
+            <TileBadge label={i18n.pick(model.badge)} icon="rewind" />
+          {:else if model.staleSince}
+            <StaleBadge since={model.staleSince} timezone={view.timezone} />
+          {/if}
+        </span>
       {/if}
     </header>
 
@@ -107,7 +116,11 @@
     position: absolute;
     top: 14px;
     left: 12px;
+    right: 56px; /* clear of the "?" button */
     display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
   }
 
   .content {
@@ -127,9 +140,9 @@
   h2 {
     overflow: hidden;
     font-family: var(--font-display);
+    letter-spacing: var(--display-tracking);
     font-size: 1.5rem;
-    font-style: italic;
-    font-weight: 800;
+    font-weight: var(--display-weight);
     line-height: 1.1;
     white-space: nowrap;
     text-overflow: ellipsis;

@@ -4,8 +4,12 @@ import { TILE_COMPONENTS, skeletonVariant, tileRows } from './registry';
 import { bannerScene, booleanOption, numberOption } from './options';
 
 describe('tile registry', () => {
-  it('has a component for every tile type used in config/tiles.yaml', () => {
-    for (const tile of tiles) expect(TILE_COMPONENTS, tile.id).toHaveProperty(tile.type);
+  it('has a component for every tile format used in config/tiles.yaml', () => {
+    for (const tile of tiles) expect(TILE_COMPONENTS, tile.id).toHaveProperty(tile.format);
+  });
+
+  it('has exactly the three formats full, banner and compact', () => {
+    expect(Object.keys(TILE_COMPONENTS).sort()).toEqual(['banner', 'compact', 'full']);
   });
 
   it('only references existing KPIs', () => {
@@ -14,8 +18,8 @@ describe('tile registry', () => {
   });
 
   it('reads typed options with fallbacks', () => {
-    expect(numberOption({ visible_rows: 3 }, 'visible_rows', 5)).toBe(3);
-    expect(numberOption({ visible_rows: 'x' }, 'visible_rows', 5)).toBe(5);
+    expect(numberOption({ top: 2 }, 'top', 3)).toBe(2);
+    expect(numberOption({ top: 'x' }, 'top', 3)).toBe(3);
     expect(booleanOption(undefined, 'show_odds', false)).toBe(false);
   });
 
@@ -26,12 +30,11 @@ describe('tile registry', () => {
     expect(bannerScene({})).toBe('mountain');
   });
 
-  it('shows a placeholder shaped like each tile type', () => {
+  it('shows a placeholder shaped like each tile format', () => {
     expect(skeletonVariant('banner')).toBe('banner');
-    expect(skeletonVariant('banner_full')).toBe('full');
-    expect(skeletonVariant('simple')).toBe('simple');
-    expect(skeletonVariant('ranking')).toBe('list');
-    expect(skeletonVariant('unknown')).toBe('list');
+    expect(skeletonVariant('full')).toBe('full');
+    expect(skeletonVariant('compact')).toBe('compact');
+    expect(skeletonVariant('unknown')).toBe('compact');
   });
 
   it('follows the Tile + PascalCase(type) naming convention', () => {
@@ -45,10 +48,9 @@ describe('tile registry', () => {
     }
   });
 
-  it('makes banner tiles span two grid rows and the others one', () => {
+  it('makes full and banner tiles span two grid rows and compact tiles one', () => {
     expect(tileRows('banner')).toBe(2);
-    expect(tileRows('banner_full')).toBe(2);
-    expect(tileRows('simple')).toBe(1);
-    expect(tileRows('ranking')).toBe(1);
+    expect(tileRows('full')).toBe(2);
+    expect(tileRows('compact')).toBe(1);
   });
 });

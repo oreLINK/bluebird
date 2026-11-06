@@ -41,6 +41,28 @@ export type Zone = string | null;
  * Linked ski area it belongs to (`domains` of its file).
  */
 export type Domain1 = string | null;
+export type Id2 = string;
+/**
+ * Place of the camera, e.g. 'Les Crêtes'.
+ */
+export type Name2 = string;
+export type Position = 'summit' | 'slopes' | 'village' | 'nordic';
+/**
+ * Metres.
+ */
+export type Elevation1 = number | null;
+/**
+ * Company that streams the webcam.
+ */
+export type Provider = 'skaping';
+/**
+ * Official page of the webcam, opened in a new tab.
+ */
+export type Url = string;
+/**
+ * Live webcams, linked from the tiles (`webcam` rule).
+ */
+export type Webcams = Webcam[];
 export type Stations = Station[];
 
 /**
@@ -83,6 +105,7 @@ export interface Station {
   enabled?: Enabled;
   zone?: Zone;
   domain?: Domain1;
+  webcams?: Webcams;
 }
 /**
  * Elevations of a ski area, in metres.
@@ -91,4 +114,15 @@ export interface Elevation {
   base: Base;
   summit: Summit;
   mid?: Mid;
+}
+/**
+ * A live webcam of a station, linked from its tiles (the image itself is never shown).
+ */
+export interface Webcam {
+  id: Id2;
+  name: Name2;
+  position: Position;
+  elevation?: Elevation1;
+  provider: Provider;
+  url: Url;
 }

@@ -17,7 +17,7 @@ const snowKpi = kpi('snow_k', 'snow', ['day', 'morning', 'evening']);
 const whiteKpi = kpi('white_k', 'sky', ['day']);
 const seasonKpi = kpi('season_k', 'rewind', undefined, 'historical');
 const tile = (id: string, k: Kpi): ResolvedTile => ({
-  tile: { id, type: 'banner', kpis: [k.id] } as Tile,
+  tile: { id, format: 'banner', kpis: [k.id] } as Tile,
   kpis: [k],
 });
 const resolved = [tile('snow_t', snowKpi), tile('white_t', whiteKpi), tile('season_t', seasonKpi)];

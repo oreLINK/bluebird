@@ -15,6 +15,7 @@
     rewinds,
     siteDomains,
     siteStations,
+    stationWebcams,
     tilesForMassif,
   } from './lib/config';
   import { geoState, readGeoPath } from './lib/geoLevels';
@@ -27,6 +28,7 @@
   import { flip } from 'svelte/animate';
   import { filterState, nextPath } from './lib/filterLevels';
   import { viewFor } from './lib/kpiView';
+  import { liveWebcam } from './lib/webcams';
   import { instanceTitle, isLiveTile, nextBoundary } from './lib/periods';
   import { skeletonVariant, tileComponent, tileRows } from './tiles/registry';
   import TileShell from './tiles/TileShell.svelte';
@@ -188,12 +190,11 @@
       <p class="visually-hidden" role="status">{i18n.t('status.loading')}</p>
       <div class="tiles">
         {#each visibleTiles as { tile, kpis } (tile.id)}
-          <div class="slot" class:tall={tileRows(tile.type) === 2}>
+          <div class="slot" class:tall={tileRows(tile.format) === 2}>
             <TileSkeleton
               id={tile.id}
               title={i18n.pick(instanceTitle(tile, kpis, sameInAll(''))).trim()}
-              icon={tile.icon}
-              variant={skeletonVariant(tile.type)}
+              variant={skeletonVariant(tile.format)}
             />
           </div>
         {/each}
@@ -204,7 +205,7 @@
       <div class="tiles">
         {#each instances as instance, index (instance.id)}
           {@const { tile, kpis, slot } = instance}
-          {@const TileComponent = tileComponent(tile.type)}
+          {@const TileComponent = tileComponent(tile.format)}
           {@const view = viewFor(
             kpis[0],
             massifId,
@@ -216,7 +217,7 @@
           )}
           <div
             class="slot"
-            class:tall={tileRows(tile.type) === 2}
+            class:tall={tileRows(tile.format) === 2}
             animate:flip={{ duration: motion(260) }}
             in:arrive={{ delay: Math.min(index, 8) * 45 }}
             out:leave
@@ -225,14 +226,13 @@
               <TileSkeleton
                 id={tile.id}
                 title={i18n.pick(tile.title ?? kpis[0]?.name)}
-                icon={tile.icon}
-                variant={skeletonVariant(tile.type)}
+                variant={skeletonVariant(tile.format)}
               />
             {:else if TileComponent}
-              <TileComponent {tile} {kpis} {view} />
+              <TileComponent {tile} {kpis} {view} webcam={liveWebcam(tile, view, now, stationWebcams)} />
             {:else if import.meta.env.DEV}
               <TileShell id={tile.id} title={i18n.pick(tile.title ?? kpis[0]?.name)} icon={tile.icon}>
-                <p>{i18n.t('tile.unsupported', { type: tile.type })}</p>
+                <p>{i18n.t('tile.unsupported', { type: tile.format })}</p>
               </TileShell>
             {/if}
           </div>
@@ -279,7 +279,7 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    /* A banner tile spans two rows: two simple tiles stack beside it (tileRows). */
+    /* A banner tile spans two rows: two compact tiles stack beside it (tileRows). */
     .slot.tall {
       grid-row: span 2;
     }

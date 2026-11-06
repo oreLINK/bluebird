@@ -61,29 +61,36 @@ a {
 }
 
 /*
- * Card frame shared by every tile: a white card whose top corners show thin
- * light-blue diagonal stripes, like the cards of betting apps.
+ * Card shared by every tile (design "Nuit étoilée", TILES.md "Design"): a
+ * glass card (frosted surface, light edge, top highlight, soft shadow) with
+ * large rounded corners, no stripes.
  *   <section class="card"><div class="card-body">…</div></section>
  */
 /*
  * Shared tile dimensions: every banner tile has the same collapsed size, every
- * simple tile a shorter one, and the "see all" bar the same height everywhere.
- * Two simple tiles and the gap between them are exactly as tall as one banner
+ * compact tile a shorter one, and the "see all" bar the same height everywhere.
+ * Two compact tiles and the gap between them are exactly as tall as one banner
  * tile, so on wide screens they stack beside it (App.svelte: banner tiles span
- * two grid rows). --tile-simple-h is derived to keep that true.
+ * two grid rows). --tile-compact-h is derived to keep that true.
  */
 :root {
   --tile-banner-h: 9.5rem; /* illustrated banner of a `banner` tile */
-  --tile-front-h: 19.5rem; /* banner + title + odds (whole hero of `banner_full`) */
+  --tile-front-h: 19.5rem; /* banner + title + odds (whole hero of a `full` tile) */
   --tile-more-h: 2.875rem; /* "see all" bar */
   --tile-gap: 18px; /* between tiles, both ways (App.svelte .tiles) */
-  --tile-frame-h: 5px; /* .card frame: 3px stripe padding + 2px .card-body borders */
-  /* title + odds of a `simple` tile (no banner): half a banner tile, minus the gap */
-  --tile-simple-h: calc(
+  --tile-frame-h: 2px; /* .card frame: the 2px top and bottom borders of .card-body */
+  /* title + odds of a `compact` tile (no image): half a banner tile, minus the gap */
+  --tile-compact-h: calc(
     (var(--tile-front-h) - var(--tile-more-h) - var(--tile-frame-h) - var(--tile-gap)) / 2
   );
   --odds-button-h: 5.25rem; /* odds button: name, percentage, reliability dots */
-  --odds-button-compact-h: 3.625rem; /* same, one line of name (simple tiles) */
+  --odds-button-compact-h: 3.625rem; /* same, one line of name (compact tiles) */
+  /* Odds buttons: share of --pill-bg in their glass (100% = solid), and their
+     look on an image (full tiles). Themes may override them. */
+  --odds-glass: 62%;
+  --odds-overlay-bg: rgba(255, 255, 255, 0.18);
+  --odds-overlay-edge: rgba(255, 255, 255, 0.42);
+  --odds-overlay-ink: #ffffff;
 }
 
 /*
@@ -92,7 +99,6 @@ a {
  * block here. `rewind`: Christmas red and white for the Rewind tiles.
  */
 [data-tile-theme='rewind'] {
-  --stripe: var(--rewind-red);
   --tile-title: var(--rewind-ink);
   --tile-badge-bg: var(--rewind-red);
   --tile-badge-ink: var(--on-rewind);
@@ -106,38 +112,44 @@ a {
   --track: var(--rewind-soft);
   --link: var(--rewind-ink);
   --sky: var(--on-rewind); /* bars over photos */
+  --odds-glass: 100%; /* solid red odds buttons */
+  --odds-overlay-bg: var(--rewind-red);
+  --odds-overlay-edge: var(--rewind-red);
+  --odds-overlay-ink: var(--on-rewind);
 }
 
 .card {
   position: relative;
   min-width: 0;
-  padding: 3px 3px 0;
-  border-radius: calc(var(--radius-l) + 3px);
-}
-
-.card::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 64px;
-  border-radius: inherit;
-  background: repeating-linear-gradient(
-    135deg,
-    var(--stripe) 0 4px,
-    transparent 4px 9px
-  );
-  -webkit-mask-image: linear-gradient(90deg, #000 0 16%, transparent 16% 84%, #000 84%);
-  mask-image: linear-gradient(90deg, #000 0 16%, transparent 16% 84%, #000 84%);
-  pointer-events: none;
+  border-radius: var(--radius-l);
 }
 
 .card-body {
   position: relative;
   overflow: hidden;
   border-radius: var(--radius-l);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow);
+  background: var(--card-bg);
+  border: 1px solid var(--glass-edge);
+  box-shadow:
+    inset 0 1px 0 var(--glass-hi),
+    var(--shadow);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  backdrop-filter: blur(20px) saturate(1.6);
+}
+
+/* Glass surfaces fall back to opaque ones (accessibility setting, old browsers). */
+@media (prefers-reduced-transparency: reduce) {
+  .card-body {
+    background: var(--surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .card-body {
+    background: var(--surface);
+  }
 }
 
 .container {

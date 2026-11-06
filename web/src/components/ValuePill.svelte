@@ -29,9 +29,9 @@
 
   .value {
     font-family: var(--font-display);
+    letter-spacing: var(--display-tracking);
     font-size: 1.1875rem;
-    font-style: italic;
-    font-weight: 800;
+    font-weight: var(--display-weight);
     line-height: 1.05;
     white-space: nowrap;
   }

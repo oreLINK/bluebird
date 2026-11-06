@@ -62,9 +62,9 @@
 
   .date {
     font-family: var(--font-display);
+    letter-spacing: var(--display-tracking);
     font-size: 1.625rem;
-    font-weight: 800;
-    font-style: italic;
+    font-weight: var(--display-weight);
     line-height: 1.1;
     color: var(--ink);
   }

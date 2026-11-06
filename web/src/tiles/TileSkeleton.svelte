@@ -1,21 +1,18 @@
 <!--
   Static placeholder shown in place of a tile while its data loads. Mirrors
-  the layout of the tile type (banner, full banner, simple or list). No
+  the layout of the tile type (full, banner or compact). No
   animation, on purpose.
 -->
 <script lang="ts">
   import type { SkeletonVariant } from './registry';
-  import TileShell from './TileShell.svelte';
 
   let {
     id,
     title,
-    icon = null,
-    variant = 'list',
+    variant = 'compact',
   }: {
     id: string;
     title: string;
-    icon?: string | null;
     variant?: SkeletonVariant;
   } = $props();
 </script>
@@ -24,18 +21,6 @@
   <section class="card" aria-labelledby="{id}-title" aria-busy="true">
     <div class="card-body">
       <div class="full">
-        <h2 id="{id}-title">{title}</h2>
-        <div class="odds" aria-hidden="true">
-          <span></span><span></span><span></span>
-        </div>
-      </div>
-      <div class="more" aria-hidden="true"></div>
-    </div>
-  </section>
-{:else if variant === 'simple'}
-  <section class="card" aria-labelledby="{id}-title" aria-busy="true">
-    <div class="card-body">
-      <div class="content simple">
         <h2 id="{id}-title">{title}</h2>
         <div class="odds" aria-hidden="true">
           <span></span><span></span><span></span>
@@ -58,13 +43,17 @@
     </div>
   </section>
 {:else}
-  <TileShell {id} {title} {icon} busy>
-    <div class="rows" aria-hidden="true">
-      {#each [0, 1, 2, 3, 4] as i (i)}
-        <span></span>
-      {/each}
+  <section class="card" aria-labelledby="{id}-title" aria-busy="true">
+    <div class="card-body">
+      <div class="content compact">
+        <h2 id="{id}-title">{title}</h2>
+        <div class="odds" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+      <div class="more" aria-hidden="true"></div>
     </div>
-  </TileShell>
+  </section>
 {/if}
 
 <style>
@@ -92,19 +81,19 @@
     text-align: center;
   }
 
-  .content.simple {
+  .content.compact {
     align-content: center;
     gap: 6px;
-    height: var(--tile-simple-h);
+    height: var(--tile-compact-h);
     padding-top: 8px;
     text-align: left;
   }
 
-  .content.simple h2 {
+  .content.compact h2 {
     font-size: 1.375rem;
   }
 
-  .content.simple .odds span {
+  .content.compact .odds span {
     height: var(--odds-button-compact-h);
   }
 
@@ -115,9 +104,9 @@
 
   h2 {
     font-family: var(--font-display);
+    letter-spacing: var(--display-tracking);
     font-size: 1.5rem;
-    font-style: italic;
-    font-weight: 800;
+    font-weight: var(--display-weight);
     color: var(--ink-faint);
   }
 
@@ -131,21 +120,10 @@
     gap: 8px;
   }
 
-  .odds span,
-  .rows span {
+  .odds span {
     display: block;
     height: var(--odds-button-h);
     border-radius: var(--radius-m);
     background: var(--track);
-  }
-
-  .rows {
-    display: grid;
-    gap: 8px;
-    padding-bottom: 10px;
-  }
-
-  .rows span {
-    height: 3rem;
   }
 </style>

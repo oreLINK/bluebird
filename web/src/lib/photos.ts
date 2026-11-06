@@ -1,12 +1,12 @@
 /**
  * Photos for tile banners, bundled from `src/assets/photos/` at build time.
  *
- * Tile option `photo` (config/tiles.yaml):
- *   - `none` (default): no photo, the tile shows its illustration;
- *   - `leader`: a random photo of the station ranked first, among
+ * Tile field `visual` (config/tiles.yaml), read by tiles/tileModel.ts:
+ *   - `scene` (default): no photo (`none`), the tile shows its illustration;
+ *   - `photo`: (`leader`) a random photo of the station ranked first, among
  *     `<massif_id>/<station_id>/<station_id>_<n>.*` (n = 1, 2, 3…). The draw
- *     happens once per station and page load, so the photo stays stable;
- *   - any other value: a fixed photo at that path (without extension).
+ *     happens once per station and page load, so the photo stays stable.
+ * `pickPhoto` also accepts a fixed path (without extension), unused by tiles.
  * When the photo does not exist, the illustration is shown instead.
  */
 import creditsYaml from '../assets/photos/credits.yaml';

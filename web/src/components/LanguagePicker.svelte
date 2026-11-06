@@ -147,9 +147,9 @@
     gap: 8px;
     margin: 0;
     font-family: var(--font-display);
+    letter-spacing: var(--display-tracking);
     font-size: 1.5rem;
-    font-style: italic;
-    font-weight: 800;
+    font-weight: var(--display-weight);
     color: var(--brand);
   }
 

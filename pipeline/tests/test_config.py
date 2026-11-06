@@ -425,3 +425,85 @@ def test_value_displays_rank_by_value_and_rate_the_spread() -> None:
     assert spread_confidence(0.0, 9.0, 3, 91) == "low"
     assert spread_confidence(1.0, 2.0, 3, 5) == "low"  # too few scenarios
     assert spread_confidence(None, 2.0, 3, 91) == "low"
+
+
+WEBCAM = (
+    "    webcams:\n"
+    "      - { id: top, name: Top, position: summit, provider: skaping,"
+    ' url: "https://www.skaping.com/alpha/top" }\n'
+)
+
+
+def test_station_webcams_are_read(tmp_path: Path) -> None:
+    stations = TWO_STATIONS.replace(
+        "    elevation: { base: 1500, summit: 2500 }\n",
+        "    elevation: { base: 1500, summit: 2500 }\n" + WEBCAM,
+    )
+    config = load_config(tiny_config_dir(tmp_path, stations))
+    alpha = config.stations["pyrenees"].stations[0]
+    assert [(w.id, w.position, w.provider) for w in alpha.webcams] == [("top", "summit", "skaping")]
+
+
+@pytest.mark.parametrize(
+    ("webcam", "message"),
+    [
+        (WEBCAM.replace("position: summit", "position: roof"), "Input should be 'summit'"),
+        (WEBCAM.replace('"https://', '"http://'), "String should match"),
+        (WEBCAM.replace("provider: skaping", "provider: viewsurf"), "Input should be 'skaping'"),
+        (WEBCAM + WEBCAM.replace("    webcams:\n", ""), "duplicate webcam id"),
+    ],
+)
+def test_invalid_webcams_are_rejected(tmp_path: Path, webcam: str, message: str) -> None:
+    anchor = "    elevation: { base: 1500, summit: 2500 }\n"
+    stations = TWO_STATIONS.replace(anchor, anchor + webcam)
+    with pytest.raises(ConfigError, match=message):
+        load_config(tiny_config_dir(tmp_path, stations))
+
+
+def test_tiles_are_classified_by_scope_format_and_visual(repo_config: Config) -> None:
+    tiles = {t.id: t for t in repo_config.tiles}
+    assert {t.scope for t in tiles.values()} == {"ranking"}
+    assert {t.format for t in tiles.values()} == {"full", "banner", "compact"}
+    assert tiles["offpiste_powder"].visual == "scene"  # default, compact tiles have no image
+    assert tiles["bluebird_day"].visual == "photo"
+    rule = tiles["bluebird_day"].webcam
+    assert rule is not None and rule.positions == ["summit"] and rule.min_probability == 0.6
+    assert [t.id for t in tiles.values() if t.webcam] == ["bluebird_day"]
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "message"),
+    [
+        ("    format: compact\n", "    format: ranking\n", "Input should be 'full'"),
+        ("    format: compact\n", "    format: compact\n    visual: photo\n", "has no image"),
+        (
+            "    format: compact\n",
+            "    format: compact\n    webcam: { positions: [summit] }\n",
+            "has no image",
+        ),
+        ("      scene: piste\n", "      scene: piste\n      photo: leader\n", "visual: photo"),
+        ("    scope: ranking\n", "    scope: station\n", "Input should be 'ranking'"),
+        (
+            "    kpis: [season_total_snowfall]\n",
+            "    kpis: [season_total_snowfall]\n    webcam: { positions: [summit] }\n",
+            "cannot link a webcam",
+        ),
+        (
+            "    webcam: { positions: [summit], min_probability: 0.6 }\n",
+            "    webcam: { positions: [] }\n",
+            "at least 1 item",
+        ),
+    ],
+)
+def test_invalid_tile_axes_are_rejected(tmp_path: Path, old: str, new: str, message: str) -> None:
+    config_dir = tiny_config_dir(tmp_path)
+    if old == "    scope: ranking\n":
+        _edit(
+            config_dir,
+            "tiles.yaml",
+            "    format: compact\n",
+            "    scope: ranking\n    format: compact\n",
+        )
+    _edit(config_dir, "tiles.yaml", old, new)
+    with pytest.raises(ConfigError, match=message):
+        load_config(config_dir)

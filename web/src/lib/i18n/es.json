@@ -13,6 +13,8 @@
   "tile.confidence": "Fiabilidad",
   "tile.elevation": "Altitud",
   "tile.unsupported": "Tipo de tarjeta desconocido: {type}",
+  "webcam.live": "En directo",
+  "webcam.open": "Webcam en directo de {station} ({place}) en {provider} (nueva pestaña)",
   "confidence.low": "baja",
   "confidence.medium": "media",
   "confidence.high": "alta",

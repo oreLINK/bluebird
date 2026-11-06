@@ -29,7 +29,7 @@ import type { Tile } from './generated/tiles';
 
 const name = { fr: 'x', en: 'x', es: 'x' };
 const kpi = (id: string, enabled = true): Kpi => ({ id, aggregator: id, enabled, name, description: name });
-const tile = (id: string, kpiIds: string[]): Tile => ({ id, type: 'ranking', kpis: kpiIds });
+const tile = (id: string, kpiIds: string[]): Tile => ({ id, format: 'compact', kpis: kpiIds });
 
 describe('resolveLayout', () => {
   const allTiles = [tile('a', ['k1']), tile('b', ['k2']), tile('c', ['k3'])];
@@ -84,8 +84,8 @@ describe('filters', () => {
   const snowKpi: Kpi = { id: 'k1', aggregator: 'a', name, description: name, filters: ['snow'] };
   const powderKpi: Kpi = { id: 'k2', aggregator: 'a', name, description: name, filters: ['powder'] };
   const resolved = [
-    { tile: { id: 't1', type: 'banner', kpis: ['k1'] }, kpis: [snowKpi] },
-    { tile: { id: 't2', type: 'banner', kpis: ['k2'] }, kpis: [powderKpi] },
+    { tile: tile('t1', ['k1']), kpis: [snowKpi] },
+    { tile: tile('t2', ['k2']), kpis: [powderKpi] },
   ];
   const snow = { id: 'snow', name };
   const wind = { id: 'wind', name };

@@ -3,7 +3,8 @@
 Read this file before changing anything in the repository. It states what
 Bluebird is, how the code is organised, the invariants you must keep, and the
 exact commands that prove a change works. Human-oriented docs:
-[README.md](README.md) (developers) and [PROJECT.md](PROJECT.md) (product).
+[README.md](README.md) (developers), [PROJECT.md](PROJECT.md) (product) and
+[TILES.md](TILES.md) (tile axes and inventory).
 
 The mandatory rules for every prompt (documentation updates, languages, Git,
 quality bar, end-of-task checklist) are in [AGENTS.md](AGENTS.md). Claude Code
@@ -43,10 +44,21 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 - The UI mimics a sports-betting page: one tile per live KPI and period (tile
   templates in `tiles.yaml` are expanded per period, "Neige {period}"),
   stations ranked by descending probability. A tile disappears when its
-  period ends. A full-window page (`#status`, linked from the footer) shows the service status of the last refresh. Style: betting-app look (Betclic-like) in dark
-  blue, light blue and white, sober plain background, no background animation;
-  fonts Inter (text) and Barlow Semi Condensed ExtraBold Italic (logo,
-  titles, percentages), self-hosted (`@fontsource`, imported in `main.ts`).
+  period ends. Tiles are classified on three axes in `tiles.yaml`: `scope`
+  (`ranking` today; `station`, one resort, planned), `format` (`full`,
+  `banner`, `compact`) and `visual` (`scene`, `photo`; `webcam` as a
+  background planned); live or Rewind comes from the KPI `kind`. A tile
+  `webcam` rule (first scope: bluebird day + summit webcam, Cauterets) shows a
+  red LIVE badge linking the leading station's webcam page (Skaping) while
+  today's period is in progress; the image is never shown (rights). A full-window page (`#status`, linked from the footer) shows the service status of the last refresh. Style: design "Nuit étoilée" (TILES.md §9, the
+  reference for any tile design): betting-app layout in midnight blue and
+  electric blue, glass cards, odds buttons and chips (Liquid Glass, opaque
+  fallback), radius 24px, no stripes, sober plain background, no background
+  animation; font Sora (`@fontsource-variable/sora`: titles and values 700,
+  text 400–600) and Barlow Semi Condensed ExtraBold Italic for the logo
+  wordmark only (`--font-logo`), self-hosted and imported in `main.ts`.
+  `full` tiles show their image down to the bottom of the card, under the
+  "see all" bar.
   Header: logo left (ski goggle mark, lens gradient by phase of the day,
   then the "Bluebird" wordmark), flag of the current language right (opens
   the language popup; default language from the browser);
@@ -78,6 +90,7 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 | Path | Role |
 |---|---|
 | `AGENTS.md` | Mandatory rules for AI agents, applied on every prompt. |
+| `TILES.md`, `docs/tiles/render.mjs`, `docs/tiles/*.svg` | The tile axes (scope, format, visual, kind), corner badges, fields and the inventory of every tile, with one mockup per value. Kept up to date with every tile change (AGENTS.md §1); the inventory and totals are checked by `web/src/lib/tilesDoc.test.ts`. The SVGs are **generated** by `node docs/tiles/render.mjs` (same mockup and example data for all; edit the script, never the SVGs). |
 | `CLAUDE.md` | Imports `AGENTS.md` and `CONTEXT.md` for Claude Code. |
 | `config/filters.yaml` | Level-1 chips of the filter bar, their `levels` (`group`, `day`, `slot`) and sub-categories `groups` (every KPI of a filter in exactly one); KPIs opt in with `filters: [id]` in `kpis.yaml`. Chip labels of the levels: `days` and period `chip` in `periods.yaml`. |
 | `config/periods.yaml` | `day_start` (06:00), `horizon_days`, periods (time slots covering the ski day + `day` with `native_window`) and their labels per day. Day-grain periods (`native_window`): `day`, `sunset` (06:00–22:00), `overnight` (06:00 → 06:00). |
@@ -116,17 +129,18 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 | `web/src/components/ServiceStatus.svelte`, `StaleBadge.svelte` | `service_*` blocks of the "Service status" page (`config/pages.yaml`, rendered by `InfoPage`); "data from HH:MM" badge on tiles with values of an earlier refresh. |
 | `web/src/lib/i18n/` | `core.ts` (pure: `LOCALES`, `LOCALE_NAMES`, `LOCALE_FLAGS`, `localizedFrom`, `sameInAll`), `i18n.svelte.ts` (reactive store), `fr.json`, `en.json`, `es.json`. |
 | `web/src/lib/generated/` | **Generated** TS types (`npm run gen:types`). Never edit by hand. |
-| `web/src/tiles/registry.ts` | Tile type id → Svelte component (`xyz` → `TileXyz.svelte`, tested). |
+| `web/src/tiles/registry.ts` | Tile `format` → Svelte component (`xyz` → `TileXyz.svelte`, tested), `skeletonVariant`, `tileRows`, `TileProps` (with the optional `webcam`). |
 | `web/src/tiles/TileBanner.svelte` | Type `banner`: banner (photo or illustration), top stations as odds buttons, "see all". |
-| `web/src/tiles/TileBannerFull.svelte` | Type `banner_full`: photo or illustration fills the card behind title and odds. |
-| `web/src/tiles/TileSimple.svelte` | Type `simple`: banner tile without banner (title without icon, compact odds, "see all"), half a banner tile (`--tile-simple-h`), so two stack beside a banner tile on wide screens. |
+| `web/src/tiles/TileFull.svelte` | Format `full`: photo or illustration fills the card behind title and odds. |
+| `web/src/tiles/TileCompact.svelte` | Format `compact`: banner tile without image (title without icon, compact odds, "see all"), half a banner tile (`--tile-compact-h`), so two stack beside a banner tile on wide screens. |
+| `web/src/lib/webcams.ts`, `web/src/components/WebcamBadge.svelte` | Pure, tested: `liveWebcam(tile, view, now, stationWebcams)` (tile `webcam` rule: period in progress, leading station's webcam at one of `positions`, probability ≥ `min_probability`); the LIVE badge, a real `<a>` (new tab) in the top left corner of `full`/`banner` tiles, `--live-bg`/`--on-live` tokens. `stationWebcams` comes from `lib/config.ts` (`webcams` of the stations files). |
 | `web/src/lib/kpiView.ts` | **One view of a KPI for every tile**: `liveView` (after the KPI `display`: percent, median value with band note, or levels; confidence, details) / `historicalView` (Rewind values, bars vs best), `viewFor()` (App), `itemLabel`, `rewindOfKpi`. Tiles never read payloads directly. |
-| `web/src/tiles/tileModel.ts`, `OddsRow.svelte`, `RankingMore.svelte`, `StationRow.svelte`, `summary.ts` | Shared by every tile type and both kinds: top/rest, photo, odds/details (live only), empty message, badge, theme (`TILE_THEMES`, from the Rewind's filter). Odds buttons show reliability dots for live KPIs; the open list has a "see less" button at its top and bottom. |
+| `web/src/tiles/tileModel.ts`, `OddsRow.svelte`, `RankingMore.svelte`, `StationRow.svelte`, `summary.ts` | Shared by every tile format and both kinds: top/rest, photo (`visual: photo`), odds/details (live only), empty message, badge, theme (`TILE_THEMES`, from the Rewind's filter). Odds buttons show reliability dots for live KPIs; the open list has a "see less" button at its top and bottom. |
 | `web/src/tiles/TileBadge.svelte`, `web/src/components/ValuePill.svelte` | Corner badge ("REWIND 25/26") and the value pill of ranking rows ("82 %", "4,43 m"). |
 | `web/src/components/ConfidenceDots.svelte` | Three reliability dots for a `confidence` level; colours via `--dot-on` / `--dot-off`. Used by odds buttons, station rows, station details, tile back. |
 | `web/src/tiles/FlipCard.svelte`, `KpiBack.svelte` | Two-sided card of every tile; front = banner, title, odds (no description); back = one section each for description, time window, method, reliability, update, sources, photo credit (never on the front). |
 | `web/src/lib/transitions.ts` | `arrive` / `leave` tile transitions, `rise` for sheets, and `motion()` (reduced-motion aware). |
-| `web/src/lib/photos.ts`, `web/src/assets/photos/` | Banner photos `<massif>/<station_id>/<station_id>_<n>.*` (`photo: leader` draws one at random per page load; also `none` / `<path>`) and `credits.yaml`. |
+| `web/src/lib/photos.ts`, `web/src/assets/photos/` | Banner photos `<massif>/<station_id>/<station_id>_<n>.*` (tile `visual: photo` draws one of the leading station at random per page load; `scene` = none) and `credits.yaml`. |
 | `web/src/components/LanguagePicker.svelte`, `Flag.svelte` | Language popup under the header's flag button (flag + endonym per locale, `LOCALE_FLAGS`/`LOCALE_NAMES` in `lib/i18n/core.ts`; blur, scroll lock, inert page, focus back to the button via `$effect.pre`); SVG flags with `--flag-*` tokens (no emoji: Windows shows letters). |
 | `web/src/components/FilterBar.svelte`, `Logo.svelte` | Scrollable chip bar, the same chips for the massif bar and the filter bar (options with `pressed`/`removable` (×), `resetScroll`, chips grow in and slide with `animate:flip`), logo (goggle mark + wordmark; phase of the day of the first massif's timezone, checked every minute). |
 | `web/src/components/LogoMark.svelte`, `web/src/lib/timeOfDay.ts` | Ski goggle mark (three-quarter view): only the lens gradient changes, tokens `--logo-lens-<phase>-<1..3>` (`--logo-frame`, `--logo-glare`); pure `dayPhase(now, timezone)` (dawn 06, day 09, dusk 17, night 20), tested. |
@@ -136,11 +150,11 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 | `web/src/components/Sheet.svelte`, `web/src/lib/sheets.svelte.ts` | Generic full-window sheet (Liquid Glass, close ×, rises from the bottom) and its router (`#<id>` in the URL, back gesture closes). Reuse them for any future over-page. |
 | `web/src/components/InfoPage.svelte`, `AppFooter.svelte` | A `pages.yaml` page in a `Sheet` (blocks `data_sources`, `photo_credits`); footer with the GitHub logo and page links. |
 | `web/src/components/ForecastStatus.svelte` | Plain text above the tiles: data date (day of `generated_at` in the massif timezone) and update time; with a Rewind filter, the season period. |
-| `web/src/tiles/TileRanking.svelte` | Type `ranking`: compact list (wrapped in `TileShell`). |
+| `web/src/tiles/TileShell.svelte`, `TileSkeleton.svelte` | Plain card shown in development for an unknown tile format; loading placeholder shaped like each tile format (`skeletonVariant`: full, banner, compact). |
 | `web/src/tiles/StationRow.svelte`, `StationDetails.svelte` | Shared station row (rank, name + reliability dots, bar, pill) and details panel. With `details` false (default) rows and odds boxes are static `div`s with `data-no-flip`. |
 | `web/src/components/BannerArt.svelte` | Static SVG banner scenes (`snowfall`, `piste`, `offpiste`, `mountain`). |
 | `web/src/lib/ranking.ts` | Pure ranking helpers: `sharedWindow`, `splitTop`, `reliability`. |
-| `web/src/styles/` | `tokens.css` (role colour tokens, light/dark), `base.css` (page, `.card` frame), `glass.css` (header only). |
+| `web/src/styles/` | `tokens.css` (role colour tokens light/dark, fonts `--font-sans`/`--font-display`/`--font-logo`, `--display-weight`/`--display-tracking`, glass `--glass-edge`/`--glass-hi`/`--card-bg`, radii), `base.css` (page, `.card` glass card, tile sizes, odds glass tokens `--odds-glass`/`--odds-overlay-*`, tile themes), `glass.css` (header). Specified in TILES.md §9. |
 | `web/public/data/diamond/` | Demo data for local dev only, produced by `uv run bluebird demo`. |
 | `scripts/ci/publish-gh-pages.sh` | The only way anything is written to `gh-pages` (used by workflows). |
 | `scripts/ci/fetch-gh-pages-data.sh` | Read-only: restores published `data/` (gold, diamond) into a storage folder for the fallback and the status. |
@@ -235,17 +249,18 @@ with `scripts/ci/fetch-gh-pages-data.sh` before computing (fallback).
     from Openverse (https://openverse.org/fr) under a reusable licence
     (CC0, PDM, CC BY, CC BY-SA; never ND); photos from resort or tourism
     sites are all rights reserved unless the owner agrees.
-16. **Equal tiles, two faces.** Banner tiles keep the same collapsed size
-    (`--tile-*` tokens in `base.css`), `simple` tiles the shorter
-    `--tile-simple-h`, derived in `base.css` so that two simple tiles plus
+16. **Equal tiles, two faces.** `full` and `banner` tiles keep the same collapsed size
+    (`--tile-*` tokens in `base.css`), `compact` tiles the shorter
+    `--tile-compact-h`, derived in `base.css` so that two compact tiles plus
     `--tile-gap` equal one banner tile (frame included); keep that formula
     when changing a tile token. On wide screens banner tiles span two grid
-    rows (`tileRows`). A new tile type uses one of these sizes or adds its own
+    rows (`tileRows`). A new tile format uses one of these sizes or adds its own
     token, shared by all its tiles. Every tile is a
     `FlipCard`; interactive content inside a tile must be a real button/link or
     carry `data-no-flip`, otherwise a tap on it flips the card. The `.card`
-    frame (striped corners) belongs to each face, never to the static wrapper,
-    so it rotates with the card.
+    glass card belongs to each face, never to the static wrapper, so it
+    rotates with the card. Colours, fonts, sizes and glass recipes of a new
+    tile axis, value or format follow TILES.md §9 (design "Nuit étoilée").
 17. **KPI method text** uses only `{param}` placeholders that exist in the
     KPI `params` (`bluebird validate` checks it), so the explanation on the
     tile back always matches the maths.
@@ -259,7 +274,7 @@ with `scripts/ci/fetch-gh-pages-data.sh` before computing (fallback).
     Rewind tiles only show under their Rewind filter (never on the home
     page, whose tiles are the live `home` entries of `layout.yaml`). On the site, tiles
     only read a `KpiView` (`lib/kpiView.ts`) and colours only change through
-    tile themes (token overrides, `[data-tile-theme]`): no tile type, prop or
+    tile themes (token overrides, `[data-tile-theme]`): no tile format, prop or
     CSS is specific to one kind of KPI or one Rewind.
 19. **One request per source and refresh.** Extractors of APIs that accept
     several locations send one grouped request (`bronze/_open_meteo.py`);
@@ -293,6 +308,13 @@ with `scripts/ci/fetch-gh-pages-data.sh` before computing (fallback).
     the pipeline still computes and publishes per massif. The site narrows
     each `KpiView` to the chosen stations (`viewFor(…, only)`), so ranks,
     bars and reliability describe the chosen place.
+
+25. **Webcams are links, never images.** Station `webcams` (config) are
+    only linked from the LIVE badge of a tile with a `webcam` rule, and only
+    while the period shown is in progress (today): a webcam shows the
+    present, never a forecast. Never display, download or store a webcam
+    image (resort webcams are all rights reserved) until the owner agrees;
+    `visual: webcam` is the planned background (README.md "Roadmap").
 
 ## 5. Git rules for agents
 
@@ -341,23 +363,24 @@ npm run dev
 
 | Task | Files to touch | Then run |
 |---|---|---|
-| Add a station | `config/stations/<massif>.yaml` (with `short_name`, `zone`, optional `domain`), folder `web/src/assets/photos/<massif>/<id>/.gitkeep` | `bluebird reference --massif <massif>`, `bluebird validate`, `npm test` |
+| Add a station | `config/stations/<massif>.yaml` (with `short_name`, `zone`, optional `domain`, optional `webcams`), folder `web/src/assets/photos/<massif>/<id>/.gitkeep` | `bluebird reference --massif <massif>`, `bluebird validate`, `npm test` |
 | Add a foreign resort | its zone in `config/massifs.yaml` (`country`: ES, AD…; Spain by comunidad autónoma), the station with checked coordinates | `bluebird reference --massif <massif>`, `bluebird validate`; check the ensemble quota (+2 locations per resort) |
 | Add a massif | `config/massifs.yaml` (with its `zones`), new `config/stations/<id>.yaml`, optional `layout.yaml` override | `bluebird reference --massif <id>`, `bluebird validate`, `bluebird demo` |
 | Add reference data | `bronze/extractor_<x>.py`, `silver/transformer_<x>.py` with `reference_suffix`, `reference_file`, `read_reference`; source with `schedule: reference` | `bluebird reference`, `pytest`, commit `config/reference/` |
 | Add a source | `bronze/extractor_<x>.py` (one grouped request if the API allows), `silver/transformer_<x>.py`, `config/sources.yaml` (+ attribution), tests | `bluebird validate`, `pytest` |
-| Add a KPI | `gold/aggregator_<x>.py` (live: `compute(ctx, ref, period)`), PROJECT.md "Available indicators", README.md "Tiles on the site", `config/kpis.yaml` (name, description, `method` with `{param}` placeholders, params, drivers, filters, `periods` for live KPIs, including a day-grain one (`day`, with `day_or_slot` for KPIs that also have slots), `display`: percent / value / levels), `config/tiles.yaml` (live: title with `{period}`), its group in `config/filters.yaml`, `config/layout.yaml`, tests | `bluebird validate`, `pytest`, `bluebird demo` |
+| Add a KPI | `gold/aggregator_<x>.py` (live: `compute(ctx, ref, period)`), PROJECT.md "Available indicators", README.md "Tiles on the site", `config/kpis.yaml` (name, description, `method` with `{param}` placeholders, params, drivers, filters, `periods` for live KPIs, including a day-grain one (`day`, with `day_or_slot` for KPIs that also have slots), `display`: percent / value / levels), `config/tiles.yaml` (live: title with `{period}`), its group in `config/filters.yaml`, `config/layout.yaml`, tests, TILES.md §7 | `bluebird validate`, `pytest`, `bluebird demo` |
 | Add a period | `config/periods.yaml` (slot + labels per day; keep slots tiling the day), `periods` of the KPIs | `bluebird validate`, `pytest`, `bluebird demo` |
-| Add a tile type | README.md "Tiles on the site" when used, `web/src/tiles/Tile<Xyz>.svelte`, `web/src/tiles/registry.ts` (id `xyz` + `skeletonVariant`), `config/tiles.yaml` | `npm run check`, `npm test`, 390 px screenshots |
+| Add a tile format | TILES.md (§2, a picture in `docs/tiles/render.mjs`, §7), README.md "Tiles on the site" when used, `web/src/tiles/Tile<Xyz>.svelte`, `web/src/tiles/registry.ts` (id `xyz` + `skeletonVariant` + `tileRows`), `TileFormat` in `config.py`, `config/tiles.yaml` (`format: xyz`) | `bluebird schemas`, `npm run gen:types`, `npm run check`, `npm test`, 390 px screenshots |
+| Link a station webcam | TILES.md §5/§7, `webcams` of the station in `config/stations/<massif>.yaml` (`position`, `provider`, official `url`), tile `webcam: { positions, min_probability }` (live `full`/`banner` only) | `bluebird validate`, `npm test`, 390 px screenshot with a frozen clock (the badge only shows while the period is in progress) |
 | Change the diamond shape | `diamond/models.py`, displayer, frontend usage | `bluebird schemas`, `npm run gen:types`, `bluebird demo`, all tests |
-| Reorder tiles | `config/layout.yaml` (`home` = home page in priority order, `default`/`overrides` = order under a filter), README.md "Tiles on the site" | `bluebird validate`, `npm test` |
+| Reorder tiles | `config/layout.yaml` (`home` = home page in priority order, `default`/`overrides` = order under a filter), README.md "Tiles on the site", TILES.md §7 (layout order) | `bluebird validate`, `npm test` |
 | Add a filter | `config/filters.yaml` (`levels`, `groups`), `filters: [id]` on KPIs in `config/kpis.yaml` | `bluebird validate`, `npm test` |
 | Add a kind of filter level | `FilterLevel` in `config.py`, `LEVEL_KINDS` in `web/src/lib/filterLevels.ts`, its `{fr, en, es}` chip labels in config, tests (max 4 levels: `MAX_FILTER_LEVELS`) | `bluebird schemas`, `npm run gen:types`, `pytest`, `npm test` |
-| Add a banner photo | found on [Openverse](https://openverse.org/fr) under a reusable licence (CC0, PDM, CC BY, CC BY-SA; never ND), checked on its source page; `web/src/assets/photos/<path>.webp` (≤ 300 KB), `credits.yaml` (author, licence, source URL, changes made), tile `photo` option | `npm test`, `npm run build`, 390 px screenshots |
+| Add a banner photo | found on [Openverse](https://openverse.org/fr) under a reusable licence (CC0, PDM, CC BY, CC BY-SA; never ND), checked on its source page; `web/src/assets/photos/<path>.webp` (≤ 300 KB), `credits.yaml` (author, licence, source URL, changes made), tile `visual: photo` | `npm test`, `npm run build`, 390 px screenshots |
 | Add a page | `config/pages.yaml` (`pages[]`, optional `footer.pages`) | `bluebird validate`, `npm test`, 390 px screenshots |
 | Add another kind of over-page | content inside `components/Sheet.svelte`, opened with `sheets.open(id)` (`lib/sheets.svelte.ts`) | `npm run check`, `npm test` |
-| Add a Rewind | `config/rewinds.yaml`, its filter (`theme: rewind`, no levels) first in `filters.yaml`, KPI tags, tiles of any type + layout (Rewind and theme come from the KPI) | after the season: `bluebird rewind --rewind <id>`, review and commit `config/rewind/<id>/` |
-| Add a historical KPI | `gold/aggregator_season_<x>.py` (`SeasonAggregator`, value in its native unit), `kpis.yaml` (`kind: historical`, `value {unit, decimals, scale, max}` — snow totals use `m` with `scale: 0.01`, percentages `%` with `scale: 100, max: 100`; method, drivers, filter), PROJECT.md "Available indicators", README.md "Tiles on the site", Rewind `kpis`, tile + layout, tests | `bluebird validate`, `pytest`, `bluebird rewind --no-fetch` |
+| Add a Rewind | `config/rewinds.yaml`, its filter (`theme: rewind`, no levels) first in `filters.yaml`, KPI tags, tiles of any type + layout (Rewind and theme come from the KPI), TILES.md §7 | after the season: `bluebird rewind --rewind <id>`, review and commit `config/rewind/<id>/` |
+| Add a historical KPI | `gold/aggregator_season_<x>.py` (`SeasonAggregator`, value in its native unit), `kpis.yaml` (`kind: historical`, `value {unit, decimals, scale, max}` — snow totals use `m` with `scale: 0.01`, percentages `%` with `scale: 100, max: 100`; method, drivers, filter), PROJECT.md "Available indicators", README.md "Tiles on the site", Rewind `kpis`, tile + layout, tests, TILES.md §7 | `bluebird validate`, `pytest`, `bluebird rewind --no-fetch` |
 | Add a UI string | `web/src/lib/i18n/fr.json`, `en.json` **and** `es.json` | `npm test` |
 | Add a UI language | `LOCALES`, `LOCALE_NAMES`, `LOCALE_FLAGS` in `web/src/lib/i18n/core.ts` (+ its flag in `Flag.svelte`, `--flag-*` tokens), `<locale>.json`, `INTL_LOCALE` in `lib/format.ts`, the field in `Localized` (`config.py`), the label in every `{…}` object of `config/`, test fixtures (web and the YAML snippets of `pipeline/tests/test_config.py`) | `bluebird validate`, `bluebird schemas`, `npm run gen:types`, `pytest`, `npm test` |
 | Change the logo or its colours | `web/src/components/LogoMark.svelte`, lens/frame tokens in `web/src/styles/tokens.css`, phase hours in `web/src/lib/timeOfDay.ts`, the `day` copies `web/public/favicon.svg` and `web/scripts/apple-touch-icon.svg` | `web/scripts/make-apple-icon.sh`, `npm test`, 390 px screenshots |
@@ -484,7 +507,7 @@ npm run dev
   broken. Test transitions in real time by driving Chrome through the DevTools
   protocol (`--remote-debugging-port`, `Runtime.evaluate` from a Node script).
 - **Generated files** (`config/schemas`, `web/src/lib/generated`) are checked
-  in CI; regenerate rather than hand-edit. `config/rewind/` is regenerated
+  in CI; `docs/tiles/*.svg` come from `node docs/tiles/render.mjs`; regenerate rather than hand-edit. `config/rewind/` is regenerated
   with `bluebird rewind` (`--no-fetch` when only the maths changed).
 - **GitHub cron is UTC.** Paris changes offset twice a year. `refresh.yml`
   has one cron line per offset and the `plan` job keeps the line matching
@@ -511,6 +534,30 @@ npm run dev
   `git push` cannot change it, and GitHub refuses to delete the default branch.
   Change it in Settings → General or with
   `gh repo edit <owner>/<repo> --default-branch main` (`setup-github.sh` does it).
+
+- **Skaping webcam pages hide the provider.** Resort sites embed the
+  Skaping player in an `<iframe>`; a text/markdown fetch of the page shows no
+  webcam at all. Read the raw HTML for `skaping.com/<resort>/<cam>/<view>`
+  URLs. The player page's `og:image` gives the still JPG pattern
+  (`skaping.s3.gra.io.cloud.ovh.net/…/YYYY/MM/DD/large/HH-MM.jpg`, every
+  30 min, 403 when missing) for the planned background.
+- **No Prettier config in `web/`.** `npx prettier --write` falls back to
+  double quotes and rewrites a whole file; it also skips `.svelte` files.
+  Keep the existing style (single quotes, 2 spaces) by hand.
+- **Tuple types from `min_length` lists.** A pydantic list with
+  `min_length=1` becomes a TS tuple (`[T, ...T[]]`) in the generated types:
+  a plain `T[]` literal does not type-check in tests; build it with a typed
+  helper (see `ruleOf` in `lib/webcams.test.ts`).
+- **An image running under a sibling.** In `TileFull`, the image overflows
+  `.hero` down under the "see all" bar of `.below`. `.hero` is positioned
+  (`isolation: isolate`), so it paints above the in-flow `.below` and hides
+  the button: `.below` needs `position: relative; z-index: 1`. The card body
+  (`overflow: hidden`, radius) clips the image at the card's edge.
+- **SVG mockups and quotes.** An `aria-label` with unescaped `"` makes the
+  whole SVG invalid and GitHub shows a broken image; `render.mjs` escapes
+  quotes (`esc`). Check the files with `xmllint --noout docs/tiles/*.svg`.
+- **Tile option `photo` is gone.** It is rejected by `bluebird validate`
+  (use `visual: photo`); `compact` tiles reject `visual` and `webcam`.
 
 ## 9. Definition of done
 
@@ -550,11 +597,16 @@ features, their feasibility and the planned tile ordering algorithm
 Periods are ready for longer horizons: weekend and week periods (needs
 `horizon_days`/period kinds beyond today and tomorrow, and more forecast
 days, then a `week` filter level kind).
-Animated KPI banners (README.md "Roadmap"): when `photo: leader` finds no
+Animated KPI banners (README.md "Roadmap"): when `visual: photo` finds no
 free photo, `BannerArt.svelte` would animate a scene per KPI (falling snow,
 sun rays, fog, stars…) in SVG/CSS, inside the banner only (invariant 14:
 the page background stays plain), paused off screen and static with
 reduced motion; photos stay the first choice (Openverse, CC licences).
+Tile axes ready for what comes next: `scope: station` (one resort, its own
+values instead of a ranking, for a future station view) and `visual: webcam`
+(the leading station's live webcam image as the tile background, today only,
+once Skaping or the resort agrees; README.md "Roadmap" has the image URL
+pattern and the constraints). Until then only the LIVE link exists.
 Place stories (full-screen highlights of the day for the chosen place,
 README.md "Future features") reuse `viewFor(…, only)` and the planned
 `rankTiles`; the current tile design stays (a 2026-11 redesign study kept it).

@@ -289,6 +289,20 @@ pages:
               medición de audiencia, ni publicidad, ni cookies. Las fuentes
               tipográficas, las imágenes y las previsiones las sirve el propio sitio,
               sin llamar a ningún servicio externo.
+          - fr: >-
+              Le badge LIVE d'une tuile est un simple lien : il ouvre la webcam de la
+              station sur le site de son diffuseur (Skaping), dans un nouvel onglet,
+              seulement si vous le touchez. Ce site applique sa propre politique de
+              confidentialité.
+            en: >-
+              The LIVE badge of a tile is a plain link: it opens the resort's webcam
+              on its provider's website (Skaping), in a new tab, only if you tap it.
+              That website applies its own privacy policy.
+            es: >-
+              La etiqueta EN DIRECTO de una tarjeta es un simple enlace: abre la
+              webcam de la estación en la web de su proveedor (Skaping), en una nueva
+              pestaña, solo si la tocas. Esa web aplica su propia política de
+              privacidad.
       - id: device
         title:
           fr: Préférences sur votre appareil

@@ -32,7 +32,7 @@ const powderKpi: Kpi = {
   periods: ['morning', 'midday', 'afternoon'],
 };
 const tile = (id: string, kpi: Kpi, title?: Localized): ResolvedTile => ({
-  tile: { id, type: 'banner', kpis: [kpi.id], ...(title ? { title } : {}) } as Tile,
+  tile: { id, format: 'banner', kpis: [kpi.id], ...(title ? { title } : {}) } as Tile,
   kpis: [kpi],
 });
 

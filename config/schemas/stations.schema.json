@@ -195,6 +195,14 @@
           "default": null,
           "description": "Linked ski area it belongs to (`domains` of its file).",
           "title": "Domain"
+        },
+        "webcams": {
+          "description": "Live webcams, linked from the tiles (`webcam` rule).",
+          "items": {
+            "$ref": "#/$defs/Webcam"
+          },
+          "title": "Webcams",
+          "type": "array"
         }
       },
       "required": [
@@ -225,6 +233,69 @@
         }
       },
       "title": "StationDefaults",
+      "type": "object"
+    },
+    "Webcam": {
+      "additionalProperties": false,
+      "description": "A live webcam of a station, linked from its tiles (the image itself is never shown).",
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9]+(?:[_-][a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "description": "Place of the camera, e.g. 'Les Crêtes'.",
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "position": {
+          "enum": [
+            "summit",
+            "slopes",
+            "village",
+            "nordic"
+          ],
+          "title": "Position",
+          "type": "string"
+        },
+        "elevation": {
+          "anyOf": [
+            {
+              "maximum": 9000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Metres.",
+          "title": "Elevation"
+        },
+        "provider": {
+          "const": "skaping",
+          "description": "Company that streams the webcam.",
+          "title": "Provider",
+          "type": "string"
+        },
+        "url": {
+          "description": "Official page of the webcam, opened in a new tab.",
+          "pattern": "^https://\\S+$",
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "position",
+        "provider",
+        "url"
+      ],
+      "title": "Webcam",
       "type": "object"
     }
   },

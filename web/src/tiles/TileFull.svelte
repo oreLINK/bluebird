@@ -1,14 +1,18 @@
 <!--
-  Tile type `banner_full`: like `banner`, but the photo or illustration fills
-  the whole front of the card, with the title and the odds buttons laid over
-  it (the "live match" card of betting apps). Details and the rest of the
-  ranking open below, on the card surface. Same options, same collapsed size
-  and same back (KpiBack) as `banner`.
+  Tile format `full`: like `banner`, but the photo or illustration fills
+  the whole front of the collapsed card, down to its bottom edge: the title,
+  the odds buttons and the "see all" bar are laid over it (the "live match"
+  card of betting apps). The rest of the ranking opens below the image, on
+  the card surface. Same options, same collapsed size
+  and same back (KpiBack) as `banner`, and the same corner badges (LIVE
+  webcam link, Rewind, data from HH:MM).
 -->
 <script lang="ts">
   import BannerMedia from '../components/BannerMedia.svelte';
   import StaleBadge from '../components/StaleBadge.svelte';
+  import WebcamBadge from '../components/WebcamBadge.svelte';
   import { i18n } from '../lib/i18n/i18n.svelte';
+  import { shortName } from '../lib/kpiView';
   import FlipCard from './FlipCard.svelte';
   import KpiBack from './KpiBack.svelte';
   import OddsRow from './OddsRow.svelte';
@@ -17,7 +21,7 @@
   import TileBadge from './TileBadge.svelte';
   import { tileModel } from './tileModel';
 
-  let { tile, view }: TileProps = $props();
+  let { tile, view, webcam = null }: TileProps = $props();
 
   const model = $derived(tileModel(tile, view));
   const title = $derived(i18n.pick(tile.title ?? view.kpi.name));
@@ -41,10 +45,15 @@
         photo={model.photo}
       />
       <div class="shade" aria-hidden="true"></div>
-      {#if model.badge}
-        <span class="badge-slot"><TileBadge label={i18n.pick(model.badge)} icon="rewind" /></span>
-      {:else if model.staleSince}
-        <span class="badge-slot"><StaleBadge since={model.staleSince} timezone={view.timezone} /></span>
+      {#if webcam || model.badge || model.staleSince}
+        <span class="badge-slot">
+          {#if webcam}<WebcamBadge live={webcam} station={shortName(view, webcam.stationId)} />{/if}
+          {#if model.badge}
+            <TileBadge label={i18n.pick(model.badge)} icon="rewind" />
+          {:else if model.staleSince}
+            <StaleBadge since={model.staleSince} timezone={view.timezone} />
+          {/if}
+        </span>
       {/if}
 
       <div class="hero-content">
@@ -96,18 +105,20 @@
     flex-direction: column;
     justify-content: flex-end;
     height: var(--tile-front-h);
-    overflow: hidden;
     isolation: isolate;
   }
 
+  /* The image and its shade run under the "see all" bar (.below), down to the
+     bottom of the collapsed card; the card clips them. */
   .hero :global(.media) {
     z-index: -2;
+    bottom: calc(-1 * var(--tile-more-h));
   }
 
   /* Darkens the lower half so white text and buttons stay legible on any image. */
   .shade {
     position: absolute;
-    inset: 0;
+    inset: 0 0 calc(-1 * var(--tile-more-h)) 0;
     z-index: -1;
     background: linear-gradient(
       180deg,
@@ -122,7 +133,11 @@
     position: absolute;
     top: 14px;
     left: 12px;
+    right: 56px; /* clear of the "?" button */
     display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
   }
 
   .hero-content {
@@ -137,9 +152,9 @@
   h2 {
     overflow: hidden;
     font-family: var(--font-display);
-    font-size: 1.875rem;
-    font-style: italic;
-    font-weight: 800;
+    letter-spacing: var(--display-tracking);
+    font-size: 1.5rem;
+    font-weight: var(--display-weight);
     line-height: 1.05;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -148,7 +163,7 @@
 
   h2.long {
     display: -webkit-box;
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     white-space: normal;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
@@ -163,8 +178,17 @@
   }
 
   .below {
+    position: relative; /* above the image that runs under it */
+    z-index: 1;
     display: grid;
     padding: 0 14px;
+  }
+
+  /* The first "see all" / "see less" button sits on the image. */
+  .below > :global(.see-all:first-of-type) {
+    color: #ffffff;
+    border-top-color: rgba(255, 255, 255, 0.28);
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
   }
 
   .below :global(.details) {

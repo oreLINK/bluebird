@@ -187,11 +187,13 @@
     min-height: 2.125rem;
     padding: 0 12px 0 10px;
     border-radius: 999px;
+    /* Glass chip (design "Nuit étoilée"). */
     border: 1px solid var(--line);
-    background: var(--surface);
+    background: color-mix(in srgb, var(--surface) 75%, transparent);
+    box-shadow: inset 0 1px 0 var(--glass-hi);
     color: var(--ink-soft);
     font-size: 0.8125rem;
-    font-weight: 700;
+    font-weight: 600;
     white-space: nowrap;
     cursor: pointer;
   }
@@ -203,6 +205,7 @@
   .chip[aria-pressed='true'] {
     border-color: var(--brand);
     background: var(--brand);
+    box-shadow: none;
     color: var(--on-brand);
   }
 

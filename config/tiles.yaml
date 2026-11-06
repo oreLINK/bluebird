@@ -1,18 +1,26 @@
 # yaml-language-server: $schema=./schemas/tiles.schema.json
 #
-# Tiles are the KPI containers displayed on the page.
-#   type:    frontend component, registered in web/src/tiles/registry.ts:
-#              banner       betting-app card: banner (photo or illustration),
-#                           top stations as odds buttons, "see all" for the rest
-#                           (TileBanner.svelte)
-#              banner_full  same, with the photo or illustration filling the
-#                           whole card behind the title and odds (TileBannerFull)
-#              simple       a banner tile without the banner: shorter card with
-#                           title, odds buttons and "see all", for the KPIs
-#                           lower on the page (TileSimple.svelte)
-#              ranking      compact list of every station (TileRanking.svelte)
+# Tiles are the KPI containers displayed on the page. They are classified on
+# three axes (plus the kind of their KPIs):
+#   scope:   how many stations the tile shows. `ranking` (default): every
+#            station ranked on one KPI. (`station`, one resort, is planned.)
+#   format:  size and layout, one component each in web/src/tiles/registry.ts:
+#              full     the image fills the whole card behind the title and the
+#                       odds buttons (TileFull.svelte)
+#              banner   image band on top, title, top stations as odds buttons,
+#                       "see all" for the rest (TileBanner.svelte)
+#              compact  a banner tile without the image: half as tall, for the
+#                       KPIs lower on the page (TileCompact.svelte)
+#   visual:  image of `full` and `banner` tiles (not allowed on `compact`):
+#              scene    (default) an illustration, chosen by option `scene`
+#              photo    a photo of the station ranked first (drawn once per page
+#                       load), else the illustration
+#            (`webcam` as a background is planned.)
+#   kind:    not set here: live (forecasts, one tile per period) or historical
+#            (a Rewind, red theme) comes from the KPIs in config/kpis.yaml.
+#
 #   kpis:    KPI ids (config/kpis.yaml) the tile reads; tiles show the first one.
-#            Every type works for live KPIs (probabilities) and for historical
+#            Every format works for live KPIs (probabilities) and for historical
 #            KPIs (Rewind values: "4,43 m", "46 h"). A historical tile takes the
 #            theme of its Rewind's filter (Christmas red) and a "REWIND 25/26"
 #            badge; odds and details are live only.
@@ -24,47 +32,50 @@
 #            every period of its KPIs). The page shows one tile per period not
 #            yet over, in chronological order, then in config/layout.yaml order.
 #            Rewind tiles are shown once.
+#   webcam:  optional, live `full` and `banner` tiles: a LIVE badge in the top
+#            left corner links the official page of the leading station's
+#            webcam (`webcams` of config/stations/<massif>.yaml) when
+#              - the period is today's and in progress,
+#              - that station has a webcam at one of `positions` (summit,
+#                slopes, village, nordic; first match wins),
+#              - its probability reaches `min_probability` (default 0.6).
+#            The webcam image itself is never shown (rights not cleared).
 #   icon:    optional; one of the icons in web/src/components/Icon.svelte.
 #   options: free-form, interpreted by the tile component:
-#              every type: theme (default | rewind) overrides the colour theme.
-#              every type: details (default false): tapping a station
+#              every format: theme (default | rewind) overrides the colour theme.
+#              every format: details (default false): tapping a station
 #                       shows its details (drivers, reliability, elevation).
 #                       Turned off for now: tiles show the probability only.
-#              banner, banner_full:
-#                       top (1-3, default 3), show_odds,
-#                       scene (snowfall | piste | offpiste | mountain; default from icon),
-#                       photo (none | leader | <path in web/src/assets/photos>);
-#                       `leader` shows the photo of the ski area ranked first and
-#                       falls back to the illustration when there is none.
-#              simple:  top (1-3, default 3), show_odds
-#              ranking: visible_rows (default 5), show_odds
+#              every format: top (1-3, default 3), show_odds.
+#              full, banner: scene (snowfall | piste | offpiste | mountain;
+#                       default from icon).
 #
 # Tile order on the page is defined in config/layout.yaml, not here.
 tiles:
   - id: snowfall_today
-    type: banner_full
+    format: full
+    visual: photo
     kpis: [snowfall_chance]
     title: { fr: "Neige {period}", en: "Snow {period}", es: "Nieve {period}" }
     icon: snowflake
     options:
       top: 3
       show_odds: false
-      photo: leader
       scene: snowfall
 
   - id: onpiste_powder
-    type: banner
+    format: banner
+    visual: photo
     kpis: [onpiste_powder_chance]
     title: { fr: "Poudreuse sur piste {period}", en: "On-piste powder {period}", es: "Nieve polvo en pista {period}" }
     icon: piste
     options:
       top: 3
       show_odds: false
-      photo: leader
       scene: piste
 
   - id: offpiste_powder
-    type: simple
+    format: compact
     kpis: [offpiste_powder_chance]
     title: { fr: "Poudreuse hors-piste {period}", en: "Off-piste powder {period}", es: "Nieve polvo fuera de pista {period}" }
     icon: mountain
@@ -74,7 +85,7 @@ tiles:
 
   # Sky: white days today and tomorrow (live, filter "Ciel").
   - id: whiteout
-    type: simple
+    format: compact
     kpis: [whiteout_chance]
     title: { fr: "Jour blanc {period}", en: "White day {period}", es: "Día blanco {period}" }
     icon: fog
@@ -83,18 +94,19 @@ tiles:
 
   # Bluebird day: fresh snow then a sunny ski day, today and tomorrow.
   - id: bluebird_day
-    type: banner
+    format: banner
+    visual: photo
     kpis: [bluebird_day_chance]
     title: { fr: "Journée bluebird {period}", en: "Bluebird day {period}", es: "Día bluebird {period}" }
     icon: sun
+    webcam: { positions: [summit], min_probability: 0.6 }
     options:
       top: 3
-      photo: leader
       scene: mountain
 
   # Live KPIs built from the data already fetched (one category filter each).
   - id: powder_alert
-    type: simple
+    format: compact
     kpis: [powder_alert_chance]
     title: { fr: "Alerte neige {period}", en: "Snow alert {period}", es: "Alerta de nieve {period}" }
     icon: snowflake
@@ -102,7 +114,7 @@ tiles:
       top: 3
 
   - id: snowmaking
-    type: simple
+    format: compact
     kpis: [snowmaking_chance]
     title: { fr: "Canons à neige {period}", en: "Snow cannons {period}", es: "Cañones de nieve {period}" }
     icon: snowflake
@@ -110,7 +122,7 @@ tiles:
       top: 3
 
   - id: spring_snow
-    type: simple
+    format: compact
     kpis: [spring_snow_chance]
     title: { fr: "Neige de printemps {period}", en: "Spring snow {period}", es: "Nieve primavera {period}" }
     icon: piste
@@ -118,7 +130,7 @@ tiles:
       top: 3
 
   - id: hard_snow
-    type: simple
+    format: compact
     kpis: [hard_snow_chance]
     title: { fr: "Neige dure {period}", en: "Hard snow {period}", es: "Nieve dura {period}" }
     icon: piste
@@ -126,7 +138,7 @@ tiles:
       top: 3
 
   - id: heavy_snow
-    type: simple
+    format: compact
     kpis: [heavy_snow_chance]
     title: { fr: "Neige lourde {period}", en: "Heavy snow {period}", es: "Nieve pesada {period}" }
     icon: piste
@@ -134,7 +146,7 @@ tiles:
       top: 3
 
   - id: easy_conditions
-    type: simple
+    format: compact
     kpis: [easy_conditions_chance]
     title: { fr: "Conditions faciles {period}", en: "Easy conditions {period}", es: "Condiciones fáciles {period}" }
     icon: piste
@@ -142,17 +154,17 @@ tiles:
       top: 3
 
   - id: sunset
-    type: banner
+    format: banner
+    visual: photo
     kpis: [sunset_chance]
     title: { fr: "Coucher de soleil {period}", en: "Sunset {period}", es: "Puesta de sol {period}" }
     icon: sunset
     options:
       top: 3
-      photo: leader
       scene: mountain
 
   - id: starry_night
-    type: simple
+    format: compact
     kpis: [starry_night_chance]
     title: { fr: "Nuit étoilée {period}", en: "Starry night {period}", es: "Noche estrellada {period}" }
     icon: moon
@@ -160,7 +172,7 @@ tiles:
       top: 3
 
   - id: sunny_slot
-    type: simple
+    format: compact
     kpis: [sunny_slot_chance]
     title: { fr: "Grand soleil {period}", en: "Full sun {period}", es: "Pleno sol {period}" }
     icon: sun
@@ -168,7 +180,7 @@ tiles:
       top: 3
 
   - id: wind_chill
-    type: simple
+    format: compact
     kpis: [wind_chill_chance]
     title: { fr: "Froid ressenti {period}", en: "Wind chill {period}", es: "Sensación térmica {period}" }
     icon: thermometer
@@ -176,7 +188,7 @@ tiles:
       top: 3
 
   - id: mild_day
-    type: simple
+    format: compact
     kpis: [mild_day_chance]
     title: { fr: "Journée douce {period}", en: "Mild day {period}", es: "Día templado {period}" }
     icon: sun
@@ -184,7 +196,7 @@ tiles:
       top: 3
 
   - id: chains
-    type: simple
+    format: compact
     kpis: [chains_chance]
     title: { fr: "Chaînes nécessaires {period}", en: "Chains needed {period}", es: "Cadenas necesarias {period}" }
     icon: car
@@ -192,7 +204,7 @@ tiles:
       top: 3
 
   - id: lift_wind
-    type: simple
+    format: compact
     kpis: [lift_wind_chance]
     title: { fr: "Remontées au vent {period}", en: "Lifts in the wind {period}", es: "Remontes y viento {period}" }
     icon: wind
@@ -200,7 +212,7 @@ tiles:
       top: 3
 
   - id: wind_slab
-    type: simple
+    format: compact
     kpis: [wind_slab_chance]
     title: { fr: "Neige ventée {period}", en: "Wind-blown snow {period}", es: "Nieve venteada {period}" }
     icon: alert
@@ -211,55 +223,55 @@ tiles:
   # (config/rewinds.yaml finds the Rewind of each KPI). Same tile types as the
   # live KPIs, in the Rewind theme.
   - id: rewind_2025_26_total_snowfall
-    type: banner_full
+    format: full
+    visual: photo
     kpis: [season_total_snowfall]
     title: { fr: Le plus de neige, en: Most snow, es: Más nieve }
     icon: snowflake
     options:
-      photo: leader
       scene: snowfall
 
   - id: rewind_2025_26_longest_snowfall
-    type: banner
+    format: banner
+    visual: photo
     kpis: [season_longest_snowfall]
     title: { fr: La plus longue chute de neige, en: Longest snowfall, es: Nevada más larga }
     icon: snowflake
     options:
-      photo: leader
       scene: snowfall
 
   - id: rewind_2025_26_domain_snowfall
-    type: banner
+    format: banner
+    visual: photo
     kpis: [season_domain_snowfall]
     title: { fr: Le plus de neige sur le domaine, en: Most snow on the slopes, es: Más nieve en el dominio }
     icon: piste
     options:
-      photo: leader
       scene: piste
 
   - id: rewind_2025_26_offpiste_snowfall
-    type: banner
+    format: banner
+    visual: photo
     kpis: [season_offpiste_snowfall]
     title: { fr: Le plus de neige hors-piste, en: Most off-piste snow, es: Más nieve fuera de pista }
     icon: mountain
     options:
-      photo: leader
       scene: offpiste
 
   - id: rewind_2025_26_deep_snow_days
-    type: banner
+    format: banner
+    visual: photo
     kpis: [season_deep_snow_days]
     title: { fr: L'enneigement idéal, en: Ideal snow cover, es: Innivación ideal }
     icon: piste
     options:
-      photo: leader
       scene: piste
 
   - id: rewind_2025_26_white_days
-    type: banner
+    format: banner
+    visual: photo
     kpis: [season_white_days]
     title: { fr: Le moins de jours blancs, en: Fewest white days, es: Menos días blancos }
     icon: fog
     options:
-      photo: leader
       scene: mountain

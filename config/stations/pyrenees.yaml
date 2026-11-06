@@ -21,6 +21,12 @@
 # when the area has at least two stations). None of these resorts shares a
 # linked area today.
 #
+# `webcams` lists the live webcams of a station: `id`, `name` (place of the
+# camera), `position` (summit | slopes | village | nordic), optional
+# `elevation`, `provider` (skaping) and `url` (official page). Tiles with a
+# `webcam` rule (config/tiles.yaml) link that page from a LIVE badge; the
+# image itself is never shown on the site (no reuse rights).
+#
 # Times are local (massif timezone), formatted HH:MM.
 #   grooming_end: when piste grooming usually finishes. If it is later than
 #                 lifts_open (e.g. 22:00), it refers to the previous evening.
@@ -164,6 +170,12 @@ stations:
     lon: -0.145
     elevation: { base: 1850, summit: 2415 }
     aspects: [N, NE]
+    webcams:
+      - { id: les-cretes, name: Les Crêtes, position: summit, elevation: 2400, provider: skaping, url: "https://www.skaping.com/cauterets/les-cretes/panoramique" }
+      - { id: cirque-du-lys, name: Cirque du Lys, position: slopes, elevation: 1850, provider: skaping, url: "https://www.skaping.com/cauterets/cirque-du-lys/panorama" }
+      - { id: village, name: Esplanade des Œufs, position: village, elevation: 930, provider: skaping, url: "https://www.skaping.com/cauterets/village/casino" }
+      - { id: pont-d-espagne, name: Pont d'Espagne, position: nordic, elevation: 1500, provider: skaping, url: "https://www.skaping.com/cauterets/pontdespagne/video" }
+      - { id: puntas, name: Puntas, position: nordic, elevation: 1500, provider: skaping, url: "https://www.skaping.com/cauterets/puntas/video" }
 
   - id: gourette
     zone: pyrenees-atlantiques

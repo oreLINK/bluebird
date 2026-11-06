@@ -130,9 +130,9 @@
   h2 {
     min-width: 0;
     font-family: var(--font-display);
+    letter-spacing: var(--display-tracking);
     font-size: 1.875rem;
-    font-style: italic;
-    font-weight: 800;
+    font-weight: var(--display-weight);
     line-height: 1.1;
     color: var(--brand);
   }

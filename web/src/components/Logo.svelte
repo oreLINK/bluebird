@@ -45,7 +45,7 @@
 
   .wordmark {
     display: inline-block;
-    font-family: var(--font-display);
+    font-family: var(--font-logo);
     font-size: calc(2.375rem * var(--scale, 1));
     font-style: italic;
     font-weight: 800;

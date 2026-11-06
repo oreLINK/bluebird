@@ -1,7 +1,8 @@
 <!--
-  Card container for list-style tiles (TileRanking, TileSkeleton): the shared
-  card frame, an icon chip, a title, an optional subtitle, the body and an
-  optional footer. TileBanner builds its own layout on the same card frame.
+  Plain card container: the shared card frame, an icon chip, a title, an
+  optional subtitle, the body and an optional footer. Used by App.svelte to
+  report an unknown tile type in development; tile types build their own
+  layout on the same card frame inside a FlipCard.
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
@@ -76,9 +77,9 @@
 
   h2 {
     font-family: var(--font-display);
+    letter-spacing: var(--display-tracking);
     font-size: 1.375rem;
-    font-style: italic;
-    font-weight: 800;
+    font-weight: var(--display-weight);
     line-height: 1.15;
   }
 

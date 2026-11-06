@@ -13,6 +13,8 @@
   "tile.confidence": "Fiabilité",
   "tile.elevation": "Altitude",
   "tile.unsupported": "Type de tuile inconnu : {type}",
+  "webcam.live": "Live",
+  "webcam.open": "Webcam en direct de {station} ({place}), sur {provider} (nouvel onglet)",
   "confidence.low": "faible",
   "confidence.medium": "moyenne",
   "confidence.high": "élevée",

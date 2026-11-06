@@ -419,7 +419,17 @@ archive does not include it), on a coarser grid of about 7 km.
   when an update fails.
 - Betting-style tiles: top three resorts as odds buttons with their
   reliability dots, full ranking on demand, optional odds.
-  Compact tiles without a picture for the indicators lower on the page.
+  Three tile sizes: large tiles whose picture fills the card, tiles with a
+  picture band on top, and compact tiles without a picture for the
+  indicators lower on the page. The picture is a photo of the leading resort
+  when we have one we may publish, otherwise a drawing.
+- **Live webcam link**: on the **Bluebird day** tile of today, a red LIVE
+  badge appears in the top left corner when the leading resort has a webcam
+  at the top of its ski area and a chance of at least 60 %, while the day is
+  in progress. It opens the resort's webcam on its provider's website
+  (Skaping) in a new tab, to check the sky with your own eyes. Never for
+  tomorrow, since a webcam only shows the present. First resort with
+  webcams: Cauterets.
 - Two-sided tiles: the back explains the indicator and the reliability for its slot.
 - Filters in levels, like a music app: category of indicator (Snow, Snow
   quality, Sky, Comfort, Getting there, Safety) or the Rewind, then sub-category, then day (Today, Tomorrow), then time
@@ -431,11 +441,11 @@ archive does not include it), on a coarser grid of about 7 km.
 - Place buttons above the filters (mountain range, then département, then
   linked ski area when there is one), and a flag button for the language
   (French, English or Spanish), both remembered on your device.
-- Clean dark-blue, light-blue and white design with a sporty typeface
-  for the logo and titles (Barlow) and a very legible one for the text and
-  numbers (Inter), both free fonts, in
-  light and dark mode following your phone's setting, without background
-  animation.
+- A clean "starry night" design: midnight blue and electric blue, frosted
+  glass cards and odds buttons, one very legible free typeface (Sora) for
+  titles, numbers and text, and the sporty italic kept for the logo. The large
+  tiles show their picture across the whole card. Light and dark mode follow
+  your phone's setting, without background animation.
 - A ski goggle logo at the top left whose lens changes colour with the time
   of day in the resorts: peach and lavender at dawn (from 6 am), orange
   during the day (from 9 am), pink and violet at dusk (from 5 pm), deep blue
@@ -456,7 +466,14 @@ archive does not include it), on a coarser grid of about 7 km.
 
 - New indicators: see [Future indicators](#future-indicators).
 - A Rewind for each new season, from the 2026/27 season on.
-- Webcams of the resorts, a comparator of two resorts, a "near me" sort by
+- **Webcam picture in the tile**: the live image of the leading resort's
+  webcam as the picture of the tile, today only and for the indicators the
+  camera's position suits (the summit camera for a bluebird day first).
+  It needs the agreement of the webcam's owner: until then, the tile only
+  links to the webcam.
+- **A page per resort**: the same tiles for a single resort, with its own
+  values instead of a ranking.
+- A comparator of two resorts, a "near me" sort by
   conditions and travel time, a season calendar for the Rewind, and tiles
   ordered by relevance and reliability of the day.
 - **Animated banners**: for a resort without a photo we may publish, the
@@ -522,6 +539,9 @@ archive does not include it), on a coarser grid of about 7 km.
   slope values.
 - Resort coordinates and elevations are approximate; grooming and opening
   times are typical values, not each resort's daily schedule.
+- The LIVE webcam link only shows the present: it is offered for today's
+  bluebird day while the day is in progress, never as a forecast. The
+  webcam itself belongs to its provider and is not shown on Bluebird.
 - Powder on piste assumes grooming ends around 02:00 and lifts open at 09:00
   unless configured otherwise for a resort.
 

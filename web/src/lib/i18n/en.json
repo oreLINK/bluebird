@@ -13,6 +13,8 @@
   "tile.confidence": "Confidence",
   "tile.elevation": "Elevation",
   "tile.unsupported": "Unknown tile type: {type}",
+  "webcam.live": "Live",
+  "webcam.open": "Live webcam of {station} ({place}) on {provider} (new tab)",
   "confidence.low": "low",
   "confidence.medium": "medium",
   "confidence.high": "high",

@@ -76,6 +76,10 @@
     <path d="M3.5 12.5h17M7 14.5h.01M17 14.5h.01" />
   {:else if name === 'wind'}
     <path d="M3 9h11a3 3 0 1 0-3-3M3 15h15a3 3 0 1 1-3 3M3 12h7" />
+  {:else if name === 'webcam'}
+    <circle cx="12" cy="10" r="6.5" />
+    <circle cx="12" cy="10" r="2.5" />
+    <path d="M8.5 16 7 21h10l-1.5-5" />
   {:else if name === 'rewind'}
     <path d="M11.5 6 5 12l6.5 6M19.5 6 13 12l6.5 6" />
   {:else if name === 'github'}
