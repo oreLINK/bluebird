@@ -218,7 +218,7 @@ bluebird/
 │   │   ├── lib/               # config, data loading, periods, status, i18n, formatting
 │   │   │   └── generated/     # GENERATED TypeScript types (npm run gen:types)
 │   │   ├── tiles/             # registry, tileModel, TileFull, TileBanner, TileCompact, OddsRow…
-│   │   ├── components/        # Logo, LogoMark, AppHeader, LanguagePicker, Flag, FilterBar, ConfidenceDots, BannerArt…
+│   │   ├── components/        # Logo, LogoMark, AppHeader, ChoicePopup, LanguagePicker, ThemePicker, Flag, FilterBar, ConfidenceDots, BannerArt…
 │   │   ├── assets/photos/     # banner photos + credits.yaml (see its README)
 │   │   └── styles/            # tokens.css, glass.css, base.css
 │   ├── public/                # favicon.svg, apple-touch-icon.png; data/diamond/ = demo data for local development only
@@ -903,13 +903,37 @@ the data is unavailable.
   right opens `components/LanguagePicker.svelte`: a small popup under it, over
   a blurred backdrop, listing each language with its flag and its own name
   (`LOCALE_FLAGS`, `LOCALE_NAMES` in `lib/i18n/core.ts`); choosing one switches
-  the site and closes it. It locks page scrolling (`lib/scrollLock.ts`), makes
-  the page inert, focuses the current language, closes with Escape, the × or
-  the backdrop, and gives focus back to the flag button. Flags are SVG
-  (`components/Flag.svelte`, `--flag-*` tokens), not emoji, which Windows shows
-  as letters.
+  the site and closes it. Flags are SVG (`components/Flag.svelte`, `--flag-*`
+  tokens), not emoji, which Windows shows as letters.
+- **Appearance**: the button left of the flag, same look, shows the icon of
+  the current choice (sun and moon split by a slash for System, sun, moon) and opens
+  `components/ThemePicker.svelte`: System (default, follows the device),
+  Light or Dark. `lib/theme.ts` (tested) sets `data-theme` on `<html>`
+  (removed for System), which `styles/tokens.css` already honours, and makes
+  the `theme-color` metas follow a forced mode; the choice is remembered
+  (`localStorage` key `bluebird:theme`) and applied by a small inline script
+  in `index.html` before the first paint, so a forced mode never flashes.
+- **Header popups**: both use `components/ChoicePopup.svelte` (options with a
+  leading flag or icon, a check on the current one). It locks page scrolling
+  (`lib/scrollLock.ts`), makes the page inert, focuses the current option,
+  closes with Escape, the × or the backdrop, and gives focus back to the
+  button that opened it.
 
 ### Navigation: places and filters
+
+- **Compact header** (`components/AppHeader.svelte`, rule in
+  `lib/compactHeader.ts`, tested): when the page scrolls down more than 12 px
+  below the first 96 px, the massif bar and the filter bar fold away (height,
+  fade and a slight rise, about 0.35 s; instant with reduced motion) and one
+  row recalls the choices: a pill with the deepest chosen place and, when a
+  filter is chosen, a pill with its levels ("Ciel · Soleil · Demain", Rewind
+  in red), two pills at most. Scrolling up 12 px, coming back to the top, or
+  tapping that row (a button, "Show all filters") opens the bars again (with
+  the keyboard, it also focuses the chosen chip). Folded, the two pills stay on
+  one line and shorten with an ellipsis, the filter pill first. The logo and
+  the language button never move. The bars never fold under a keyboard focus
+  (`:focus-visible`), and scroll events are ignored for 420 ms after each
+  fold, since the page height changes.
 
 - **Massif bar** (place levels): under the logo, `components/FilterBar.svelte`
   driven by `lib/geoLevels.ts` (`geoState`, tested) and the bundled station
@@ -1340,7 +1364,7 @@ AGENTS.md §4; scraping must respect the site's terms).
 |---|---|---|---|
 | Webcam background | `visual: webcam`: the live image of the leading station's webcam fills the image of a `full` / `banner` tile, today only and for the KPIs its position suits (first: bluebird day + summit webcam), instead of today's LIVE link; also a way to calibrate white days (image brightness and contrast) | Skaping serves a still JPG every 30 min at a predictable URL (`skaping.s3.gra.io.cloud.ovh.net/<resort>/<cam>/<view>/YYYY/MM/DD/{large,small,thumb}/HH-MM.jpg`, 360° panorama ~4:1: needs a crop per webcam). Needs the written agreement of Skaping or the resort (images all rights reserved), a privacy notice (visitors load an OVH image) and a fallback to the photo when the image is missing (403) or at night | 🔴 |
 | Resort opening status | Share of pistes and lifts open, per station | Resort websites / N'PY (scraper, terms to check) | 🔴 |
-| Near me | Sort resorts by conditions × travel time | Browser geolocation (never stored) + public routing (OSRM) | 🟡 |
+| Around me ("Autour de moi") | A first chip at the far left of the place bar. Tapped, it keeps the N nearest stations **by road** among those less than one hour's drive from the visitor, nearest first, and every ranking then covers only them, like a chosen zone. Road time, not distance as the crow flies: in the mountains 10 minutes as the crow flies is often 30 minutes by car. Stations of other massifs or across the border (Spain, Andorra) count if they are within the hour | **Position**: browser geolocation, asked only on tap, never stored nor sent anywhere; refused or unavailable, the chip says so and the bar stays as it is. **Road times without a server** (GitHub only, AGENTS.md §4): precompute once a season, with `bluebird reference`, one drive-time isochrone per station (15, 30, 45 and 60 min, from the station's access point), committed as reference data in `config/reference/isochrones/<massif>.geojson`; the site then tests the position against those polygons on the phone (point in polygon) and sorts the stations by the smallest band that contains it. Isochrone source: openrouteservice (free API key, so the owner's approval first) or the FOSSGIS Valhalla instance within its usage policy; never at runtime. **Winter closures**: passes closed from November to May (Tourmalet, Aubisque, Portet d'Aspet…) must be excluded when computing (a closed-roads list in config, sent as avoid polygons), otherwise the times are wrong. **In the code**: a place level kind `near` in `lib/geoLevels.ts` (place chip first, before the massifs), the subset passed to `viewFor(…, only)` as for zones (CONTEXT.md invariant 24); the massif shown is the one with most stations in the subset, or several payloads when the hour spans two massifs | 🟡/🔴 |
 | Value for money | Lift pass price per km of pistes | Prices (scraper) + piste km from `domain_features` | 🔴 |
 | Ski area map | Map tile of pistes and lifts | `domain_features` (already collected) | 🟢 |
 | Alps and cross-border resorts | Northern and Southern Alps, Andorra, Spain, Switzerland, Italy in the place levels (zones, linked areas, a flag for foreign resorts) | Config only for the navigation, but two limits: **Open-Meteo quota** — the ensemble request weighs every location and member, and ~120 Alpine resorts × 2 bands is ~7 times today's request (split the source by massif, stagger the refreshes or keep one band); **payload size** — ~360 KB for 18 resorts, ~2 MB for a large massif (publish per-zone payloads, or keep the top N plus the chosen zone per ranking) | 🟢/🟡 |

@@ -183,7 +183,7 @@ function odds(y, items, { compact = false, rewind = false, overlay = false } = {
       const dots = rewind
         ? ''
         : [0, 1, 2]
-            .map((d) => `<circle cx="${x + 34 + d * 6}" cy="${y + boxH - 7}" r="2" fill="${d < 2 || i === 0 ? ink : '#9fb6d3'}"/>`)
+            .map((d) => `<circle cx="${x + 34 + d * 6}" cy="${y + boxH - 7}" r="2" fill="${d < 2 || i === 0 ? ink : overlay ? 'rgba(255,255,255,.35)' : '#9fb6d3'}"/>`)
             .join('');
       const name = text(x + 40, y + (compact ? 13 : 16), it.name, { size: 9.5, weight: 500, fill: ink });
       const value = text(x + 40, y + (compact ? 29 : 36), it.value, { size: compact ? 14 : 17, fill: ink, display: true });

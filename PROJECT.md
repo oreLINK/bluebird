@@ -439,13 +439,19 @@ archive does not include it), on a coarser grid of about 7 km.
   snow, longest snowfall, most snow on the slopes, most off-piste snow, ideal
   snow cover days, fewest white days), behind its own red filter.
 - Place buttons above the filters (mountain range, then département, then
-  linked ski area when there is one), and a flag button for the language
-  (French, English or Spanish), both remembered on your device.
+  linked ski area when there is one), a flag button for the language
+  (French, English or Spanish), and next to it an appearance button: System
+  (follows your phone, the default), Light or Dark, its icon showing your
+  choice. All are remembered on your device.
+- More room for the tiles while you scroll: scrolling down folds the place
+  and filter buttons into one line that recalls your choices (the place, and
+  the filter if you chose one); scrolling up, or tapping that line, brings
+  them back. The logo and the appearance and language buttons stay.
 - A clean "starry night" design: midnight blue and electric blue, frosted
   glass cards and odds buttons, one very legible free typeface (Sora) for
   titles, numbers and text, and the sporty italic kept for the logo. The large
   tiles show their picture across the whole card. Light and dark mode follow
-  your phone's setting, without background animation.
+  your phone's setting unless you choose one, without background animation.
 - A ski goggle logo at the top left whose lens changes colour with the time
   of day in the resorts: peach and lavender at dawn (from 6 am), orange
   during the day (from 9 am), pink and violet at dusk (from 5 pm), deep blue
@@ -473,8 +479,14 @@ archive does not include it), on a coarser grid of about 7 km.
   links to the webcam.
 - **A page per resort**: the same tiles for a single resort, with its own
   values instead of a ranking.
-- A comparator of two resorts, a "near me" sort by
-  conditions and travel time, a season calendar for the Rewind, and tiles
+- **Around me**: a first button "Autour de moi" at the far left of the place
+  line. It keeps the resorts less than one hour away **by road** from where
+  you are, the nearest first, and every ranking then covers only them. Road
+  time, not distance: in the mountains, 10 minutes as the crow flies is often
+  30 minutes by car, and passes closed in winter are taken into account.
+  Your position is asked only when you tap the button and never leaves your
+  phone.
+- A comparator of two resorts, a season calendar for the Rewind, and tiles
   ordered by relevance and reliability of the day.
 - **Animated banners**: for a resort without a photo we may publish, the
   banner of a tile shows a small animation that matches the indicator

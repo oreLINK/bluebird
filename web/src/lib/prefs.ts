@@ -1,5 +1,5 @@
 /**
- * Per-device preferences (language, last massif) in localStorage.
+ * Per-device preferences (language, appearance, place, filter) in localStorage.
  * Storage can be unavailable (private mode, blocked cookies): every access is
  * guarded and the app works without it.
  */

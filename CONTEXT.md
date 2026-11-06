@@ -60,8 +60,13 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
   `full` tiles show their image down to the bottom of the card, under the
   "see all" bar.
   Header: logo left (ski goggle mark, lens gradient by phase of the day,
-  then the "Bluebird" wordmark), flag of the current language right (opens
-  the language popup; default language from the browser);
+  then the "Bluebird" wordmark); on the right the appearance button (icon of
+  the choice: System by default, Light, Dark; `lib/theme.ts`) then the flag
+  of the current language (default language from the browser), both opening
+  the same kind of popup (`ChoicePopup.svelte`); while the page
+  scrolls down, the two chip bars below fold into one row recalling the
+  chosen place and filter (two pills max, `lib/compactHeader.ts`), back on
+  scroll up or tap;
   below, the massif bar (place levels of `lib/geoLevels.ts`:
   massif → zone = département or foreign country/region (`zones` of
   `massifs.yaml`, one mixed list: French zones first, foreign ones after
@@ -141,7 +146,9 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 | `web/src/tiles/FlipCard.svelte`, `KpiBack.svelte` | Two-sided card of every tile; front = banner, title, odds (no description); back = one section each for description, time window, method, reliability, update, sources, photo credit (never on the front). |
 | `web/src/lib/transitions.ts` | `arrive` / `leave` tile transitions, `rise` for sheets, and `motion()` (reduced-motion aware). |
 | `web/src/lib/photos.ts`, `web/src/assets/photos/` | Banner photos `<massif>/<station_id>/<station_id>_<n>.*` (tile `visual: photo` draws one of the leading station at random per page load; `scene` = none) and `credits.yaml`. |
-| `web/src/components/LanguagePicker.svelte`, `Flag.svelte` | Language popup under the header's flag button (flag + endonym per locale, `LOCALE_FLAGS`/`LOCALE_NAMES` in `lib/i18n/core.ts`; blur, scroll lock, inert page, focus back to the button via `$effect.pre`); SVG flags with `--flag-*` tokens (no emoji: Windows shows letters). |
+| `web/src/components/ChoicePopup.svelte`, `LanguagePicker.svelte`, `ThemePicker.svelte`, `Flag.svelte` | Choice popup shared by the header buttons (options with a leading snippet, check on the current one; blur, scroll lock, inert page, Escape, focus back to the opener via `$effect.pre`); language popup (flag + endonym per locale, `LOCALE_FLAGS`/`LOCALE_NAMES` in `lib/i18n/core.ts`); appearance popup (System / Light / Dark with their icons); SVG flags with `--flag-*` tokens (no emoji: Windows shows letters). |
+| `web/src/lib/theme.ts`, `theme.svelte.ts` | Appearance: `THEMES` (`system` default, `light`, `dark`), `THEME_ICONS` (`sun-moon`: a sun and a moon split by a slash; `sun`, `moon`), `parseTheme`, `applyTheme` (`data-theme` on `<html>`, removed for `system`; `theme-color` metas follow a forced mode), pure and tested; reactive store `theme` (preference `theme`). `index.html` applies the stored mode before the first paint. |
+| `web/src/components/AppHeader.svelte`, `web/src/lib/compactHeader.ts` | Sticky header: logo, language button, the two chip bars; compact mode: `nextScrollState` (fold after 12 px down below 96 px, open after 12 px up; anchor = lowest point while open, highest while folded) and `headerSummary` (deepest chosen place + chosen filter levels), both pure and tested; folds animate `grid-template-rows` 1fr ↔ 0fr with fade; 420 ms settle after a fold; never folds under keyboard focus (`:focus-visible` only); folded pills on one line (`minmax(0, 1fr)` column, filter pill shrinks first). |
 | `web/src/components/FilterBar.svelte`, `Logo.svelte` | Scrollable chip bar, the same chips for the massif bar and the filter bar (options with `pressed`/`removable` (×), `resetScroll`, chips grow in and slide with `animate:flip`), logo (goggle mark + wordmark; phase of the day of the first massif's timezone, checked every minute). |
 | `web/src/components/LogoMark.svelte`, `web/src/lib/timeOfDay.ts` | Ski goggle mark (three-quarter view): only the lens gradient changes, tokens `--logo-lens-<phase>-<1..3>` (`--logo-frame`, `--logo-glare`); pure `dayPhase(now, timezone)` (dawn 06, day 09, dusk 17, night 20), tested. |
 | `web/public/favicon.svg`, `web/public/apple-touch-icon.png`, `web/scripts/apple-touch-icon.svg`, `web/scripts/make-apple-icon.sh` | Static copies of the `day` mark: favicon, and the 180 px home-screen icon rendered from its SVG source (headless Chrome + `sips`, macOS). `src/lib/brandIcons.test.ts` checks shapes, day colours and links stay in sync with `LogoMark.svelte`. |
@@ -413,6 +420,10 @@ npm run dev
 - **SVG gradient ids.** Several inline SVGs on one page share the document's id
   space; a fixed `id="sky"` makes every banner use the first one. Prefix ids
   with `$props.id()` (see `BannerArt.svelte`).
+- **Dots on a photo.** On `full` tiles the odds buttons are white glass on a
+  dark image: filled dots in `--prob-high` (blue) vanish there. `OddsRow`
+  sets `--dot-on: currentColor` and `--dot-off` at 35 % on `.overlay`; any
+  mark drawn on an image uses the white text colour (TILES.md §9).
 - **Graphics on the odds buttons.** `--track` is almost the colour of
   `--pill-bg`, so empty reliability dots drawn with it vanish on the
   light-blue buttons. `OddsRow` sets `--dot-off` to a mix of `currentColor`
@@ -422,7 +433,7 @@ npm run dev
   that renders a sheet, so `document.activeElement` read in the sheet's
   `$effect` is already `<body>` and focus cannot return to the footer link.
   Capture the opener in `$effect.pre` (see `Sheet.svelte`,
-  `LanguagePicker.svelte`; the former side menu had this bug).
+  `ChoicePopup.svelte`; the former side menu had this bug).
 - **`element.click()` does not focus.** A DevTools-protocol check of
   "focus returns to the opener" must `focus()` the button before the
   scripted `click()`, as a keyboard user would; otherwise the opener is
@@ -548,6 +559,20 @@ npm run dev
   `min_length=1` becomes a TS tuple (`[T, ...T[]]`) in the generated types:
   a plain `T[]` literal does not type-check in tests; build it with a typed
   helper (see `ruleOf` in `lib/webcams.test.ts`).
+- **A tapped button keeps the focus.** After a mouse click or a tap on a
+  chip, `document.activeElement` is that chip: a "don't fold while the focus
+  is in the bars" guard then blocked folding for good after the first filter
+  choice. Guard only keyboard focus (`matches(':focus-visible')`). To test it,
+  tap with `Input.dispatchMouseEvent` (DevTools protocol): `element.click()`
+  does not focus (see above).
+- **Folding header vs scroll position.** Folding the header changes the page
+  height; at the bottom of a short page the browser then moves `scrollY` by
+  itself, which reads as a scroll up and reopens the bars (a loop).
+  `AppHeader` ignores scroll events for 420 ms after each fold, only moving
+  the anchor. To test it with the DevTools protocol, scroll by a relative
+  amount (`scrollY - 140`): two absolute `scrollTo` past the end of a short
+  page clamp to the same position and fire no event; screenshots of a
+  scrolled page need `clip.y = scrollY`.
 - **An image running under a sibling.** In `TileFull`, the image overflows
   `.hero` down under the "see all" bar of `.below`. `.hero` is positioned
   (`isolation: isolate`), so it paints above the in-flow `.below` and hides
@@ -607,6 +632,13 @@ values instead of a ranking, for a future station view) and `visual: webcam`
 (the leading station's live webcam image as the tile background, today only,
 once Skaping or the resort agrees; README.md "Roadmap" has the image URL
 pattern and the constraints). Until then only the LIVE link exists.
+Planned "Autour de moi" place chip, first of the massif bar (README.md
+"Roadmap"): the N nearest stations by road within one hour's drive. Road
+times come from drive-time isochrones per station (15/30/45/60 min, winter
+passes excluded) precomputed by `bluebird reference` and committed as
+reference data; the site tests the browser position against them locally,
+never sends or stores it, and narrows views with `viewFor(…, only)`
+(invariant 24). No routing API at runtime.
 Place stories (full-screen highlights of the day for the chosen place,
 README.md "Future features") reuse `viewFor(…, only)` and the planned
 `rankTiles`; the current tile design stays (a 2026-11 redesign study kept it).

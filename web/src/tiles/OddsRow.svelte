@@ -138,8 +138,11 @@
     color: var(--pill-active-ink);
   }
 
-  /* On an image (full tiles): white glass with white text. */
+  /* On an image (full tiles): white glass with white text, and reliability
+     dots in the text colour (blue dots vanish on a dark photo). */
   .overlay .odd-button {
+    --dot-on: currentColor;
+    --dot-off: color-mix(in oklch, currentColor 35%, transparent);
     border-color: var(--odds-overlay-edge);
     background: var(--odds-overlay-bg);
     color: var(--odds-overlay-ink);

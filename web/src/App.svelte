@@ -2,6 +2,7 @@
   import AppFooter from './components/AppFooter.svelte';
   import AppHeader from './components/AppHeader.svelte';
   import LanguagePicker from './components/LanguagePicker.svelte';
+  import ThemePicker from './components/ThemePicker.svelte';
   import ForecastStatus from './components/ForecastStatus.svelte';
   import Icon from './components/Icon.svelte';
   import InfoPage from './components/InfoPage.svelte';
@@ -48,6 +49,7 @@
   const storedFilter = readPref('filter');
   let filterPath = $state<string[]>(storedFilter ? [storedFilter] : []);
   let languageOpen = $state(false);
+  let themeOpen = $state(false);
   let status = $state<Status>('loading');
   let payload = $state<MassifDaily | null>(null);
   let serviceStatus = $state<ServiceStatus | null>(null);
@@ -154,7 +156,7 @@
 
 </script>
 
-<div class="page" inert={languageOpen || sheetOpen}>
+<div class="page" inert={languageOpen || themeOpen || sheetOpen}>
   <AppHeader
     places={place.chips}
     onselectplace={selectPlace}
@@ -162,6 +164,8 @@
     onselectfilter={selectFilter}
     {languageOpen}
     onlanguage={() => (languageOpen = true)}
+    {themeOpen}
+    ontheme={() => (themeOpen = true)}
   />
 
   <main class="container main">
@@ -245,6 +249,7 @@
 </div>
 
 <LanguagePicker open={languageOpen} onclose={() => (languageOpen = false)} />
+<ThemePicker open={themeOpen} onclose={() => (themeOpen = false)} />
 
 {#each pages as page (page.id)}
   <InfoPage {page} service={serviceContext} />

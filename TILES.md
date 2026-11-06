@@ -368,7 +368,7 @@ screens `full` and `banner` span two grid rows (`tileRows`).
 |---|---|
 | Card (`.card-body`) | `--card-bg` (surface at 78 %), 1px `--glass-edge`, `inset 0 1px 0 --glass-hi` + `--shadow`, `backdrop-filter: blur(20px) saturate(1.6)` |
 | Odds button | `--pill-bg` at `--odds-glass` (62 %), 1px `--glass-edge`, inset highlight, blur 12px |
-| Odds button on an image | `--odds-overlay-bg` (white 18 %), `--odds-overlay-edge` (white 42 %), white text |
+| Odds button on an image | `--odds-overlay-bg` (white 18 %), `--odds-overlay-edge` (white 42 %), white text; reliability dots in the text colour (filled 100 %, empty 35 %), never `--prob-high` on a photo |
 | Chip | surface at 75 %, 1px `--line`, inset highlight; chosen: `--brand`, no glass |
 | "?" on an image | white 20 %, white 50 % edge, blur 10px; on the card: `--pill-bg` |
 
@@ -383,7 +383,8 @@ A theme may make the buttons solid: the Rewind theme sets `--odds-glass:
 - `full`: the image covers the whole collapsed card, down to the bottom edge,
   under the "see all" bar; a shade (transparent at the top, 88 % midnight at
   the bottom) keeps white text legible. The ranking opens below the image.
-- White text and white glass appear only on an image with its shade.
+- White text and white glass appear only on an image with its shade; marks
+  laid on an image (reliability dots, bars) are white too.
 - Photos (`visual: photo`) are free-licence pictures of the leading station;
   without one, the illustration (`BannerArt`, colours `--banner-*`).
 
