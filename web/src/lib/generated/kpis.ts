@@ -60,6 +60,34 @@ export type Filters = string[];
  * @minItems 1
  */
 export type Periods = [string, ...string[]];
+/**
+ * Below it (top-3 mean) the tile is not significant.
+ */
+export type Floor = number;
+/**
+ * At or beyond it the impact is full (1).
+ */
+export type Strong = number;
+/**
+ * Editorial weight of the KPI (0..1].
+ */
+export type Priority = number;
+/**
+ * value (needs a `value` display) or probability; default from the display.
+ */
+export type Measure = ('value' | 'probability') | null;
+/**
+ * Measure at or beyond which the tile is an alert: shown right after the pinned tiles (and, for the `early_alerts` filters of layout.yaml, tomorrow from noon).
+ */
+export type Alert = number | null;
+/**
+ * Below it (top-3 mean) the tile is not significant.
+ */
+export type Floor1 = number;
+/**
+ * At or beyond it the impact is full (1).
+ */
+export type Strong1 = number;
 export type Kpis = Kpi[];
 
 /**
@@ -92,6 +120,10 @@ export interface Kpi {
   drivers?: Drivers;
   filters?: Filters;
   periods?: Periods;
+  /**
+   * Live KPIs: priority and significance thresholds of the home page visibility score; without it the KPI is never ranked on the home page.
+   */
+  visibility?: KpiVisibility | null;
 }
 /**
  * Unit of the value of a historical KPI, as published and displayed (e.g. 4.43 m).
@@ -157,4 +189,31 @@ export interface DriverSpec {
   label: Localized;
   unit?: Unit1;
   decimals?: Decimals1;
+}
+/**
+ * How a live KPI competes for the home page (visibility score, README.md).
+ *
+ * The measure is the mean of the top 3 stations of the chosen place: the
+ * median value of the display `driver` (`value`) or the probability
+ * (`probability`, 0..1). Impact = (measure - floor) / (strong - floor),
+ * clamped to 0..1; `strong` below `floor` means lower is stronger (e.g. a
+ * colder wind chill). Below `floor` the tile is hidden from the home page.
+ */
+export interface KpiVisibility {
+  floor: Floor;
+  strong: Strong;
+  priority: Priority;
+  measure?: Measure;
+  alert?: Alert;
+  /**
+   * `floor` and `strong` for the time slots, when they differ from the day's.
+   */
+  slots?: SlotThresholds | null;
+}
+/**
+ * Significance thresholds of a live KPI for its time slots (morning, afternoon…).
+ */
+export interface SlotThresholds {
+  floor: Floor1;
+  strong: Strong1;
 }

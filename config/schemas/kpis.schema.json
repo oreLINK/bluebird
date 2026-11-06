@@ -186,6 +186,18 @@
           "minItems": 1,
           "title": "Periods",
           "type": "array"
+        },
+        "visibility": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/KpiVisibility"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Live KPIs: priority and significance thresholds of the home page visibility score; without it the KPI is never ranked on the home page."
         }
       },
       "required": [
@@ -287,6 +299,78 @@
       "title": "KpiDisplay",
       "type": "object"
     },
+    "KpiVisibility": {
+      "additionalProperties": false,
+      "description": "How a live KPI competes for the home page (visibility score, README.md).\n\nThe measure is the mean of the top 3 stations of the chosen place: the\nmedian value of the display `driver` (`value`) or the probability\n(`probability`, 0..1). Impact = (measure - floor) / (strong - floor),\nclamped to 0..1; `strong` below `floor` means lower is stronger (e.g. a\ncolder wind chill). Below `floor` the tile is hidden from the home page.",
+      "properties": {
+        "floor": {
+          "description": "Below it (top-3 mean) the tile is not significant.",
+          "title": "Floor",
+          "type": "number"
+        },
+        "strong": {
+          "description": "At or beyond it the impact is full (1).",
+          "title": "Strong",
+          "type": "number"
+        },
+        "priority": {
+          "description": "Editorial weight of the KPI (0..1].",
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Priority",
+          "type": "number"
+        },
+        "measure": {
+          "anyOf": [
+            {
+              "enum": [
+                "value",
+                "probability"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "value (needs a `value` display) or probability; default from the display.",
+          "title": "Measure"
+        },
+        "alert": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Measure at or beyond which the tile is an alert: shown right after the pinned tiles (and, for the `early_alerts` filters of layout.yaml, tomorrow from noon).",
+          "title": "Alert"
+        },
+        "slots": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SlotThresholds"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "`floor` and `strong` for the time slots, when they differ from the day's."
+        }
+      },
+      "required": [
+        "floor",
+        "strong",
+        "priority"
+      ],
+      "title": "KpiVisibility",
+      "type": "object"
+    },
     "Localized": {
       "additionalProperties": false,
       "description": "A user-facing string in every supported UI language.",
@@ -313,6 +397,28 @@
         "es"
       ],
       "title": "Localized",
+      "type": "object"
+    },
+    "SlotThresholds": {
+      "additionalProperties": false,
+      "description": "Significance thresholds of a live KPI for its time slots (morning, afternoon…).",
+      "properties": {
+        "floor": {
+          "description": "Below it (top-3 mean) the tile is not significant.",
+          "title": "Floor",
+          "type": "number"
+        },
+        "strong": {
+          "description": "At or beyond it the impact is full (1).",
+          "title": "Strong",
+          "type": "number"
+        }
+      },
+      "required": [
+        "floor",
+        "strong"
+      ],
+      "title": "SlotThresholds",
       "type": "object"
     },
     "ValueSpec": {

@@ -1,14 +1,67 @@
 # yaml-language-server: $schema=./schemas/layout.schema.json
 #
-# Home page (no filter selected): `home` lists its tiles in priority order,
-# the first one at the top. Each entry is a live tile id of config/tiles.yaml
-# and one of its periods; the tile shows today's period, or tomorrow's once
-# today's is over. Tiles missing from a massif's layout are skipped.
+# Home page (no filter selected). README.md "Home page visibility score" has
+# the full formula; the score is never shown to visitors.
+#
+#   pinned    always first, whatever their score: today's period, or
+#             tomorrow's once today's is over.
+#   scored    then every live tile and period of today and tomorrow competes:
+#               visibility = priority x impact x relevance x reliability
+#             priority and impact come from the KPI `visibility` block
+#             (config/kpis.yaml), relevance from the time of day (below),
+#             reliability from the top stations. Not significant (below
+#             `floor`) or not relevant yet (factor 0) = hidden. One tile per
+#             KPI (its best period); alerts first; at most `per_category`
+#             tiles of one category (first filter of the KPI) among the first
+#             `first` ones; at most `limit` tiles in all.
+#   fallback  shown after the pinned tiles when no tile is significant, and
+#             in `fixed` mode (pinned + fallback, no score).
+#
+# Times are local times of the massif on the ski day clock (from 06:00 to
+# 06:00 the next morning). A list of steps gives the factor of the last step
+# reached, 0 before the first one.
 home:
-  - { tile: bluebird_day, period: day }      # always first: bluebird today
-  - { tile: snowfall_today, period: day }
-  - { tile: onpiste_powder, period: day }
-  - { tile: whiteout, period: day }
+  mode: scored
+  limit: 50                 # tiles in all, pinned included: the footer stays reachable
+  top: 3                    # stations averaged by the measure (the odds buttons)
+  pinned:
+    - { tile: bluebird_day, period: day }   # always first: the base of the site
+  fallback:
+    - { tile: snowfall_today, period: day }
+    - { tile: onpiste_powder, period: day }
+    - { tile: whiteout, period: day }
+  relevance:
+    slots: { current: 1.0, next: 0.9, later: 0.7 }   # today's time slots
+    today:                  # today's day-grain periods
+      day:
+        - { from: "06:00", factor: 1.0 }
+        - { from: "12:00", factor: 0.8 }
+        - { from: "14:00", factor: 0.6 }
+      sunset:               # sunset and starry night (their period runs to 22:00)
+        - { from: "06:00", factor: 0.6 }
+        - { from: "14:00", factor: 1.0 }
+        - { from: "20:00", factor: 0.4 }   # the sun has set most of the season
+      overnight:
+        - { from: "06:00", factor: 0.5 }
+        - { from: "14:00", factor: 0.75 }
+        - { from: "17:00", factor: 1.0 }
+    tomorrow:               # nothing of tomorrow before 17:00 (lifts closing)
+      steps:
+        - { from: "17:00", factor: 0.8 }
+        - { from: "20:00", factor: 1.0 }
+      slots: { first: 0.9, later: 0.6 }   # x the step; day-grain periods x 1
+    early_alerts:           # tomorrow's Access alerts (chains, lift wind) from noon
+      filters: [access]
+      from: "12:00"
+      factor: 0.7
+  reliability:
+    high: 1.0               # confidence of the top stations, averaged
+    medium: 0.85
+    low: 0.65
+    stale: 0.7              # values from an earlier refresh
+    coverage_min: 0.5       # under half the place's stations with a value…
+    coverage: 0.8           # …x 0.8
+  diversity: { first: 6, per_category: 2 }
 
 # Order of the tiles under a filter (top to bottom on mobile), after the time
 # order of their periods. `default` applies to every massif; `overrides`

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { type Filter, type Kpi, type ResolvedTile, type Tile, layout } from './config';
 import type { MassifDaily } from './data';
-import { filterState, nextPath } from './filterLevels';
+import { filterState, nextPath, readFilterPath, writeFilterPath } from './filterLevels';
 
 const name = { fr: 'x', en: 'x', es: 'x' };
 const kpi = (id: string, filter: string, periods?: Kpi['periods'], kind?: 'historical'): Kpi => ({
@@ -21,12 +21,17 @@ const tile = (id: string, k: Kpi): ResolvedTile => ({
   kpis: [k],
 });
 const resolved = [tile('snow_t', snowKpi), tile('white_t', whiteKpi), tile('season_t', seasonKpi)];
-/** Home page in priority order: the white day first, then snow; `gone_t` is not in the layout. */
-const home = [
-  { tile: 'white_t', period: 'day' },
-  { tile: 'gone_t', period: 'day' },
-  { tile: 'snow_t', period: 'day' },
-];
+/** Fixed home page: the white day pinned, then snow; `gone_t` is not in the layout. */
+const home = {
+  config: {
+    mode: 'fixed' as const,
+    pinned: [{ tile: 'white_t', period: 'day' }],
+    fallback: [
+      { tile: 'gone_t', period: 'day' },
+      { tile: 'snow_t', period: 'day' },
+    ],
+  },
+};
 
 const filters: Filter[] = [
   { id: 'rewind', name: { fr: 'Rewind', en: 'Rewind', es: 'Rewind' }, theme: 'rewind' },
@@ -88,7 +93,7 @@ const keys = (state: ReturnType<typeof filterState>) => state.chips.map((c) => `
 const ids = (state: ReturnType<typeof filterState>) => state.instances.map((i) => i.id);
 
 describe('filterState', () => {
-  it('shows every usable level-1 filter and the home tiles in priority order', () => {
+  it('shows every usable level-1 filter and the fixed home tiles in order', () => {
     const state = filterState([], filters, resolved, payload, morning, home);
     expect(keys(state)).toEqual(['1:rewind', '1:snow', '1:sky']);
     expect(ids(state)).toEqual(['white_t--day-2026-12-14', 'snow_t--day-2026-12-14']);
@@ -104,8 +109,10 @@ describe('filterState', () => {
     ]);
   });
 
-  it('puts the bluebird day of today first on the repository home page', () => {
-    expect(layout.home?.[0]).toEqual({ tile: 'bluebird_day', period: 'day' });
+  it('pins the bluebird day first on the repository home page, at most 50 tiles', () => {
+    expect(layout.home?.pinned?.[0]).toEqual({ tile: 'bluebird_day', period: 'day' });
+    expect(layout.home?.mode).toBe('scored');
+    expect(layout.home?.limit).toBe(50);
   });
 
   it('narrows a topic by day then by time slot, slot tiles only at the slot level', () => {
@@ -234,3 +241,71 @@ describe('sub-categories', () => {
   });
 });
 
+
+describe('the Mood filter', () => {
+  const moodFilter: Filter = {
+    id: 'mood',
+    name,
+    icon: 'sparkle',
+    theme: 'mood',
+    levels: ['mood_group', 'mood'],
+    moods: [
+      {
+        id: 'on-site',
+        name,
+        icon: 'mountain',
+        moods: [
+          { id: 'snowy', name, kpis: ['snow_k', 'white_k'] },
+          { id: 'white', name, kpis: ['white_k'] },
+          { id: 'empty', name, kpis: ['gone_k'] },
+        ],
+      },
+      { id: 'on-the-way', name, icon: 'car', tomorrow_only: true, moods: [{ id: 'up', name, kpis: ['snow_k'] }] },
+    ],
+  };
+  const all = [...filters, moodFilter];
+  const config = { ...layout.home, mode: 'scored' as const };
+  const state = (path: string[]) => filterState(path, all, resolved, payload, morning, { config });
+
+  it('is usable without any KPI tag and keeps its moving theme', () => {
+    const home = state([]);
+    expect(keys(home)).toEqual(['1:rewind', '1:snow', '1:sky', '1:mood']);
+    expect(home.chips.find((c) => c.id === 'mood')?.theme).toBe('mood');
+  });
+
+  it('offers the sub-moods, then their moods with a tile, and shows their KPIs', () => {
+    const top = state(['mood']);
+    expect(keys(top)).toEqual(['1:mood*', '2:on-site', '2:on-the-way']);
+    expect(top.chips[1]?.icon).toBe('mountain');
+    // every KPI of every mood, one tile each
+    expect(top.instances.map((i) => i.kpis[0]?.id).sort()).toEqual(['snow_k', 'white_k']);
+
+    const site = state(['mood', 'on-site']);
+    expect(keys(site)).toEqual(['1:mood*', '2:on-site*', '3:snowy', '3:white']);
+
+    const white = state(['mood', 'on-site', 'white']);
+    expect(keys(white)).toEqual(['1:mood*', '2:on-site*', '3:white*']);
+    expect(white.path).toEqual(['mood', 'on-site', 'white']);
+    expect(white.instances.map((i) => i.id)).toEqual(['white_t--day-2026-12-14']);
+  });
+
+  it('keeps tomorrow alone under a tomorrow-only sub-mood', () => {
+    const up = state(['mood', 'on-the-way', 'up']);
+    expect(up.instances.map((i) => i.slot?.skiDay)).toEqual([T]);
+  });
+
+  it('drops unknown items of a remembered path', () => {
+    expect(state(['mood', 'on-site', 'gone']).path).toEqual(['mood', 'on-site']);
+  });
+});
+
+describe('remembered filter path', () => {
+  it('reads a level-1 id as saved before, and a whole path up to level 4', () => {
+    expect(readFilterPath(null)).toEqual([]);
+    expect(readFilterPath('snow')).toEqual(['snow']);
+    expect(readFilterPath('mood/on-site/freerider')).toEqual(['mood', 'on-site', 'freerider']);
+    expect(readFilterPath('a/b/c/d/e')).toEqual(['a', 'b', 'c', 'd']);
+    expect(writeFilterPath(['snow', 'falls', 'd0', 'morning'])).toBe('snow/falls/d0/morning');
+    expect(writeFilterPath([])).toBe('');
+  });
+});

@@ -60,6 +60,7 @@
   const filterText = $derived(summary.filter.map((c) => i18n.pick(c.name)).join(' · '));
   const filterIcon = $derived(summary.filter[0]?.icon ?? null);
   const filterRewind = $derived(summary.filter[0]?.theme === 'rewind');
+  const filterMood = $derived(summary.filter[0]?.theme === 'mood');
 
   /** While the bars fold or unfold, the page height changes: ignore scroll events. */
   const SETTLE_MS = 420;
@@ -184,7 +185,7 @@
               <span class="pill place"><span class="pill-text">{i18n.pick(summary.place.name)}</span></span>
             {/if}
             {#if summary.filter.length > 0}
-              <span class="pill" class:rewind={filterRewind}>
+              <span class="pill" class:rewind={filterRewind} class:mood={filterMood}>
                 {#if filterIcon}<Icon name={filterIcon} size={15} />{/if}
                 <span class="pill-text">{filterText}</span>
               </span>
@@ -343,6 +344,43 @@
     border-color: var(--rewind-red);
     background: var(--rewind-red);
     color: var(--on-rewind);
+  }
+
+  /* Mood filter: filled like its chosen chip (FilterBar), colours sliding left to right. */
+  .pill.mood {
+    border-color: transparent;
+    background: linear-gradient(
+      90deg,
+      var(--mood-fill-1),
+      var(--mood-fill-2),
+      var(--mood-fill-3),
+      var(--mood-fill-4),
+      var(--mood-fill-5),
+      var(--mood-fill-1),
+      var(--mood-fill-2),
+      var(--mood-fill-3),
+      var(--mood-fill-4),
+      var(--mood-fill-5),
+      var(--mood-fill-1)
+    );
+    background-size: 200% 100%;
+    color: var(--on-mood);
+    animation: pill-mood 4s linear infinite;
+  }
+
+  @keyframes pill-mood {
+    from {
+      background-position: 100% 0;
+    }
+    to {
+      background-position: 0% 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pill.mood {
+      animation: none;
+    }
   }
 
   .summary :global(.more) {
