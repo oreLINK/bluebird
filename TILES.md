@@ -270,8 +270,9 @@ README.md "Tiles on the site". Checked by `web/src/lib/tilesDoc.test.ts`.
 The home page does not follow this order: the bluebird day is pinned first,
 then live tiles are ranked by an invisible visibility score (KPI
 `visibility` in `config/kpis.yaml`, `home` in `config/layout.yaml`, at most
-50 tiles; README.md "Home page visibility score"). Nothing about it is drawn
-on a tile.
+50 tiles; README.md "Home page visibility score"). The mood pages (Mood
+filter, README.md "Moods") use the same score over the KPIs of the mood,
+without pin and without hiding any. Nothing about it is drawn on a tile.
 
 | Tile | KPI | Scope | Format | Visual | Kind | Webcam |
 |---|---|---|---|---|---|---|
@@ -356,6 +357,8 @@ fonts, radii) and `web/src/styles/base.css` (tile sizes, glass recipes).
 | Bars (graphics only) | `--prob-low` → `--prob-high`, `--track` | `#a9bde6` → `#1d4ed8`, `#dce4f2` | `#2a4a92` → `#4f8cff`, `#1a2850` |
 | Glass edge / top highlight | `--glass-edge` · `--glass-hi` | white 75 % · white 90 % | white 14 % · white 16 % |
 | Rewind | `--rewind-red` · `--rewind-ink` | `#c8102e` · `#b00d27` | `#c8102e` · `#ff8a98` |
+| Mood chip (text, border) | `--mood-1` … `--mood-5` | `#c2185b` · `#b45309` · `#047857` · `#0369a1` · `#6d28d9` | `#ff8fc0` · `#ffb86b` · `#6ee7b7` · `#7cc8ff` · `#c4a8ff` |
+| Mood chip chosen (fill) | `--mood-fill-1` … `--mood-fill-5` / `--on-mood` | `#be185d` · `#b45309` · `#047857` · `#1d4ed8` · `#6d28d9` / white | same |
 | LIVE badge | `--live-bg` / `--on-live` | `#d0021b` / white | same |
 
 **Day colours** (`--when-<tone>`, the day cell of the time badge): dark, with
@@ -440,6 +443,7 @@ and `banner` span two grid rows (`tileRows`).
 | Odds button | `--pill-bg` at `--odds-glass` (62 %), 1px `--glass-edge`, inset highlight, blur 12px |
 | Odds button on an image | `--odds-overlay-bg` (white 18 %), `--odds-overlay-edge` (white 42 %), white text; reliability dots in the text colour (filled 100 %, empty 35 %), never `--prob-high` on a photo |
 | Chip | surface at 75 %, 1px `--line`, inset highlight; chosen: `--brand`, no glass |
+| Mood chip | `--surface` inside a 1px border of the `--mood-*` band, text in the same band (`background-clip: text`), both sliding left to right over 4 s (the band repeats once over 200 % of the chip); chosen: the `--mood-fill-*` band with white text; static with reduced motion. The only moving chip, never a page background |
 | "?" on an image | white 20 %, white 50 % edge, blur 10px; on the card: `--pill-bg` |
 
 Every glass surface falls back to its opaque colour with

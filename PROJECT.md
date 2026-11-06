@@ -132,7 +132,8 @@ The filters work like those of a music app on the phone, one level at a time:
    ordered automatically: strong values first, at the right time of day,
    when the forecast is reliable (see
    [How the home page is chosen](#how-the-home-page-is-chosen)). The filter row shows
-   **Rewind 25/26** and the six categories **Snow**, **Snow quality**,
+   **Rewind 25/26**, **Mood** (its name and outline shimmer in moving
+   colours, see [Moods](#moods)) and the six categories **Snow**, **Snow quality**,
    **Sky**, **Comfort**, **Getting there** and **Safety** (see
    [Categories](#categories)).
 2. Tap a category, for example **Snow quality**: its button fills in, moves
@@ -155,8 +156,41 @@ night), and today's tiles give way to tomorrow's once the day is over. Tap a
 chosen filter (the one with the **×**) to remove it and the ones after it.
 **Safety** has a single sub-category, so it goes straight to Today/Tomorrow,
 and stops there (wind-blown snow is computed for the whole day); **Rewind
-25/26** has no further level. The category you chose is remembered on your
-device.
+25/26** has no further level. Your filter is remembered on your device,
+down to its last level (for example Mood, On site, Freerider): next time the
+site opens straight on it.
+
+### Moods
+
+**Mood** answers the wish of the day, not your skiing level: the same skier
+can be a Freerider on a powder day and pick Dolce vita when the sun is out.
+Tap **Mood**, then where you are, then your mood:
+
+- **On site**
+  - **Freerider**: off-piste powder, snow alert, snow, wind-blown snow,
+    white day, bluebird day, lifts in the wind, hard snow.
+  - **Carver**: on-piste powder, hard snow, snow, lifts in the wind, white
+    day, bluebird day, heavy snow, full sun.
+  - **Dolce vita**: a bit of skiing, a lot of terrace: bluebird day, full
+    sun, sunset, mild day, spring snow, starry night, wind chill.
+  - **Snowplough** (beginners, teenagers or adults): what scares a
+    beginner: easy conditions, white day (seeing the slope), hard snow
+    (ice), lifts in the wind, heavy snow, mild day, wind chill.
+  - **Little ones** (Piou-Piou, children starting out): children feel the
+    cold and tire quickly: wind chill, mild day, easy conditions, full sun,
+    snow, white day.
+- **On the way** (tomorrow only, at any time of day)
+  - **Heading up tomorrow**: can you get there, and which resort is best?
+    Chains, snow, lifts in the wind, bluebird day, on-piste and off-piste
+    powder, white day.
+  - **Heading down tomorrow**: the road back, and is the last morning worth
+    skiing? Chains, snow, on-piste powder, bluebird day.
+
+A mood shows **all** its indicators, each once, at its best moment: alerts
+first, then the strongest values at the right time of day (see
+[How the home page is chosen](#how-the-home-page-is-chosen)), then the
+others, so a dry day still tells a Freerider "no powder today". Nothing is
+pinned, not even the bluebird day.
 
 If an update is late, a line under the date above the tiles says so.
 
@@ -526,7 +560,9 @@ the mean of the three best resorts of your place.
 - Two-sided tiles: the back explains the indicator, gives the exact date and hours of its slot, and the reliability for that slot.
 - Filters in levels, like a music app: category of indicator (Snow, Snow
   quality, Sky, Comfort, Getting there, Safety) or the Rewind, then sub-category, then day (Today, Tomorrow), then time
-  slot (the only level showing time-slot tiles); a home page led by the
+  slot (the only level showing time-slot tiles); **Moods** for the wish of
+  the day (On site: Freerider, Carver, Dolce vita, Snowplough, Little ones;
+  On the way: heading up or down tomorrow); a home page led by the
   bluebird day, then the tiles that matter most right now (big snowfalls,
   alerts, the next time slot, tomorrow from the evening), up to 50.
 - **Rewind 25/26**: the review of the 2025/26 season in the Pyrenees (most
@@ -573,6 +609,11 @@ the mean of the three best resorts of your place.
 
 - New indicators: see [Future indicators](#future-indicators).
 - A Rewind for each new season, from the 2026/27 season on.
+- **More moods**: **Village side** (On site, for those who stay in the
+  village: spa, shops, terraces; it needs the weather down in the village)
+  and **Heading up this weekend** (On the way, once weekend forecasts
+  exist). Later, a mood could weigh some indicators differently (−8 °C felt
+  already matters for a child).
 - **Webcam picture in the tile**: the live image of the leading resort's
   webcam as the picture of the tile, today only and for the indicators the
   camera's position suits (the summit camera for a bluebird day first).
@@ -644,9 +685,11 @@ the mean of the three best resorts of your place.
   5. **Time slot**: morning to night.
 
   A level with a single choice is applied on its own and skipped. There will
-  be no skier level (beginner to expert): the weather is the same for
-  everyone, but it differs by terrain, which the piste map tells apart; the
-  **Easy conditions** indicator answers beginners.
+  still be no skier level (beginner to expert): the weather is the same for
+  everyone, but it differs by terrain, which the piste map tells apart. The
+  **Moods** are not levels but the wish of the day: Snowplough and Little
+  ones gather the conditions that matter to beginners and children, not a
+  skiing technique.
 - A 7-day trend tile and a map of the ski areas (piste and lift data from
   OpenStreetMap is already collected and refreshed once a season).
 - More mountain ranges: Northern and Southern Alps, Massif Central, Vosges,

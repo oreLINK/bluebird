@@ -79,7 +79,16 @@ export function resolveLayout(
 /** Tiles matching a level-1 filter (a KPI tagged with its id); every tile without a filter. */
 export function filterTiles(resolved: ResolvedTile[], filter: Filter | undefined): ResolvedTile[] {
   if (!filter) return resolved;
+  if (filter.moods?.length) {
+    const wanted = new Set(moodKpis(filter));
+    return resolved.filter(({ kpis }) => kpis.some((kpi) => wanted.has(kpi.id)));
+  }
   return resolved.filter(({ kpis }) => kpis.some((kpi) => kpi.filters?.includes(filter.id)));
+}
+
+/** Every KPI of a Mood filter's moods, once (they need no `filters:` tag). */
+export function moodKpis(filter: Filter): string[] {
+  return [...new Set((filter.moods ?? []).flatMap((g) => g.moods.flatMap((m) => m.kpis)))];
 }
 
 /** Level-1 filters worth showing in the bar: those matching at least one tile. */

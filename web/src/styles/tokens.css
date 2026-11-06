@@ -135,6 +135,19 @@
   --rewind-ink: #b00d27; /* red text on the card surface */
   --rewind-soft: #fde8eb; /* value pills of the list (with --rewind-ink) */
   --rewind-line: #f5c2ca;
+  /* Mood filter chip: text and border slide through these colours (>= 4.5:1 on
+     the chip), filled with the darker `--mood-fill-*` and white text when chosen. */
+  --mood-1: #c2185b;
+  --mood-2: #b45309;
+  --mood-3: #047857;
+  --mood-4: #0369a1;
+  --mood-5: #6d28d9;
+  --mood-fill-1: #be185d;
+  --mood-fill-2: #b45309;
+  --mood-fill-3: #047857;
+  --mood-fill-4: #1d4ed8;
+  --mood-fill-5: #6d28d9;
+  --on-mood: #ffffff;
 
   /* Banner illustrations */
   --banner-sky-top: #0b1d4d;
@@ -231,6 +244,11 @@
     --rewind-ink: #ff8a98;
     --rewind-soft: #3b1420;
     --rewind-line: #5c2030;
+    --mood-1: #ff8fc0;
+    --mood-2: #ffb86b;
+    --mood-3: #6ee7b7;
+    --mood-4: #7cc8ff;
+    --mood-5: #c4a8ff;
     --logo-a: #ffffff;
     --logo-b: #5db4ff;
     --logo-frame: #ffffff;
@@ -304,6 +322,11 @@
   --rewind-ink: #ff8a98;
   --rewind-soft: #3b1420;
   --rewind-line: #5c2030;
+  --mood-1: #ff8fc0;
+  --mood-2: #ffb86b;
+  --mood-3: #6ee7b7;
+  --mood-4: #7cc8ff;
+  --mood-5: #c4a8ff;
   --logo-a: #ffffff;
   --logo-b: #5db4ff;
   --logo-frame: #ffffff;

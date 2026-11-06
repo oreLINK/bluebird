@@ -47,8 +47,12 @@ Aspect = Literal["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
 KpiKind = Literal["live", "historical"]
 """live: a probability for today (daily run); historical: a value over a past season (Rewind)."""
 
-FilterLevel = Literal["group", "day", "slot"]
-"""Built-in kinds of the filter levels after level 1: sub-category, ski day, time slot."""
+FilterLevel = Literal["group", "day", "slot", "mood_group", "mood"]
+"""Built-in kinds of the filter levels after level 1: sub-category, ski day, time slot,
+and the two levels of the Mood filter (sub-mood such as Sur place, then the mood)."""
+
+MOOD_LEVELS: tuple[FilterLevel, ...] = ("mood_group", "mood")
+"""The levels of a filter with `moods`, always both, in this order."""
 
 MAX_FILTER_LEVELS = 4
 """Depth of the filter bar: the topic chip (level 1) plus at most three levels."""
@@ -747,14 +751,43 @@ class FilterGroup(StrictModel):
     kpis: list[Slug] = Field(min_length=1, description="KPIs of the sub-category.")
 
 
+class Mood(StrictModel):
+    """A mood (level `mood`), e.g. Freerider: the KPIs that matter for that wish of the day.
+
+    Unlike groups, a KPI can belong to several moods; the page shows all of them,
+    ordered by the home page visibility score (lib/homeFeed.ts).
+    """
+
+    id: Slug
+    name: Localized
+    icon: str | None = None
+    kpis: list[Slug] = Field(min_length=1, description="Live KPIs shown under this mood.")
+
+
+class MoodGroup(StrictModel):
+    """A sub-mood (level `mood_group`), e.g. Sur place or En route, and its moods."""
+
+    id: Slug
+    name: Localized
+    icon: str | None = None
+    tomorrow_only: bool = Field(
+        default=False,
+        description="Show tomorrow's periods only, at any time of day (e.g. Je monte demain).",
+    )
+    moods: list[Mood] = Field(min_length=1)
+
+
 class Filter(StrictModel):
     """A level-1 chip of the filter bar: shows the tiles of the KPIs tagged with its id."""
 
     id: Slug
     name: Localized
     icon: str | None = None
-    theme: Literal["default", "rewind"] = Field(
-        default="default", description="Colour of the chip (rewind: Christmas red)."
+    theme: Literal["default", "rewind", "mood"] = Field(
+        default="default",
+        description=(
+            "Colour of the chip (rewind: Christmas red; mood: moving multicolour text and border)."
+        ),
     )
     levels: list[FilterLevel] = Field(
         default_factory=list,
@@ -769,6 +802,13 @@ class Filter(StrictModel):
         default_factory=list,
         description="Sub-categories for the `group` level; every KPI of the filter in one.",
     )
+    moods: list[MoodGroup] = Field(
+        default_factory=list,
+        description=(
+            "Sub-moods and moods for the `mood_group` and `mood` levels; the filter then "
+            "shows the KPIs of its moods (no `filters:` tag needed)."
+        ),
+    )
 
     @field_validator("levels")
     @classmethod
@@ -776,6 +816,22 @@ class Filter(StrictModel):
         if len(set(value)) != len(value):
             raise ValueError("a filter level kind can only appear once")
         return value
+
+    @model_validator(mode="after")
+    def _moods_and_levels(self) -> Filter:
+        mood_levels = [level for level in self.levels if level in MOOD_LEVELS]
+        if self.moods and tuple(self.levels) != MOOD_LEVELS:
+            raise ValueError("a filter with `moods` has exactly the levels [mood_group, mood]")
+        if mood_levels and not self.moods:
+            raise ValueError("the `mood_group` and `mood` levels need `moods`")
+        if self.moods and self.groups:
+            raise ValueError("a filter has `groups` or `moods`, not both")
+        return self
+
+    @property
+    def mood_kpis(self) -> list[str]:
+        """Every KPI of the filter's moods, once, in order of appearance."""
+        return list(dict.fromkeys(k for g in self.moods for m in g.moods for k in m.kpis))
 
 
 class FiltersFile(StrictModel):
@@ -1228,6 +1284,25 @@ class Config:
                 if filter_id not in filter_ids:
                     errors.append(f"KPI '{kpi.id}' references unknown filter '{filter_id}'")
         used = {fid for kpi in self.kpis if kpi.enabled for fid in kpi.filters}
+        kpis_by_id = {k.id: k for k in self.kpis}
+        for flt in self.filters:
+            if not flt.moods:
+                continue
+            if any(kpis_by_id.get(k) and kpis_by_id[k].enabled for k in flt.mood_kpis):
+                used.add(flt.id)
+            duplicates(f"filter '{flt.id}' sub-mood", [g.id for g in flt.moods])
+            duplicates(f"filter '{flt.id}' mood", [m.id for g in flt.moods for m in g.moods])
+            for group in flt.moods:
+                for mood in group.moods:
+                    duplicates(f"mood '{mood.id}' KPI", mood.kpis)
+                    for kpi_id in mood.kpis:
+                        kpi = kpis_by_id.get(kpi_id)
+                        if kpi is None:
+                            errors.append(f"mood '{mood.id}' references unknown KPI '{kpi_id}'")
+                        elif kpi.kind != "live":
+                            errors.append(f"mood '{mood.id}': KPI '{kpi_id}' is not live")
+                    if not any(kpis_by_id.get(k) and kpis_by_id[k].enabled for k in mood.kpis):
+                        errors.append(f"mood '{mood.id}' has no enabled KPI")
         for flt in self.filters:
             if flt.id not in used:
                 errors.append(f"filter '{flt.id}' matches no enabled KPI")

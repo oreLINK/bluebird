@@ -20,13 +20,18 @@
  * `per_category` tiles of one category among the first `first`, `limit` tiles
  * in all. With no significant tile: pinned + `fallback`. The score is never
  * shown: it only orders the page. README.md "Home page visibility score".
+ *
+ * Mood pages (`moodFeed`, the Mood filter of config/filters.yaml) use the same
+ * score over the KPIs of the mood, but show all of them (insignificant ones
+ * last, by priority), pin nothing and keep no category rule; a
+ * `tomorrow_only` sub-mood shows tomorrow alone, at any hour.
  */
 import type { Kpi, ResolvedTile } from './config';
 import type { MassifDaily } from './data';
 import type { KpiVisibility } from './generated/kpis';
 import type { HomePage, HomeReliability, HomeTile, RelevanceStep } from './generated/layout';
 import { type LiveView, displayOf, liveView } from './kpiView';
-import { type Period, type TileInstance, expandTiles, periodsFile } from './periods';
+import { type Period, type TileInstance, expandTiles, isLiveTile, periodsFile } from './periods';
 
 /** Defaults of the optional fields, the same as the pipeline models (config.py). */
 const DEFAULTS = {
@@ -49,7 +54,10 @@ export interface HomeOptions {
 
 /** The parts of a candidate's score (tests; never shown on the site). */
 export interface Visibility {
+  /** Mean of the top stations; `NaN` without any value. */
   measure: number;
+  /** The measure reaches the floor (impact counts); otherwise impact is 0. */
+  significant: boolean;
   impact: number;
   relevance: number;
   reliability: number;
@@ -147,6 +155,7 @@ export function relevanceOf(
   kpi: Kpi,
   alert: boolean,
   ctx: Pick<Context, 'config' | 'periods' | 'dayStart' | 'rankAt' | 'clock'>,
+  tomorrowOnly = false,
 ): number {
   const relevance = ctx.config.relevance;
   const { slot, time } = instance;
@@ -178,6 +187,8 @@ export function relevanceOf(
     : span(period).start === 0
       ? tomorrowSlots.first
       : tomorrowSlots.later;
+  // A page of tomorrow only (mood En route): tomorrow is asked for, at any hour.
+  if (tomorrowOnly) return periodFactor;
   const step = stepFactor(relevance.tomorrow.steps, ctx.clock, ctx.dayStart);
   if (step > 0) return step * periodFactor;
   const early = relevance.early_alerts;
@@ -201,12 +212,18 @@ export function reliabilityOf(
   return mean * (stale ? cfg.stale : 1) * (coverage < cfg.coverage_min ? cfg.coverage : 1);
 }
 
-/** The visibility of one live tile instance, or `null` when it is hidden from the home page. */
+/**
+ * The visibility of one live tile instance. `null` only without a KPI
+ * `visibility` block or a period; a measure below the floor gives
+ * `significant: false` and a score of 0 (the home page hides it, a mood shows
+ * it last).
+ */
 export function visibilityOf(
   instance: TileInstance,
   payload: MassifDaily,
   ctx: Context,
   only: Set<string> | null = null,
+  tomorrowOnly = false,
 ): Visibility | null {
   const kpi = instance.kpis[0];
   const vis = kpi?.visibility;
@@ -215,22 +232,22 @@ export function visibilityOf(
   const { floor, strong } = thresholds(vis, period);
   const view = liveView(kpi, payload, instance.slot, only);
   const { rows, known } = topOf(kpi, view, ctx.config.top ?? DEFAULTS.top, strong < floor);
-  if (rows.length === 0) return null;
-  const measure = rows.reduce((sum, row) => sum + row.measure, 0) / rows.length;
-  const impact = impactOf(measure, floor, strong);
-  if (impact === null) return null;
-  const alert = isAlert(vis, measure);
-  const relevance = relevanceOf(instance, kpi, alert, ctx);
-  if (relevance <= 0) return null;
+  const measure = rows.length ? rows.reduce((sum, row) => sum + row.measure, 0) / rows.length : Number.NaN;
+  const reached = Number.isFinite(measure) ? impactOf(measure, floor, strong) : null;
+  const alert = reached !== null && isAlert(vis, measure);
+  const relevance = relevanceOf(instance, kpi, alert, ctx, tomorrowOnly);
   const coverage = ctx.stationCount > 0 ? known / ctx.stationCount : 0;
-  const reliability = reliabilityOf(
-    rows.map((row) => row.confidence),
-    view.stale,
-    coverage,
-    ctx.config.reliability,
-  );
+  const reliability = rows.length
+    ? reliabilityOf(
+        rows.map((row) => row.confidence),
+        view.stale,
+        coverage,
+        ctx.config.reliability,
+      )
+    : 0;
+  const impact = reached ?? 0;
   const score = vis.priority * impact * relevance * reliability;
-  return { measure, impact, relevance, reliability, alert, score };
+  return { measure, significant: reached !== null, impact, relevance, reliability, alert, score };
 }
 
 /** The first instance of each entry (today's period, or tomorrow's once today's is over). */
@@ -261,6 +278,25 @@ function order(scored: Scored[], config: HomePage): Scored[] {
     count.set(picked.category, (count.get(picked.category) ?? 0) + 1);
   }
   return [...result, ...rest];
+}
+
+function contextOf(
+  config: HomePage,
+  payload: MassifDaily,
+  now: number,
+  options: HomeOptions,
+  periods: Period[],
+  dayStart: string,
+): Context {
+  const rankAt = options.rankAt ?? now;
+  return {
+    config,
+    periods,
+    dayStart,
+    rankAt,
+    clock: skiClock(rankAt, payload.timezone, dayStart),
+    stationCount: options.only?.size ?? Object.keys(payload.stations).length,
+  };
 }
 
 /** Tiles and tile instances of the home page. */
@@ -297,21 +333,13 @@ export function homeFeed(
     return finish([...pinned, ...entryInstances(config.fallback ?? [], all)]);
   }
 
-  const rankAt = options.rankAt ?? now;
-  const ctx: Context = {
-    config,
-    periods,
-    dayStart,
-    rankAt,
-    clock: skiClock(rankAt, payload.timezone, dayStart),
-    stationCount: options.only?.size ?? Object.keys(payload.stations).length,
-  };
+  const ctx = contextOf(config, payload, now, options, periods, dayStart);
   const best = new Map<string, Scored>();
   all.forEach((instance, index) => {
     const kpi = instance.kpis[0];
     if (!kpi || pinnedKpis.has(kpi.id)) return;
     const visibility = visibilityOf(instance, payload, ctx, options.only ?? null);
-    if (!visibility) return;
+    if (!visibility?.significant || visibility.relevance <= 0) return;
     const candidate = { instance, index, kpi, category: kpi.filters?.[0] ?? kpi.id, visibility };
     const current = best.get(kpi.id);
     const better =
@@ -322,4 +350,75 @@ export function homeFeed(
   });
   if (best.size === 0) return finish([...pinned, ...entryInstances(config.fallback ?? [], all)]);
   return finish([...pinned, ...order([...best.values()], config).map((s) => s.instance)]);
+}
+
+const moodRank = (v: Visibility): number[] => [Number(v.alert && v.relevance > 0), v.score, v.relevance];
+
+/** Lexicographic comparison of two ranks: > 0 when `a` comes first. */
+function compareRanks(a: number[], b: number[]): number {
+  for (let i = 0; i < a.length; i += 1) {
+    const diff = (a[i] ?? 0) - (b[i] ?? 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
+}
+
+export interface MoodOptions extends HomeOptions {
+  /** The KPIs of the chosen mood(s) (config/filters.yaml `moods`). */
+  kpis: string[];
+  /** Tomorrow's periods only, at any hour (sub-mood `tomorrow_only`, e.g. En route). */
+  tomorrowOnly?: boolean;
+}
+
+/**
+ * A mood page: ALL the tiles of its KPIs, one per KPI (its best period, by
+ * score, then relevance, then time), ordered like the home page but without
+ * pinned tiles nor the category rule and without hiding anything: alerts
+ * first, then the significant tiles by score, then the others (score 0) by
+ * KPI priority. The time of day still counts (relevance), and tomorrow-only
+ * pages keep tomorrow's periods alone.
+ */
+export function moodFeed(
+  resolved: ResolvedTile[],
+  payload: MassifDaily | null,
+  now: number,
+  options: MoodOptions,
+  periods: Period[] = periodsFile.periods,
+  dayStart: string = periodsFile.day_start ?? '06:00',
+): { tiles: ResolvedTile[]; instances: TileInstance[] } {
+  const wanted = new Set(options.kpis);
+  const tiles = resolved.filter((r) => isLiveTile(r) && wanted.has(r.kpis[0]?.id ?? ''));
+  const config = options.config;
+  if (!payload || !config) return { tiles, instances: [] };
+  const tomorrowOnly = options.tomorrowOnly ?? false;
+  const ctx = contextOf(config, payload, now, options, periods, dayStart);
+  const best = new Map<string, Scored>();
+  expandTiles(tiles, payload, now, periods).forEach((instance, index) => {
+    const kpi = instance.kpis[0];
+    if (!kpi || !instance.slot || (tomorrowOnly && instance.time?.offset !== 1)) return;
+    const visibility = visibilityOf(instance, payload, ctx, options.only ?? null, tomorrowOnly) ?? {
+      measure: Number.NaN,
+      significant: false,
+      impact: 0,
+      relevance: 0,
+      reliability: 0,
+      alert: false,
+      score: 0,
+    };
+    const candidate = { instance, index, kpi, category: kpi.filters?.[0] ?? kpi.id, visibility };
+    const current = best.get(kpi.id);
+    // Best period: an alert, then the score, then the relevance; the earliest on a tie.
+    const better = !current || compareRanks(moodRank(visibility), moodRank(current.visibility)) > 0;
+    if (better) best.set(kpi.id, candidate);
+  });
+  const all = [...best.values()];
+  const shown = (s: Scored) => s.visibility.score > 0;
+  const byScore = (a: Scored, b: Scored) => b.visibility.score - a.visibility.score || a.index - b.index;
+  const priority = (s: Scored) => s.kpi.visibility?.priority ?? 0;
+  const alerts = all.filter((s) => s.visibility.alert && shown(s)).sort(byScore);
+  const significant = all.filter((s) => !s.visibility.alert && shown(s)).sort(byScore);
+  const rest = all
+    .filter((s) => !shown(s))
+    .sort((a, b) => priority(b) - priority(a) || b.visibility.relevance - a.visibility.relevance || a.index - b.index);
+  return { tiles, instances: [...alerts, ...significant, ...rest].map((s) => s.instance) };
 }

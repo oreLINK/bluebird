@@ -2,14 +2,15 @@
 #
 # Filter bar under the header, Spotify-style. With nothing selected, the bar
 # shows the level-1 filters below (in this order) and the home page shows the
-# `home` tiles of config/layout.yaml. Choosing a filter fills its chip, moves
+# home feed (pinned tiles, then tiles by visibility score, config/layout.yaml). Choosing a filter fills its chip, moves
 # it to the left with a small "x", hides the other level-1 chips and offers
 # the next level; each chosen chip joins the row the same way (at most 4
 # levels).
 #
 #   id, name, icon: the chip. A filter shows the tiles whose KPIs list its id
 #                   under `filters:` in config/kpis.yaml.
-#   theme:          colour of the chip (default | rewind: Christmas red).
+#   theme:          colour of the chip (default | rewind: Christmas red |
+#                   mood: multicolour text and border moving left to right).
 #   levels:         levels offered after this filter, in order (live KPIs only):
 #                     group sub-categories of the filter (`groups` below); with
 #                           a single group the level is skipped
@@ -21,8 +22,15 @@
 #                   tiles. Above the `slot` level the page shows the day-grain
 #                   tiles only (periods with `native_window`: today, tonight…);
 #                   the time slot tiles appear once a slot is chosen.
-#   groups:         sub-categories: id, name {fr, en}, kpis (every KPI tagged
-#                   with the filter belongs to exactly one group).
+#   groups:         sub-categories: id, name {fr, en, es}, kpis (every KPI
+#                   tagged with the filter belongs to exactly one group).
+#   moods:          the Mood filter (`levels: [mood_group, mood]`): sub-moods
+#                   (Sur place, En route; `tomorrow_only` shows tomorrow only, at
+#                   any hour), each with its moods: id, name, kpis. A KPI can be
+#                   in several moods and needs no `filters:` tag. A mood shows
+#                   ALL its KPIs, one tile each (its best period), ordered by
+#                   the visibility score of the home page (insignificant ones
+#                   last, by priority); no pinned tile, no category rule.
 #
 # The live filters are the indicator categories of PROJECT.md ("Categories"):
 # Snow, Snow quality, Sky, Comfort, Getting there, Safety; one per KPI.
@@ -35,6 +43,56 @@ filters:
     name: { fr: Rewind 25/26, en: Rewind 25/26, es: Rewind 25/26 }
     icon: rewind
     theme: rewind
+
+  # The wish of the day, not a skier level: the same skier is a Freerider on a
+  # powder day and picks Dolce vita when the sun is out. Planned: Côté village
+  # (Sur place) and Je monte ce week-end (En route, once weekend KPIs exist).
+  - id: mood
+    name: { fr: Mood, en: Mood, es: Mood }
+    icon: sparkle
+    theme: mood
+    levels: [mood_group, mood]
+    moods:
+      - id: on-site
+        name: { fr: Sur place, en: On site, es: En la estación }
+        icon: mountain
+        moods:
+          - id: freerider
+            name: { fr: Freerider, en: Freerider, es: Freerider }
+            kpis: [offpiste_powder_chance, powder_alert_chance, snowfall_chance, wind_slab_chance,
+                   whiteout_chance, bluebird_day_chance, lift_wind_chance, hard_snow_chance]
+          - id: carver
+            name: { fr: Carveur, en: Carver, es: Carver }
+            kpis: [onpiste_powder_chance, hard_snow_chance, snowfall_chance, lift_wind_chance,
+                   whiteout_chance, bluebird_day_chance, heavy_snow_chance, sunny_slot_chance]
+          - id: dolce-vita
+            name: { fr: Dolce vita, en: Dolce vita, es: Dolce vita }
+            kpis: [bluebird_day_chance, sunny_slot_chance, sunset_chance, mild_day_chance,
+                   spring_snow_chance, starry_night_chance, wind_chill_chance]
+          # A beginner is afraid: visibility, ice, swaying chairlifts.
+          - id: snowplough
+            name: { fr: Chasse-neige, en: Snowplough, es: Cuña }
+            kpis: [easy_conditions_chance, whiteout_chance, hard_snow_chance, lift_wind_chance,
+                   heavy_snow_chance, mild_day_chance, wind_chill_chance]
+          # A child is cold and tires quickly; a little snow falling is a party.
+          - id: little-ones
+            name: { fr: Piou-Piou, en: Little ones, es: Peques }
+            kpis: [wind_chill_chance, mild_day_chance, easy_conditions_chance, sunny_slot_chance,
+                   snowfall_chance, whiteout_chance]
+      - id: on-the-way
+        name: { fr: En route, en: On the way, es: En camino }
+        icon: car
+        tomorrow_only: true
+        moods:
+          # Can I get there, and which resort tomorrow?
+          - id: heading-up
+            name: { fr: Je monte demain, en: Heading up tomorrow, es: Subo mañana }
+            kpis: [chains_chance, snowfall_chance, lift_wind_chance, bluebird_day_chance,
+                   onpiste_powder_chance, offpiste_powder_chance, whiteout_chance]
+          # The road back, and is the last morning worth skiing?
+          - id: heading-down
+            name: { fr: Je redescends demain, en: Heading down tomorrow, es: Bajo mañana }
+            kpis: [chains_chance, snowfall_chance, onpiste_powder_chance, bluebird_day_chance]
 
   # Will it snow, how much, is there snow on the ground?
   - id: snow

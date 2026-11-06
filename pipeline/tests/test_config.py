@@ -639,3 +639,65 @@ def test_invalid_tile_axes_are_rejected(tmp_path: Path, old: str, new: str, mess
     _edit(config_dir, "tiles.yaml", old, new)
     with pytest.raises(ConfigError, match=message):
         load_config(config_dir)
+
+
+def test_mood_sits_between_rewind_and_snow(repo_config: Config) -> None:
+    ids = [f.id for f in repo_config.filters]
+    assert ids[:3] == ["rewind-2025-26", "mood", "snow"]
+    mood = repo_config.filters[1]
+    assert mood.theme == "mood"
+    assert [g.id for g in mood.moods] == ["on-site", "on-the-way"]
+    assert [m.id for m in mood.moods[0].moods] == [
+        "freerider",
+        "carver",
+        "dolce-vita",
+        "snowplough",
+        "little-ones",
+    ]
+    assert [m.id for m in mood.moods[1].moods] == ["heading-up", "heading-down"]
+    assert mood.moods[1].tomorrow_only and not mood.moods[0].tomorrow_only
+    assert 1 + len(mood.levels) <= 4
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "message"),
+    [
+        (
+            "kpis: [chains_chance, snowfall_chance, onpiste_powder_chance, bluebird_day_chance]",
+            "kpis: [chains_chance, nope_chance]",
+            "mood 'heading-down' references unknown KPI 'nope_chance'",
+        ),
+        (
+            "kpis: [chains_chance, snowfall_chance, onpiste_powder_chance, bluebird_day_chance]",
+            "kpis: [chains_chance, season_white_days]",
+            "mood 'heading-down': KPI 'season_white_days' is not live",
+        ),
+        (
+            "kpis: [chains_chance, snowfall_chance, onpiste_powder_chance, bluebird_day_chance]",
+            "kpis: [chains_chance, chains_chance]",
+            "duplicate mood 'heading-down' KPI id 'chains_chance'",
+        ),
+        ("- id: carver\n", "- id: freerider\n", "duplicate filter 'mood' mood id 'freerider'"),
+        (
+            "    levels: [mood_group, mood]\n",
+            "    levels: [mood, mood_group]\n",
+            "exactly the levels",
+        ),
+        ("    levels: [mood_group, mood]\n", "    levels: [day, slot]\n", "exactly the levels"),
+    ],
+)
+def test_invalid_moods_are_rejected(tmp_path: Path, old: str, new: str, message: str) -> None:
+    config_dir = tiny_config_dir(tmp_path)
+    text = (config_dir / "filters.yaml").read_text(encoding="utf-8")
+    assert old in text
+    (config_dir / "filters.yaml").write_text(text.replace(old, new, 1), encoding="utf-8")
+    with pytest.raises(ConfigError, match=message):
+        load_config(config_dir)
+
+
+def test_mood_levels_need_moods() -> None:
+    from bluebird_pipeline.config import Filter
+
+    name = {"fr": "x", "en": "x", "es": "x"}
+    with pytest.raises(ValueError, match="need `moods`"):
+        Filter.model_validate({"id": "x", "name": name, "levels": ["mood_group", "mood"]})

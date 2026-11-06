@@ -583,20 +583,23 @@ pages:
               Pour retrouver vos choix à la prochaine visite, le site enregistre
               quatre réglages dans le stockage local de votre navigateur (ce ne sont
               pas des cookies) : la langue, l'apparence (Système, Clair ou Sombre),
-              le lieu choisi et le premier niveau du filtre. Ils ne quittent jamais
-              votre appareil et ne sont envoyés à personne.
+              le lieu choisi et le filtre choisi (jusqu'à son quatrième niveau, par
+              exemple Mood, Sur place, Freerider). Ils ne quittent jamais votre
+              appareil et ne sont envoyés à personne.
             en: >-
               To remember your choices for your next visit, the site saves four
               settings in your browser's local storage (these are not cookies): the
               language, the appearance (System, Light or Dark), the chosen place and
-              the first level of the filter. They never leave your device and are
-              sent to no one.
+              the chosen filter (down to its fourth level, for example Mood, On
+              site, Freerider). They never leave your device and are sent to no
+              one.
             es: >-
               Para recordar tus elecciones en la próxima visita, el sitio guarda
               cuatro ajustes en el almacenamiento local de tu navegador (no son
               cookies): el idioma, la apariencia (Sistema, Claro u Oscuro), el lugar
-              elegido y el primer nivel del filtro. Nunca salen de tu dispositivo y no
-              se envían a nadie.
+              elegido y el filtro elegido (hasta su cuarto nivel, por ejemplo Mood,
+              En la estación, Freerider). Nunca salen de tu dispositivo y no se
+              envían a nadie.
           - fr: >-
               Ces réglages n'ont pas de date d'expiration : ils restent jusqu'à ce que
               vous les supprimiez. Safari (iPhone, iPad, Mac) les efface toutefois

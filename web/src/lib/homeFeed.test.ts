@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Kpi, ResolvedTile, Tile } from './config';
 import type { MassifDaily } from './data';
 import type { HomePage } from './generated/layout';
-import { clockOf, homeFeed, impactOf, reliabilityOf, skiClock, stepFactor } from './homeFeed';
+import { clockOf, homeFeed, impactOf, moodFeed, reliabilityOf, skiClock, stepFactor } from './homeFeed';
 
 const name = { fr: 'x', en: 'x', es: 'x' };
 const valueDisplay = { kind: 'value' as const, driver: 'v', range: ['lo', 'hi'] as [string, string], tolerance: 3 };
@@ -289,5 +289,68 @@ describe('homeFeed', () => {
     const loading = homeFeed(resolved, null, morning, { config });
     expect(loading.instances).toEqual([]);
     expect(loading.tiles.map((t) => t.tile.id)).toEqual(['blue_t', 'snow_t']);
+  });
+});
+
+describe('moodFeed', () => {
+  const morning = time(D, '10:00');
+  const mood = (v: Values, now: number, kpis: string[], tomorrowOnly = false) =>
+    moodFeed(resolved, payload(v), now, { config, kpis, tomorrowOnly }).instances.map((i) => i.id);
+
+  it('shows every KPI of the mood, significant ones by score, then the others by priority', () => {
+    const v: Values = {
+      star: [['a', 0.95], ['b', 0.95], ['c', 0.95]],
+      chill: [['a', 0.5, -22.5], ['b', 0.5, -22.5], ['c', 0.5, -22.5]],
+      // snow 1 cm (priority 1), blue 12 % (priority 1), powder 5 % (0.9): not significant
+      snowDay: [['a', 0.9, 1], ['b', 0.9, 1], ['c', 0.9, 1]],
+      powder: [['a', 0.05], ['b', 0.05], ['c', 0.05]],
+    };
+    expect(mood(v, morning, ['star_k', 'chill_k', 'snow_k', 'blue_k', 'powder_k'])).toEqual([
+      'star_t--day-2026-12-14', // 0.4
+      'chill_t--day-2026-12-14', // 0.35
+      'snow_t--day-2026-12-14',
+      'blue_t--day-2026-12-14',
+      'powder_t--day-2026-12-14',
+    ]);
+  });
+
+  it('pins nothing and keeps no category rule', () => {
+    const v: Values = {
+      snowDay: [['a', 0.9, 50], ['b', 0.9, 50], ['c', 0.9, 50]],
+      powder: [['a', 0.9], ['b', 0.9], ['c', 0.9]],
+    };
+    const ids = moodFeed(resolved, payload(v), morning, {
+      config: { ...config, diversity: { first: 2, per_category: 1 } },
+      kpis: ['blue_k', 'snow_k', 'powder_k'],
+    }).instances.map((i) => i.id);
+    expect(ids).toEqual(['snow_t--day-2026-12-14', 'powder_t--day-2026-12-14', 'blue_t--day-2026-12-14']);
+  });
+
+  it('puts alerts first', () => {
+    const v: Values = {
+      snowDay: [['a', 0.9, 50], ['b', 0.9, 50], ['c', 0.9, 50]],
+      windToday: [['a', 0.9, 61], ['b', 0.9, 61], ['c', 0.9, 61]],
+    };
+    expect(mood(v, morning, ['snow_k', 'wind_k'])).toEqual(['wind_t--day-2026-12-14', 'snow_t--day-2026-12-14']);
+  });
+
+  it('shows tomorrow only, at any hour, on a tomorrow-only page', () => {
+    const v: Values = {
+      snowDay: [['a', 0.9, 50], ['b', 0.9, 50], ['c', 0.9, 50]],
+      snowTomorrow: [['a', 0.9, 20], ['b', 0.9, 20], ['c', 0.9, 20]],
+      windTomorrow: [['a', 0.9, 50], ['b', 0.9, 50], ['c', 0.9, 50]],
+    };
+    expect(mood(v, morning, ['snow_k', 'wind_k'], true)).toEqual([
+      'snow_t--day-2026-12-15', // (20 - 5) / 25 = 0.6
+      'wind_t--day-2026-12-15', // 0.85 × 0.2 = 0.17
+    ]);
+    // the same page without the option keeps today's snow (tomorrow waits for 17:00)
+    expect(mood(v, morning, ['snow_k'])).toEqual(['snow_t--day-2026-12-14']);
+  });
+
+  it('lists the tiles of the mood as placeholders while the data loads', () => {
+    const loading = moodFeed(resolved, null, morning, { config, kpis: ['snow_k', 'wind_k'] });
+    expect(loading.instances).toEqual([]);
+    expect(loading.tiles.map((t) => t.tile.id)).toEqual(['snow_t', 'wind_t']);
   });
 });

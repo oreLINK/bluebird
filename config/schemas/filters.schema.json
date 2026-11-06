@@ -28,10 +28,11 @@
         },
         "theme": {
           "default": "default",
-          "description": "Colour of the chip (rewind: Christmas red).",
+          "description": "Colour of the chip (rewind: Christmas red; mood: moving multicolour text and border).",
           "enum": [
             "default",
-            "rewind"
+            "rewind",
+            "mood"
           ],
           "title": "Theme",
           "type": "string"
@@ -42,7 +43,9 @@
             "enum": [
               "group",
               "day",
-              "slot"
+              "slot",
+              "mood_group",
+              "mood"
             ],
             "type": "string"
           },
@@ -56,6 +59,14 @@
             "$ref": "#/$defs/FilterGroup"
           },
           "title": "Groups",
+          "type": "array"
+        },
+        "moods": {
+          "description": "Sub-moods and moods for the `mood_group` and `mood` levels; the filter then shows the KPIs of its moods (no `filters:` tag needed).",
+          "items": {
+            "$ref": "#/$defs/MoodGroup"
+          },
+          "title": "Moods",
           "type": "array"
         }
       },
@@ -135,6 +146,96 @@
         "es"
       ],
       "title": "Localized",
+      "type": "object"
+    },
+    "Mood": {
+      "additionalProperties": false,
+      "description": "A mood (level `mood`), e.g. Freerider: the KPIs that matter for that wish of the day.\n\nUnlike groups, a KPI can belong to several moods; the page shows all of them,\nordered by the home page visibility score (lib/homeFeed.ts).",
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9]+(?:[_-][a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "$ref": "#/$defs/Localized"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "kpis": {
+          "description": "Live KPIs shown under this mood.",
+          "items": {
+            "pattern": "^[a-z0-9]+(?:[_-][a-z0-9]+)*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Kpis",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "kpis"
+      ],
+      "title": "Mood",
+      "type": "object"
+    },
+    "MoodGroup": {
+      "additionalProperties": false,
+      "description": "A sub-mood (level `mood_group`), e.g. Sur place or En route, and its moods.",
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9]+(?:[_-][a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "$ref": "#/$defs/Localized"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "tomorrow_only": {
+          "default": false,
+          "description": "Show tomorrow's periods only, at any time of day (e.g. Je monte demain).",
+          "title": "Tomorrow Only",
+          "type": "boolean"
+        },
+        "moods": {
+          "items": {
+            "$ref": "#/$defs/Mood"
+          },
+          "minItems": 1,
+          "title": "Moods",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "moods"
+      ],
+      "title": "MoodGroup",
       "type": "object"
     }
   },

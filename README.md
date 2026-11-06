@@ -495,7 +495,7 @@ User-facing labels are `{fr, en, es}` objects; every language is required.
 | `stations/<massif>.yaml` | Resorts of one massif | `defaults {grooming_end, lifts_open}`, `stations[]`: `id`, `name`, `short_name?` (≤ 20 chars, shown in tiles), `lat`, `lon`, `elevation {base, summit, mid?}`, `aspects`, `grooming_end?`, `lifts_open?`, `website?`, `enabled`, `zone` (required when the massif has zones), `domain?`, `webcams?[]` (`id`, `name`, `position` `summit` / `slopes` / `village` / `nordic`, `elevation?`, `provider` `skaping`, `url` of the official page); `domains[]` (linked ski areas, level 3: `id`, `name`) |
 | `kpis.yaml` | KPI registry | `id`, `aggregator`, `kind` (`live` / `historical`), `display` (live: `percent` default, optional `note` driver; `value` with `driver`, `range` [p10, p90], `tolerance`, `bands`; `levels` by probability), `order` (`desc` / `asc`: lowest value first, e.g. fewest white days, coldest felt temperature), `value {unit, unit_label, unit_label_one, decimals, scale, max}` (historical; `unit_label` when the unit depends on the language, e.g. jours / days / días, `unit_label_one` its singular, chosen with the language's plural rules; `scale` converts the aggregator's unit, e.g. `0.01` for cm → m; `max` is the value of a full bar, e.g. `100` for a percentage, default the best value), `name`, `description`, `method?` (`{param}` placeholders, shown on the tile back), `params`, `drivers {key: {label, unit, decimals}}`, `filters[]`, `periods[]` (live KPIs; default `[day]`), `visibility` (live, required by the scored home page: `priority`, `measure?`, `floor`, `strong`, `alert?`, `slots? {floor, strong}`; see [Home page visibility score](#home-page-visibility-score)), `enabled` |
 | `periods.yaml` | Time slots of the ski day | `day_start`, `horizon_days`, `days[]` (chips of the `day` filter level: today, tomorrow), `badge_days[]` (day cell of the tile time badge, one per day: `tone` today / tomorrow and a short `label`, "Auj."), `badge_tonight` (replaces today + a night moment: "Cette nuit"), `periods[]` (time slots, and day-grain periods with `native_window`: `day`, `sunset`, `overnight`): `id`, `start`, `end`, `native_window?`, `labels[]` (one per day: today, tomorrow; the period written out on the tile back, for screen readers and on the status page), `chip` (chip of the `slot` filter level, required for time slots), `badge?` (short moment cell of the tile time badge, "Matin" / "AM" / "Mañ."; none for the whole day), `tone?` (`morning`, `midday`, `afternoon`, `evening`, `night`: colour of the moment cell, required with `badge`) |
-| `filters.yaml` | Level-1 chips of the filter bar, in order | `id`, `name`, `icon?`, `theme?` (`default` / `rewind`), `levels?[]` (next levels, at most 3: `group`, `day`, `slot`; live KPIs only), `groups?[]` (sub-categories: `id`, `name`, `kpis[]`) |
+| `filters.yaml` | Level-1 chips of the filter bar, in order | `id`, `name`, `icon?`, `theme?` (`default` / `rewind` / `mood`: moving multicolour chip), `levels?[]` (next levels, at most 3: `group`, `day`, `slot`, or exactly `[mood_group, mood]`; live KPIs only), `groups?[]` (sub-categories: `id`, `name`, `kpis[]`), `moods?[]` (sub-moods: `id`, `name`, `icon?`, `tomorrow_only?`, `moods[] {id, name, icon?, kpis[]}`; see [Moods](#moods)) |
 | `tiles.yaml` | KPI containers; a live tile is shown once per period | `id`, `scope` (`ranking`, default), `format` (`full` / `banner` / `compact`), `visual` (`scene` default / `photo`; not on `compact`), `webcam?` (`positions[]`, `min_probability` default 0.6; live `full`/`banner` only), `kpis[]`, `title?` (never the period: `{period}` is refused; live tiles show a time badge), `periods?[]` (live), `icon?`, `options` (`top`, `show_odds`, `scene`, `theme`; `details` turns station details on, off by default) |
 | `layout.yaml` | Home page and tile order | `home` (`mode` `scored` / `fixed`, `limit` (50), `top` (3), `pinned[] {tile, period}`, `fallback[] {tile, period}`, `relevance {slots, today, tomorrow, early_alerts}`, `reliability`, `diversity`; see [Home page visibility score](#home-page-visibility-score)), `default[]`, `overrides {massif: [tiles]}` |
 | `sources.yaml` | Data sources | `id`, `extractor`, `transformer`, `schedule` (`daily` / `on_demand` / `reference` / `season`), `params`, `attribution` |
@@ -738,9 +738,47 @@ Nothing is selected by default: the home page shows the pinned tiles of
 [visibility score](#home-page-visibility-score). Filters matching
 no tile of the current layout are hidden.
 
+### Moods
+
+The **Mood** filter (`id: mood`, between Rewind 25/26 and Snow, `theme: mood`)
+answers the wish of the day, not a skier level: the same skier is a
+Freerider on a powder day and picks Dolce vita when the sun is out. Its
+levels are always `[mood_group, mood]` (3 levels with the chip):
+
+| Sub-mood (level 2) | Mood (level 3) | KPIs |
+|---|---|---|
+| Sur place / On site / En la estación | Freerider | off-piste powder, snow alert, snow, wind-blown snow, white day, bluebird day, lifts in the wind, hard snow |
+| | Carveur / Carver / Carver | on-piste powder, hard snow, snow, lifts in the wind, white day, bluebird day, heavy snow, full sun |
+| | Dolce vita | bluebird day, full sun, sunset, mild day, spring snow, starry night, wind chill |
+| | Chasse-neige / Snowplough / Cuña | easy conditions, white day, hard snow, lifts in the wind, heavy snow, mild day, wind chill |
+| | Piou-Piou / Little ones / Peques | wind chill, mild day, easy conditions, full sun, snow, white day |
+| En route / On the way / En camino (`tomorrow_only`) | Je monte demain / Heading up tomorrow / Subo mañana | chains, snow, lifts in the wind, bluebird day, on-piste powder, off-piste powder, white day |
+| | Je redescends demain / Heading down tomorrow / Bajo mañana | chains, snow, on-piste powder, bluebird day |
+
+- **Configuration**: `moods` of the filter in `config/filters.yaml`. A KPI can
+  be in several moods and needs no `filters:` tag; `bluebird validate` refuses
+  unknown, historical or repeated KPIs, a mood without an enabled KPI,
+  duplicate ids and other levels than `[mood_group, mood]`.
+- **Page** (`moodFeed` in `lib/homeFeed.ts`, through `moodState` in
+  `lib/filterLevels.ts`): **all** the KPIs of the chosen mood (or of every
+  mood above it when only Mood or a sub-mood is chosen), one tile each (its
+  best period), ordered by the [visibility score](#home-page-visibility-score):
+  alerts, then significant tiles by score, then the others (score 0) by KPI
+  priority. Nothing is hidden, nothing is pinned (the bluebird day is ranked
+  like the others), no category rule. The time of day counts as on the home
+  page; a `tomorrow_only` sub-mood keeps tomorrow's periods alone, at any hour.
+  No day or slot level: the score picks the moment.
+- **Chip**: text and border slide through the `--mood-*` colours from left to
+  right (4 s loop), filled with `--mood-fill-*` and white text when chosen
+  (also the folded header pill); static with reduced motion.
+- **Planned**: Côté village (Sur place, needs village weather), Je monte ce
+  week-end (En route, needs weekend KPIs), mood-specific priorities or
+  thresholds if needed.
+
 ### Add a kind of filter level
 
-Levels after level 1 are built-in kinds (`group`, `day`, `slot`). A new kind
+Levels after level 1 are built-in kinds (`group`, `day`, `slot`, and the
+Mood filter's `mood_group` and `mood`, handled by `moodState`). A new kind
 (a 4th level at most, `MAX_FILTER_LEVELS`) is one value of `FilterLevel` in
 `pipeline/.../config.py` and one entry of `LEVEL_KINDS` in
 `web/src/lib/filterLevels.ts` (`options` offered for the current tiles,
@@ -980,8 +1018,13 @@ the data is unavailable.
   tiles appear at the slot level only. Each choice joins the row and the bar
   scrolls back to its start, as far as the last chosen chip stays visible;
   tapping a chosen chip removes it and the levels after it. Unknown or ended
-  path items are dropped. Only level 1 is remembered in `localStorage`.
-  `theme: rewind` makes a chip Christmas red. New chips grow in and the others
+  path items are dropped. The whole path is remembered in `localStorage`
+  (`filter`, levels joined with `/`, up to level 4: `readFilterPath` /
+  `writeFilterPath`; a value saved before, a level-1 id, reads the same), so
+  a remembered mood opens directly. The Mood filter has its own levels
+  (sub-mood, mood; see [Moods](#moods)).
+  `theme: rewind` makes a chip Christmas red, `theme: mood` multicolour and
+  moving. New chips grow in and the others
   slide (`animate:flip`).
 - **Data date**: above the tiles, as plain text (no card),
   `components/ForecastStatus.svelte` shows the reference date of the data
@@ -1137,7 +1180,11 @@ the data is unavailable.
 - **Motion**: changing filter makes tiles arrive "from the back" (scale, fade
   and rise, staggered), leaving tiles fade out and the others glide into place
   (`lib/transitions.ts`, `animate:flip`). Durations drop to 0 with "reduce
-  motion". The filter row scrolls horizontally with fading edges.
+  motion". The filter row scrolls horizontally with fading edges. The Mood
+  chip is the only moving chip: its text and border slide through the
+  `--mood-*` colours from left to right (`FilterBar.svelte`, 4 s loop; filled
+  with `--mood-fill-*` when chosen, also the folded header pill), static with
+  "reduce motion"; the page background never moves.
 - **Accessibility**: text keeps ≥ 4.5:1 contrast (odds buttons use one fixed
   colour pair; magnitude is shown by the bars). Reduced transparency and
   missing `backdrop-filter` fall back to opaque surfaces. Buttons expose their
@@ -1193,8 +1240,10 @@ when no tile is significant. Under a filter, live tiles show once
 per day-grain period of today and tomorrow not over yet ("aujourd'hui",
 "cette nuit", "ce soir"), narrowed by the sub-category and day chips; the
 time-slot instances ("ce matin", "demain midi"…) only once a slot chip is
-chosen. Rewind tiles only show under their Rewind filter, once, in the Rewind
-theme with a "REWIND 25/26" badge.
+chosen. Under the Mood filter, every tile of the chosen mood shows once (its
+best period), ordered by the visibility score (see [Moods](#moods)). Rewind
+tiles only show under their Rewind filter, once, in the Rewind theme with a
+"REWIND 25/26" badge.
 
 ---
 
@@ -1331,6 +1380,16 @@ reliability = mean confidence of the top 3 (high 1.0, medium 0.85, low 0.65)
    moved when new data arrives, when a period ends and when the tab comes
    back to the foreground, never every minute, so the page does not
    reshuffle under the visitor's eyes.
+
+### Mood pages
+
+The same score orders the pages of the [Moods](#moods) (`moodFeed`), with
+three differences: **nothing is hidden** (tiles below their floor come last,
+by KPI priority, then relevance), **nothing is pinned** (the bluebird day is
+ranked like the others) and **no category rule**. Alerts still come first and
+the time of day still counts; a `tomorrow_only` sub-mood (En route) keeps
+tomorrow's periods alone, with a relevance of 1 at any hour (× the slot
+factors). `limit` does not apply (a mood has fewer than 10 KPIs).
 
 ### Tuning
 
@@ -1580,6 +1639,9 @@ AGENTS.md §4; scraping must respect the site's terms).
 | Tile effects | A layer between the tile's background (photo or illustration) and its text. **Permanent** effects loop as long as the tile is shown, e.g. falling snow on the Snow tiles; **flash** effects play once, e.g. a sun glint across the Bluebird day tile, only when the visitor actually sees the tile on screen (and again on a later view) | A tile field `effect: { name, mode: permanent \| flash }` (or a default per KPI), one CSS/SVG or canvas component per effect in an effect registry, laid between `BannerMedia` and the content (`z-index`), pointer-events off. Flash effects start from an `IntersectionObserver` (e.g. 60 % of the tile visible), at most once per view; permanent ones pause off screen and when the card is turned over. Static or off with `prefers-reduced-motion`; transform/opacity only; text keeps ≥ 4.5:1 over the effect (TILES.md §9). Inside the tile only: the page background stays plain (CONTEXT.md invariant 14). Works with "Animated KPI banners", which replace the illustration itself | 🟢 |
 | Odds that move | An arrow ↑ / ↓ on each odds button when the probability rose or fell since the previous refresh, like moving odds in betting apps | Values of the previous refresh of the same ski day, already restored by `scripts/ci/fetch-gh-pages-data.sh`; a `previous` probability (or a `delta`) per ranking entry in the diamond payload (`schema_version` bump) | 🟢 |
 | Calendar alerts | Subscribe in any calendar app to a station or KPI feed: an event "Journée bluebird probable demain à Cauterets (78 %)" when a probability passes a threshold | The `publish` job writes static `.ics` feeds on `gh-pages` (one per station, one per KPI), updated every refresh; no server, no push service | 🟢 |
+| Mood Côté village | A Sur place mood for those who stay in the village (spa, shops, terraces, bars): village weather, sunny terrace, sunset, the road | Village weather and rain in the village (a base band in the forecast); no shop, restaurant or hotel data (not weather, external sources need the owner's approval) | 🟢/🟡 |
+| Mood Je monte ce week-end | An En route mood for the coming weekend | Weekend periods and KPIs first (`horizon_days`, more forecast days) | 🟡 |
+| Mood-specific thresholds | A mood overrides the priority or thresholds of a few KPIs (−8 °C felt already counts for a child; a little snow is a party for Piou-Piou) | Optional overrides per mood in `config/filters.yaml`, applied by `moodFeed` | 🟢 |
 | My resorts | A star on stations, kept on the device, and a "Mes stations" chip in the place bar | Preference in `localStorage`; a place level kind narrowing every view like a zone (`viewFor(…, only)`) | 🟢 |
 | Share a tile | Send a tile as an image ("Neige demain : La Pierre 12 cm") through the phone's share sheet, plus a link that reopens the same place and filters | Canvas rendering of the tile front, Web Share API (fallback: copy the link); place and filter path in the URL hash, read at start | 🟢 |
 | Offline mode | Installable site that keeps the last refresh, for mountains without network | Web app manifest and a service worker (allowed on GitHub Pages) caching the app and `latest.json`; the stale state says how old the data is | 🟢 |

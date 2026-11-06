@@ -26,7 +26,7 @@
   import { sheets } from './lib/sheets.svelte';
   import { arrive, leave, motion } from './lib/transitions';
   import { flip } from 'svelte/animate';
-  import { filterState, nextPath } from './lib/filterLevels';
+  import { filterState, nextPath, readFilterPath, writeFilterPath } from './lib/filterLevels';
   import { viewFor } from './lib/kpiView';
   import { liveWebcam } from './lib/webcams';
   import { isLiveTile, nextBoundary, tileTitle } from './lib/periods';
@@ -44,9 +44,8 @@
   let lastMassif = $state(initialGeo[0] ?? massifs[0]?.id ?? '');
   const place = $derived(geoState(geoPath, massifs, siteStations, siteDomains, lastMassif));
   const massifId = $derived(place.massifId);
-  /** Chosen filter chips, level by level (lib/filterLevels.ts); only level 1 is remembered. */
-  const storedFilter = readPref('filter');
-  let filterPath = $state<string[]>(storedFilter ? [storedFilter] : []);
+  /** Chosen filter chips, level by level (lib/filterLevels.ts); remembered up to level 4. */
+  let filterPath = $state<string[]>(readFilterPath(readPref('filter')));
   let languageOpen = $state(false);
   let themeOpen = $state(false);
   let status = $state<Status>('loading');
@@ -162,7 +161,7 @@
     const chip = filtered.chips.find((c) => c.key === key);
     if (!chip) return;
     filterPath = nextPath(filtered.path, chip);
-    writePref('filter', filterPath[0] ?? '');
+    writePref('filter', writeFilterPath(filterPath));
   }
 
 </script>

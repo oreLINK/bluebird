@@ -11,6 +11,10 @@
  *         config/periods.yaml)
  *   slot  time slot of the tile (periods without `native_window`, `chip`
  *         labels); whole-day tiles are under no slot.
+ *   mood_group, mood  the two levels of the Mood filter (`moods`): a
+ *         sub-mood (Sur place, En route) then a mood (Freerider…). The page
+ *         shows every KPI of the chosen mood(s), ordered by the visibility
+ *         score (`moodFeed` of lib/homeFeed.ts); no day or slot level.
  * Grain rule: until a slot is chosen, the page only shows day-grain tiles
  * (periods with `native_window`: today, tonight…) and Rewind tiles; the time
  * slot tiles appear at the slot level only, so the page stays short.
@@ -33,17 +37,20 @@ import {
 } from './config';
 import type { MassifDaily } from './data';
 import type { Localized } from './generated/filters';
-import { type HomeOptions, homeFeed } from './homeFeed';
+import { type HomeOptions, homeFeed, moodFeed } from './homeFeed';
 import {
   type Period,
   type TileInstance,
   daysBetween,
   expandTiles,
+  isLiveTile,
   periodsFile,
   referenceDay,
 } from './periods';
 
 export type LevelKind = NonNullable<Filter['levels']>[number];
+/** The levels of the Mood filter, handled by `moodState` (not LEVEL_KINDS). */
+export type MoodLevelKind = 'mood_group' | 'mood';
 
 /** A chip of the filter bar. */
 export interface FilterChip {
@@ -95,7 +102,7 @@ const dayId = (instance: TileInstance, ctx: LevelContext): string | null =>
 
 const kpiOf = (instance: TileInstance): string | undefined => instance.kpis[0]?.id;
 
-export const LEVEL_KINDS: Record<LevelKind, LevelKindSpec> = {
+export const LEVEL_KINDS: Record<Exclude<LevelKind, MoodLevelKind>, LevelKindSpec> = {
   group: {
     options: (instances, ctx) =>
       ctx.groups.flatMap((g) =>
@@ -151,6 +158,8 @@ export function filterState(
     return { path: [], chips, ...homeFeed(resolved, payload, now, home, periods) };
   }
 
+  if (topic.moods?.length) return moodState(path, topic, resolved, payload, now, home, periods);
+
   let tiles = filterTiles(resolved, topic);
   let instances = expandTiles(tiles, payload, now, periods);
   const ctx: LevelContext = {
@@ -162,7 +171,7 @@ export function filterState(
   const kept = [topic.id];
   const chips = [chip(topic, true)];
   let slotChosen = false;
-  for (const kind of topic.levels ?? []) {
+  for (const kind of (topic.levels ?? []) as Exclude<LevelKind, MoodLevelKind>[]) {
     const spec = LEVEL_KINDS[kind];
     // Groups are known from the configuration: they narrow the tiles even while live data loads.
     const options =
@@ -192,10 +201,80 @@ export function filterState(
   return { path: kept, chips, tiles, instances, rewind: rewindOfFilter(topic.id) };
 }
 
+/**
+ * The Mood filter: level 2 = its sub-moods, level 3 = the moods of the chosen
+ * one (only those with a tile). The page shows the KPIs of the chosen mood, or
+ * of every mood above it, through `moodFeed` (a `tomorrow_only` sub-mood keeps
+ * tomorrow alone).
+ */
+function moodState(
+  path: string[],
+  topic: Filter,
+  resolved: ResolvedTile[],
+  payload: MassifDaily | null,
+  now: number,
+  home: HomeOptions,
+  periods: Period[],
+): FilterState {
+  const hasTile = (kpis: string[]) =>
+    resolved.some((r) => isLiveTile(r) && kpis.includes(r.kpis[0]?.id ?? ''));
+  const groups = (topic.moods ?? [])
+    .map((g) => ({ ...g, moods: g.moods.filter((m) => hasTile(m.kpis)) }))
+    .filter((g) => g.moods.length > 0);
+  const levelChip = (level: number, option: LevelOption & { icon?: string | null }, pressed: boolean) => ({
+    key: `${level}:${option.id}`,
+    id: option.id,
+    name: option.name,
+    icon: option.icon ?? null,
+    level,
+    pressed,
+  });
+  const kept = [topic.id];
+  const chips: FilterChip[] = [chip(topic, true)];
+  const group = groups.find((g) => g.id === path[1]);
+  const mood = group?.moods.find((m) => m.id === path[2]);
+  if (!group) chips.push(...groups.map((g) => levelChip(2, g, false)));
+  else {
+    kept.push(group.id);
+    chips.push(levelChip(2, group, true));
+    if (!mood) chips.push(...group.moods.map((m) => levelChip(3, m, false)));
+    else {
+      kept.push(mood.id);
+      chips.push(levelChip(3, mood, true));
+    }
+  }
+  const moods = mood ? [mood] : group ? group.moods : groups.flatMap((g) => g.moods);
+  const kpis = [...new Set(moods.flatMap((m) => m.kpis))];
+  const feed = moodFeed(resolved, payload, now, {
+    ...home,
+    kpis,
+    tomorrowOnly: group?.tomorrow_only ?? false,
+  }, periods);
+  return { path: kept, chips, ...feed };
+}
+
 /** A day-grain tile (period with `native_window`) or a Rewind tile (no period). */
 export function isDayGrain(instance: TileInstance, periods: Period[] = periodsFile.periods): boolean {
   if (!instance.slot) return true;
   return periods.find((p) => p.id === instance.slot?.periodId)?.native_window === true;
+}
+
+/** Deepest filter path remembered: the topic plus three levels (`MAX_FILTER_LEVELS` of config.py). */
+export const MAX_FILTER_LEVELS = 4;
+
+/**
+ * The filter path stored in `localStorage` (`filter`): `snow`, or every level
+ * joined with `/` (`mood/on-site/freerider`). Values saved before the whole
+ * path was kept are a level-1 id, read the same way. Unknown or stale items
+ * (a slot already over) are dropped by `filterState`.
+ */
+export function readFilterPath(value: string | null): string[] {
+  return (value ?? '').split('/').filter(Boolean).slice(0, MAX_FILTER_LEVELS);
+}
+
+/** The value stored for a filter path. */
+export function writeFilterPath(path: string[]): string {
+  return path.slice(0, MAX_FILTER_LEVELS).join('/');
 }
 
 /**

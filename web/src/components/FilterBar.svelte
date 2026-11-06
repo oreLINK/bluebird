@@ -23,7 +23,7 @@
     removable?: boolean;
     name: Filter['name'];
     icon?: string | null;
-    /** `rewind`: Christmas-red chip (config/filters.yaml `theme`). */
+    /** `rewind`: Christmas-red chip; `mood`: moving multicolour text and border (config/filters.yaml `theme`). */
     theme?: Filter['theme'];
   }
 </script>
@@ -116,6 +116,7 @@
       type="button"
       class="chip"
       class:rewind={option.theme === 'rewind'}
+      class:mood={option.theme === 'mood'}
       class:removable={option.removable}
       aria-pressed={option.pressed}
       aria-label={option.removable
@@ -230,6 +231,137 @@
 
   .chip.rewind[aria-pressed='true'] :global(svg) {
     color: inherit;
+  }
+
+  /*
+   * Mood filter: text and border slide through the --mood-* colours from left
+   * to right, so the chip is easy to spot; filled with the darker
+   * --mood-fill-* and white text when chosen. The gradient repeats once over
+   * 200 % of the chip, so moving it by one chip width loops seamlessly.
+   * Static with reduced motion. The page background stays plain (invariant 14).
+   */
+  .chip.mood {
+    --mood-band: linear-gradient(
+      90deg,
+      var(--mood-1),
+      var(--mood-2),
+      var(--mood-3),
+      var(--mood-4),
+      var(--mood-5),
+      var(--mood-1),
+      var(--mood-2),
+      var(--mood-3),
+      var(--mood-4),
+      var(--mood-5),
+      var(--mood-1)
+    );
+    border-color: transparent;
+    background:
+      linear-gradient(var(--surface), var(--surface)) padding-box,
+      var(--mood-band) border-box;
+    background-size:
+      100% 100%,
+      200% 100%;
+    animation: mood-slide 4s linear infinite;
+  }
+
+  .chip.mood span {
+    background: var(--mood-band);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: mood-text 4s linear infinite;
+  }
+
+  .chip.mood :global(svg) {
+    animation: mood-icon 4s linear infinite;
+  }
+
+  .chip.mood[aria-pressed='true'] {
+    --mood-band: linear-gradient(
+      90deg,
+      var(--mood-fill-1),
+      var(--mood-fill-2),
+      var(--mood-fill-3),
+      var(--mood-fill-4),
+      var(--mood-fill-5),
+      var(--mood-fill-1),
+      var(--mood-fill-2),
+      var(--mood-fill-3),
+      var(--mood-fill-4),
+      var(--mood-fill-5),
+      var(--mood-fill-1)
+    );
+    background: var(--mood-band);
+    background-size: 200% 100%;
+    color: var(--on-mood);
+    animation: mood-text 4s linear infinite;
+  }
+
+  .chip.mood[aria-pressed='true'] span {
+    background: none;
+    color: inherit;
+    animation: none;
+  }
+
+  .chip.mood[aria-pressed='true'] :global(svg) {
+    color: inherit;
+    animation: none;
+  }
+
+  /* Left to right: the image starts one chip width to the left and slides right. */
+  @keyframes mood-slide {
+    from {
+      background-position:
+        0 0,
+        100% 0;
+    }
+    to {
+      background-position:
+        0 0,
+        0% 0;
+    }
+  }
+
+  @keyframes mood-text {
+    from {
+      background-position: 100% 0;
+    }
+    to {
+      background-position: 0% 0;
+    }
+  }
+
+  @keyframes mood-icon {
+    0%,
+    100% {
+      color: var(--mood-1);
+    }
+    20% {
+      color: var(--mood-2);
+    }
+    40% {
+      color: var(--mood-3);
+    }
+    60% {
+      color: var(--mood-4);
+    }
+    80% {
+      color: var(--mood-5);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .chip.mood,
+    .chip.mood span,
+    .chip.mood :global(svg) {
+      animation: none;
+    }
+
+    .chip.mood :global(svg) {
+      color: var(--mood-1);
+    }
   }
 
   /* Chosen filter: the × after the text says a tap removes it. */
