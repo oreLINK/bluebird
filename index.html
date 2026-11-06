@@ -15,8 +15,15 @@
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <title>Bluebird</title>
-    <script type="module" crossorigin src="./assets/index-D0QDJv29.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-DR8xAnUT.css">
+    <!-- Remembered appearance (lib/theme.ts), applied before the first paint. -->
+    <script>
+      try {
+        var t = localStorage.getItem('bluebird:theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
+    <script type="module" crossorigin src="./assets/index-D6ao_4ID.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-B-5XCnVc.css">
   </head>
   <body>
     <div id="app"></div>
