@@ -468,9 +468,11 @@ archive does not include it), on a coarser grid of about 7 km.
   during the day (from 9 am), pink and violet at dusk (from 5 pm), deep blue
   at night (from 8 pm). The browser tab icon and the home-screen icon always
   show the daytime orange lens.
-- Banner photos of the ski areas (photos are added progressively; an
-  illustration is shown until then). Each photo is credited on the back of
-  its tile and in the legal notice.
+- Winter photos of the ski areas under free licences, mostly from Wikimedia
+  Commons: 15 of the 18 resorts have two or three; Porté-Puymorens,
+  Ascou-Pailhères and Le Mourtis show an illustration until a free winter
+  photo is found. Each photo is credited on the back of its tile and in the
+  legal notice.
 - A short footer: the GitHub logo (link to the project's source code) and
   small links to **About**, **Legal notice** and **Privacy**. Each opens as
   a full-screen page over a blurred background, sliding up from the bottom;
@@ -491,6 +493,10 @@ archive does not include it), on a coarser grid of about 7 km.
 - **A page per resort**: the same tiles for a single resort, with its own
   values instead of a ranking, topped by one sentence summing up its day
   ("Demain, grand beau après 20 cm").
+- **Tile effects**: a light animation between the picture and the text of
+  a tile. Some stay on, like snow falling on the Snow tiles; others play
+  once, like a glint of sun across the Bluebird day tile when it comes into
+  view. None for people who reduce motion on their phone.
 - **Odds that move**: an arrow ↑ or ↓ on each odds button when the
   probability rose or fell since the previous update, like the odds of a
   betting app.

@@ -744,8 +744,10 @@ then `uv run bluebird schemas` and `npm run gen:types`.
 ### Add a banner photo
 
 > [!NOTE]
-> Photos are found with [Openverse](https://openverse.org/fr) and are free to
-> reuse under their licence (CC0, public domain, CC BY, CC BY-SA). Check the
+> Photos are found with [Openverse](https://openverse.org/fr) or directly on
+> Wikimedia Commons (its main source; its API is easier to script, see
+> CONTEXT.md §8) and are free to reuse under their licence (CC0, public
+> domain, CC BY, CC BY-SA). Check the
 > licence and author on the source page, never use an ND licence (resizing
 > is a modification), and prefer winter photos with snow. Details in
 > [web/src/assets/photos/README.md](web/src/assets/photos/README.md#where-photos-come-from).
@@ -1379,6 +1381,7 @@ AGENTS.md §4; scraping must respect the site's terms).
 | Avalanche bulletin (BRA) | Danger level per massif, archive for Rewind/All Time | Météo-France API (key) or public XML/PDF archive | 🔴 |
 | School holidays | Crowd index, "holiday luck" Rewind | Open data school calendar (education.gouv) | 🟡 |
 | Probability calibration | "Our success rate" (Brier score, reliability diagram) | The day-to-day history per station per KPI (see "Yesterday's verdict") vs observed snow | 🟢/🟡 |
+| Tile effects | A layer between the tile's background (photo or illustration) and its text. **Permanent** effects loop as long as the tile is shown, e.g. falling snow on the Snow tiles; **flash** effects play once, e.g. a sun glint across the Bluebird day tile, only when the visitor actually sees the tile on screen (and again on a later view) | A tile field `effect: { name, mode: permanent \| flash }` (or a default per KPI), one CSS/SVG or canvas component per effect in an effect registry, laid between `BannerMedia` and the content (`z-index`), pointer-events off. Flash effects start from an `IntersectionObserver` (e.g. 60 % of the tile visible), at most once per view; permanent ones pause off screen and when the card is turned over. Static or off with `prefers-reduced-motion`; transform/opacity only; text keeps ≥ 4.5:1 over the effect (TILES.md §9). Inside the tile only: the page background stays plain (CONTEXT.md invariant 14). Works with "Animated KPI banners", which replace the illustration itself | 🟢 |
 | Odds that move | An arrow ↑ / ↓ on each odds button when the probability rose or fell since the previous refresh, like moving odds in betting apps | Values of the previous refresh of the same ski day, already restored by `scripts/ci/fetch-gh-pages-data.sh`; a `previous` probability (or a `delta`) per ranking entry in the diamond payload (`schema_version` bump) | 🟢 |
 | Calendar alerts | Subscribe in any calendar app to a station or KPI feed: an event "Journée bluebird probable demain à Cauterets (78 %)" when a probability passes a threshold | The `publish` job writes static `.ics` feeds on `gh-pages` (one per station, one per KPI), updated every refresh; no server, no push service | 🟢 |
 | My resorts | A star on stations, kept on the device, and a "Mes stations" chip in the place bar | Preference in `localStorage`; a place level kind narrowing every view like a zone (`viewFor(…, only)`) | 🟢 |
