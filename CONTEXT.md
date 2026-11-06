@@ -42,15 +42,21 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
   line above the tiles reads "Saison 2025/2026". Shown only under its
   Christmas-red filter, the first level-1 chip (no levels, never on the home page). Rewind tiles are not split by period.
 - The UI mimics a sports-betting page: one tile per live KPI and period (tile
-  templates in `tiles.yaml` are expanded per period, "Neige {period}"),
-  stations ranked by descending probability. A tile disappears when its
+  templates in `tiles.yaml` are expanded per period; the title stays "Neige"
+  and a **time badge** names the period: a small rectangular ticket with
+  short labels per language, "Dem. | Matin": day cell in the dark colour of
+  the day (`--when-*`: today, tonight, tomorrow), moment cell soft in the
+  colour of the period `tone` (morning, midday, afternoon, evening, night:
+  `--tone-*`); a whole day shows the day alone ("Auj."), today's night "Cette
+  nuit" alone; the tile back repeats it with the exact date), stations ranked by descending
+  probability. A tile disappears when its
   period ends. Tiles are classified on three axes in `tiles.yaml`: `scope`
   (`ranking` today; `station`, one resort, planned), `format` (`full`,
   `banner`, `compact`) and `visual` (`scene`, `photo`; `webcam` as a
   background planned); live or Rewind comes from the KPI `kind`. A tile
   `webcam` rule (first scope: bluebird day + summit webcam, Cauterets) shows a
-  red LIVE badge linking the leading station's webcam page (Skaping) while
-  today's period is in progress; the image is never shown (rights). A full-window page (`#status`, linked from the footer) shows the service status of the last refresh. Style: design "Nuit étoilée" (TILES.md §9, the
+  red LIVE badge (under the time badge) linking the leading station's webcam
+  page (Skaping) while today's period is in progress; the image is never shown (rights). A full-window page (`#status`, linked from the footer) shows the service status of the last refresh. Style: design "Nuit étoilée" (TILES.md §9, the
   reference for any tile design): betting-app layout in midnight blue and
   electric blue, glass cards, odds buttons and chips (Liquid Glass, opaque
   fallback), radius 24px, no stripes, sober plain background, no background
@@ -98,7 +104,7 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 | `TILES.md`, `docs/tiles/render.mjs`, `docs/tiles/*.svg` | The tile axes (scope, format, visual, kind), corner badges, fields and the inventory of every tile, with one mockup per value. Kept up to date with every tile change (AGENTS.md §1); the inventory and totals are checked by `web/src/lib/tilesDoc.test.ts`. The SVGs are **generated** by `node docs/tiles/render.mjs` (same mockup and example data for all; edit the script, never the SVGs). |
 | `CLAUDE.md` | Imports `AGENTS.md` and `CONTEXT.md` for Claude Code. |
 | `config/filters.yaml` | Level-1 chips of the filter bar, their `levels` (`group`, `day`, `slot`) and sub-categories `groups` (every KPI of a filter in exactly one); KPIs opt in with `filters: [id]` in `kpis.yaml`. Chip labels of the levels: `days` and period `chip` in `periods.yaml`. |
-| `config/periods.yaml` | `day_start` (06:00), `horizon_days`, periods (time slots covering the ski day + `day` with `native_window`) and their labels per day. Day-grain periods (`native_window`): `day`, `sunset` (06:00–22:00), `overnight` (06:00 → 06:00). |
+| `config/periods.yaml` | `day_start` (06:00), `horizon_days`, `days` (day chips), `badge_days` / `badge_tonight` (day cell of the time badge: short label + day tone), periods (time slots covering the ski day + `day` with `native_window`) with their labels per day (the period written out), `chip`, `badge` (short moment cell of the time badge; none for the whole day) and `tone` (its colour). Day-grain periods (`native_window`): `day`, `sunset` (06:00–22:00), `overnight` (06:00 → 06:00). |
 | `config/rewinds.yaml` | Rewinds: season `start`/`end` (local days, included), massifs, historical KPIs, its level-1 filter (no levels). |
 | `config/rewind/<id>/<massif>.hourly.parquet`, `.json` | **Generated** by `bluebird rewind`, committed via PR: the season hour by hour (silver `season_hourly`) and the ranked payload the site bundles. Never edit by hand. |
 | `config/pages.yaml` | Footer (GitHub repository link, page links) and full-window pages (about, legal notice, privacy) with `{fr, en, es}` sections and built-in blocks. |
@@ -134,10 +140,11 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 | `web/src/components/ServiceStatus.svelte`, `StaleBadge.svelte` | `service_*` blocks of the "Service status" page (`config/pages.yaml`, rendered by `InfoPage`); "data from HH:MM" badge on tiles with values of an earlier refresh. |
 | `web/src/lib/i18n/` | `core.ts` (pure: `LOCALES`, `LOCALE_NAMES`, `LOCALE_FLAGS`, `localizedFrom`, `sameInAll`), `i18n.svelte.ts` (reactive store), `fr.json`, `en.json`, `es.json`. |
 | `web/src/lib/generated/` | **Generated** TS types (`npm run gen:types`). Never edit by hand. |
-| `web/src/tiles/registry.ts` | Tile `format` → Svelte component (`xyz` → `TileXyz.svelte`, tested), `skeletonVariant`, `tileRows`, `TileProps` (with the optional `webcam`). |
+| `web/src/tiles/registry.ts` | Tile `format` → Svelte component (`xyz` → `TileXyz.svelte`, tested), `skeletonVariant`, `tileRows`, `TileProps` (with the optional `webcam` and `time`). |
+| `web/src/tiles/TimeBadge.svelte` | Time badge of live tiles (1.375rem): day cell (`--when-<tone>`, white) + soft moment cell (`--tone-<tone>-*`, icon `TONE_ICONS`; tinted glass on an image), or the day alone (whole day, "Cette nuit"); `aria-hidden` (the title carries the period in a visually hidden span). First in the corner stack of `full`/`banner`, on the badge row of `compact`, and in the "Quand ?" section of `KpiBack` (with the exact date from `slotDates`). |
 | `web/src/tiles/TileBanner.svelte` | Type `banner`: banner (photo or illustration), top stations as odds buttons, "see all". |
 | `web/src/tiles/TileFull.svelte` | Format `full`: photo or illustration fills the card behind title and odds. |
-| `web/src/tiles/TileCompact.svelte` | Format `compact`: banner tile without image (title without icon, compact odds, "see all"), half a banner tile (`--tile-compact-h`), so two stack beside a banner tile on wide screens. |
+| `web/src/tiles/TileCompact.svelte` | Format `compact`: banner tile without image (badge row level with "?": time badge or Rewind / stale; title without icon, compact odds, "see all"), half a banner tile (`--tile-compact-h`, 151px), so two stack beside a banner tile on wide screens. |
 | `web/src/lib/webcams.ts`, `web/src/components/WebcamBadge.svelte` | Pure, tested: `liveWebcam(tile, view, now, stationWebcams)` (tile `webcam` rule: period in progress, leading station's webcam at one of `positions`, probability ≥ `min_probability`); the LIVE badge, a real `<a>` (new tab) in the top left corner of `full`/`banner` tiles, `--live-bg`/`--on-live` tokens. `stationWebcams` comes from `lib/config.ts` (`webcams` of the stations files). |
 | `web/src/lib/kpiView.ts` | **One view of a KPI for every tile**: `liveView` (after the KPI `display`: percent, median value with band note, or levels; confidence, details) / `historicalView` (Rewind values, bars vs best), `viewFor()` (App), `itemLabel`, `rewindOfKpi`. Tiles never read payloads directly. |
 | `web/src/tiles/tileModel.ts`, `OddsRow.svelte`, `RankingMore.svelte`, `StationRow.svelte`, `summary.ts` | Shared by every tile format and both kinds: top/rest, photo (`visual: photo`), odds/details (live only), empty message, badge, theme (`TILE_THEMES`, from the Rewind's filter). Odds buttons show reliability dots for live KPIs; the open list has a "see less" button at its top and bottom. |
@@ -155,13 +162,13 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 | `web/src/lib/filterLevels.ts` | Pure, tested: `filterState(path, …)` → chips, tiles and tile instances of the filter path (home = `homeTiles`: `layout.yaml` `home` in priority order), `LEVEL_KINDS` (`group`, `day`, `slot`: options + match; a single group is skipped), `isDayGrain` (grain rule: day-grain tiles until a slot is chosen), `nextPath` (tap = choose, tap a chosen chip = remove it and the levels after). Only level 1 is stored in `localStorage`. |
 | `web/src/lib/geoLevels.ts` | Pure, tested: `geoState(path, massifs, siteStations, siteDomains, fallback)` → chips of the massif bar (massif, zone skipped below two, linked area with 2+ stations), the massif shown and the station subset (`null` = all) passed to `viewFor(…, only)`; `readGeoPath` (preference `geo`, migrated from `massif`).; French zones first, foreign ones after with `flagOf` (ISO code → flag emoji). `stationCountries` (`lib/config.ts`) feeds the flag of `shortName` in `lib/kpiView.ts`. |
 | `web/src/components/Sheet.svelte`, `web/src/lib/sheets.svelte.ts` | Generic full-window sheet (Liquid Glass, close ×, rises from the bottom) and its router (`#<id>` in the URL, back gesture closes). Reuse them for any future over-page. |
-| `web/src/components/InfoPage.svelte`, `LocalData.svelte`, `AppFooter.svelte` | A `pages.yaml` page in a `Sheet` (blocks `data_sources`, `photo_credits`, `local_data`, `service_*`); `local_data` (privacy page) lists the `localStorage` preferences (`PREF_KEYS`, `storedPrefs` in `lib/prefs.ts`) and deletes them (`clearPrefs`: only `bluebird:` keys), then reloads; footer with the GitHub logo and page links. A new preference key goes in `PREF_KEYS`, its label in `LocalData.svelte` (`localData.*` strings) and the privacy page text. |
+| `web/src/components/InfoPage.svelte`, `LocalData.svelte`, `TileGuide.svelte`, `AppFooter.svelte` | A `pages.yaml` page in a `Sheet` (blocks `data_sources`, `photo_credits`, `local_data`, `tile_front` / `tile_back` / `time_badges`, `service_*`); `TileGuide` (page `guide`, "Lire une tuile") draws an example front (marks 1–8) and back (marks 1–9) from the real tile parts and lists every time badge (`timeLegend`), the marks being explained by the numbered paragraphs of `front-marks` / `back-marks` (a pytest checks the counts: change both together); `local_data` (privacy page) lists the `localStorage` preferences (`PREF_KEYS`, `storedPrefs` in `lib/prefs.ts`) and deletes them (`clearPrefs`: only `bluebird:` keys), then reloads; footer with the GitHub logo and page links. A new preference key goes in `PREF_KEYS`, its label in `LocalData.svelte` (`localData.*` strings) and the privacy page text. |
 | `web/src/components/ForecastStatus.svelte` | Plain text above the tiles: data date (day of `generated_at` in the massif timezone) and update time; with a Rewind filter, the season period. |
 | `web/src/tiles/TileShell.svelte`, `TileSkeleton.svelte` | Plain card shown in development for an unknown tile format; loading placeholder shaped like each tile format (`skeletonVariant`: full, banner, compact). |
 | `web/src/tiles/StationRow.svelte`, `StationDetails.svelte` | Shared station row (rank, name + reliability dots, bar, pill) and details panel. With `details` false (default) rows and odds boxes are static `div`s with `data-no-flip`. |
 | `web/src/components/BannerArt.svelte` | Static SVG banner scenes (`snowfall`, `piste`, `offpiste`, `mountain`). |
 | `web/src/lib/ranking.ts` | Pure ranking helpers: `sharedWindow`, `splitTop`, `reliability`. |
-| `web/src/styles/` | `tokens.css` (role colour tokens light/dark, fonts `--font-sans`/`--font-display`/`--font-logo`, `--display-weight`/`--display-tracking`, glass `--glass-edge`/`--glass-hi`/`--card-bg`, radii), `base.css` (page, `.card` glass card, tile sizes, odds glass tokens `--odds-glass`/`--odds-overlay-*`, tile themes), `glass.css` (header). Specified in TILES.md §9. |
+| `web/src/styles/` | `tokens.css` (role colour tokens light/dark, fonts `--font-sans`/`--font-display`/`--font-logo`, `--display-weight`/`--display-tracking`, glass `--glass-edge`/`--glass-hi`/`--card-bg`, radii, time badge `--when-<tone>`, `--tone-<tone>-bg/-text/-vivid` and `--ticket-glass*`), `base.css` (page, `.card` glass card, tile sizes (`--tile-front-h` 23rem, `--tile-banner-h` 13rem, compact 151px), odds glass tokens `--odds-glass`/`--odds-overlay-*`, tile themes), `glass.css` (header). Specified in TILES.md §9. |
 | `web/public/data/diamond/` | Demo data for local dev only, produced by `uv run bluebird demo`. |
 | `scripts/ci/publish-gh-pages.sh` | The only way anything is written to `gh-pages` (used by workflows). |
 | `scripts/ci/fetch-gh-pages-data.sh` | Read-only: restores published `data/` (gold, diamond) into a storage folder for the fallback and the status. |
@@ -294,12 +301,18 @@ with `scripts/ci/fetch-gh-pages-data.sh` before computing (fallback).
     `generated_at`. Period instance key: `period_id@ski_day`. Time slots in
     `periods.yaml` must tile the ski day (validated). A period is shown until
     its end, by the pipeline (published periods) and by the site (clock).
-21. **Tiles are templates.** A tile title must contain `{period}`; the site
-    expands each tile into one instance per period with a unique DOM id
-    (`<tile>--<period>-<ski_day>`); its `KpiView` is built for that period
-    (`liveView(kpi, payload, slot)`, `stale` when the values are older than
-    the payload). Tiles of historical KPIs have no `{period}` and are shown
-    once. **Grain rule:** above the slot filter level only instances of
+21. **Tiles are templates.** A tile title never contains the period
+    (`{period}` is refused by `bluebird validate`); the site expands each
+    tile into one instance per period with a unique DOM id
+    (`<tile>--<period>-<ski_day>`) and a `TileTime` (`slotTime` in
+    `lib/periods.ts`: day, moment, tone, offset, label) drawn as the time
+    badge; its `KpiView` is built for that period (`liveView(kpi, payload,
+    slot)`, `stale` when the values are older than the payload). Every period
+    with a moment has a short `badge` and its `tone`; `badge_days` /
+    `badge_tonight` give the day cell. Where no badge is
+    drawn (accessible names, status page), `instanceTitle` writes the title
+    with the period ("Neige demain matin"). Tiles of historical KPIs have no
+    time badge and are shown once. **Grain rule:** above the slot filter level only instances of
     day-grain periods (`native_window`) are shown, so every live KPI needs
     a day-grain period (`day`, `sunset` or `overnight`); time-slot instances
     only appear once a slot chip is chosen (`isDayGrain`).
@@ -376,8 +389,8 @@ npm run dev
 | Add a massif | `config/massifs.yaml` (with its `zones`), new `config/stations/<id>.yaml`, optional `layout.yaml` override | `bluebird reference --massif <id>`, `bluebird validate`, `bluebird demo` |
 | Add reference data | `bronze/extractor_<x>.py`, `silver/transformer_<x>.py` with `reference_suffix`, `reference_file`, `read_reference`; source with `schedule: reference` | `bluebird reference`, `pytest`, commit `config/reference/` |
 | Add a source | `bronze/extractor_<x>.py` (one grouped request if the API allows), `silver/transformer_<x>.py`, `config/sources.yaml` (+ attribution), tests | `bluebird validate`, `pytest` |
-| Add a KPI | `gold/aggregator_<x>.py` (live: `compute(ctx, ref, period)`), PROJECT.md "Available indicators", README.md "Tiles on the site", `config/kpis.yaml` (name, description, `method` with `{param}` placeholders, params, drivers, filters, `periods` for live KPIs, including a day-grain one (`day`, with `day_or_slot` for KPIs that also have slots), `display`: percent / value / levels), `config/tiles.yaml` (live: title with `{period}`), its group in `config/filters.yaml`, `config/layout.yaml`, tests, TILES.md §7 | `bluebird validate`, `pytest`, `bluebird demo` |
-| Add a period | `config/periods.yaml` (slot + labels per day; keep slots tiling the day), `periods` of the KPIs | `bluebird validate`, `pytest`, `bluebird demo` |
+| Add a KPI | `gold/aggregator_<x>.py` (live: `compute(ctx, ref, period)`), PROJECT.md "Available indicators", README.md "Tiles on the site", `config/kpis.yaml` (name, description, `method` with `{param}` placeholders, params, drivers, filters, `periods` for live KPIs, including a day-grain one (`day`, with `day_or_slot` for KPIs that also have slots), `display`: percent / value / levels), `config/tiles.yaml` (title without the period), its group in `config/filters.yaml`, `config/layout.yaml`, tests, TILES.md §7 | `bluebird validate`, `pytest`, `bluebird demo` |
+| Add a period | `config/periods.yaml` (slot + labels per day + short `badge` and `tone`, none for a whole-day period; keep slots tiling the day), `periods` of the KPIs | `bluebird validate`, `pytest`, `bluebird demo` |
 | Add a tile format | TILES.md (§2, a picture in `docs/tiles/render.mjs`, §7), README.md "Tiles on the site" when used, `web/src/tiles/Tile<Xyz>.svelte`, `web/src/tiles/registry.ts` (id `xyz` + `skeletonVariant` + `tileRows`), `TileFormat` in `config.py`, `config/tiles.yaml` (`format: xyz`) | `bluebird schemas`, `npm run gen:types`, `npm run check`, `npm test`, 390 px screenshots |
 | Link a station webcam | TILES.md §5/§7, `webcams` of the station in `config/stations/<massif>.yaml` (`position`, `provider`, official `url`), tile `webcam: { positions, min_probability }` (live `full`/`banner` only) | `bluebird validate`, `npm test`, 390 px screenshot with a frozen clock (the badge only shows while the period is in progress) |
 | Change the diamond shape | `diamond/models.py`, displayer, frontend usage | `bluebird schemas`, `npm run gen:types`, `bluebird demo`, all tests |
@@ -599,6 +612,17 @@ npm run dev
 - **SVG mockups and quotes.** An `aria-label` with unescaped `"` makes the
   whole SVG invalid and GitHub shows a broken image; `render.mjs` escapes
   quotes (`esc`). Check the files with `xmllint --noout docs/tiles/*.svg`.
+- **Accents clipped in small capitals.** A label with `line-height: 1` and
+  `overflow: hidden` (for the ellipsis) cuts the accents of capitals: the
+  time badge showed "MAN." for "MAÑ.". Keep `line-height` ≥ 1.3 on any
+  clipped uppercase label (`TimeBadge.svelte` `.text`).
+- **Room in a compact tile.** `--tile-compact-h` is a fixed height with
+  `overflow: hidden`: everything stacked in it (badge row, title, odds and
+  their bars) must fit, or the bars are clipped silently. The time badge
+  row needed +28px, hence `--tile-front-h` 23rem (the formula then gives
+  151px); compact titles stay on one line (a smaller font when long), since
+  two lines no longer fit. Check `getBoundingClientRect()` heights of the
+  `.slot`s (416 / 199 px at 390 px) after any change to a tile part.
 - **Tile option `photo` is gone.** It is rejected by `bluebird validate`
   (use `visual: photo`); `compact` tiles reject `visual` and `webcam`.
 
@@ -639,7 +663,9 @@ features, their feasibility and the planned tile ordering algorithm
 (`rankTiles`, `ordering` in `layout.yaml`) in README.md "Future features".
 Periods are ready for longer horizons: weekend and week periods (needs
 `horizon_days`/period kinds beyond today and tomorrow, and more forecast
-days, then a `week` filter level kind).
+days, then a `week` filter level kind); the time badge then needs two
+more day tones in `DayTone` (`config.py`) and `--when-*` tokens: week-end
+(bronze) and next week (slate), as drawn in TILES.md §9.
 Animated KPI banners (README.md "Roadmap"): when `visual: photo` finds no
 free photo, `BannerArt.svelte` would animate a scene per KPI (falling snow,
 sun rays, fog, stars…) in SVG/CSS, inside the banner only (invariant 14:
@@ -657,6 +683,11 @@ passes excluded) precomputed by `bluebird reference` and committed as
 reference data; the site tests the browser position against them locally,
 never sends or stores it, and narrows views with `viewFor(…, only)`
 (invariant 24). No routing API at runtime.
+Planned human KPI texts (README.md "Roadmap"): question-style
+descriptions, tips and word verdicts per value band, a plain method summary
+beside the technical `method` (folded on the back), human reliability
+wording and friendlier back labels; new `{fr, en, es}` KPI fields validated
+against the params, plus a voice guide. Open: tu or vous, humour level.
 Planned tile effects (README.md "Roadmap"): a layer between a tile's
 background and its text, `permanent` (looping, e.g. falling snow on Snow
 tiles; paused off screen and when turned) or `flash` (once per view, started

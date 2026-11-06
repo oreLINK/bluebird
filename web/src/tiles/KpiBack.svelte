@@ -1,7 +1,9 @@
 <!--
   Back of a tile, for both KPI kinds (lib/kpiView.ts): what the KPI is, how it
   is computed (config/kpis.yaml `method`, with its params filled in), then
-    live:        the time window studied, today's reliability (from the
+    live:        when (the time badge, the period in words and its exact date:
+                 "Demain matin · Samedi 16 janvier, de 06:00 à 12:00"), the
+                 time window studied, today's reliability (from the
                  confidence of every station) and the last update;
     historical:  the season (Rewind dates) and when it was computed;
   and finally the data sources and the banner photo credit.
@@ -21,10 +23,37 @@
   } from '../lib/format';
   import { i18n } from '../lib/i18n/i18n.svelte';
   import type { KpiView } from '../lib/kpiView';
+  import { slotDates, type TileTime } from '../lib/periods';
   import type { Photo } from '../lib/photos';
+  import TimeBadge from './TimeBadge.svelte';
   import { reliability, sharedWindow } from '../lib/ranking';
 
-  let { tile, view, photo }: { tile: Tile; view: KpiView; photo?: Photo } = $props();
+  let {
+    tile,
+    view,
+    photo,
+    time = null,
+  }: { tile: Tile; view: KpiView; photo?: Photo; time?: TileTime | null } = $props();
+
+  const capitalize = (text: string) => text.charAt(0).toLocaleUpperCase(i18n.locale) + text.slice(1);
+  /** The exact date of the period shown, in words. */
+  const when = $derived.by(() => {
+    if (view.kind !== 'live' || !view.slot) return '';
+    const dates = slotDates(view.slot, view.timezone);
+    const date = formatLongDate(dates.date, i18n.locale);
+    if (dates.kind === 'day') return capitalize(i18n.t('back.whenDay', { date }));
+    if (dates.kind === 'night') {
+      return capitalize(i18n.t('back.whenNight', { date, next: formatLongDate(dates.next, i18n.locale) }));
+    }
+    if (dates.kind === 'date') return capitalize(i18n.t('back.whenDate', { date }));
+    return capitalize(
+      i18n.t('back.whenSlot', {
+        date,
+        start: formatTime(dates.start, i18n.locale, view.timezone),
+        end: formatTime(dates.end, i18n.locale, view.timezone),
+      }),
+    );
+  });
 
   const kpi = $derived(view.kpi);
   const ranking = $derived(view.kind === 'live' ? view.ranking : []);
@@ -53,6 +82,18 @@
     <h4>{i18n.t('back.what')}</h4>
     <p class="strong">{i18n.pick(kpi.description)}</p>
   </section>
+
+  {#if time && when}
+    <section>
+      <h4>{i18n.t('back.when')}</h4>
+      <p class="when">
+        <TimeBadge {time} />
+        <strong>{capitalize(i18n.pick(time.label))}</strong>
+      </p>
+      <p class="strong">{when}</p>
+      <p class="help">{i18n.t('back.whenHelp')}</p>
+    </section>
+  {/if}
 
   {#if view.kind === 'historical'}
     <section>
@@ -178,6 +219,14 @@
   }
 
   .strong {
+    color: var(--ink);
+  }
+
+  .when {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
     color: var(--ink);
   }
 

@@ -4,6 +4,8 @@
     data_sources   attribution of every enabled source (config/sources.yaml)
     photo_credits  credit of every banner photo (assets/photos/credits.yaml)
     local_data     settings stored on the device, with a button to delete them
+    tile_front, tile_back, time_badges
+                   examples of the page "Lire une tuile" (TileGuide.svelte)
     service_*      status of the last refresh (ServiceStatus.svelte)
   Open while `#<page id>` is in the URL (lib/sheets.svelte.ts).
 -->
@@ -15,6 +17,7 @@
   import LocalData from './LocalData.svelte';
   import ServiceStatus, { type ServiceBlock, type ServiceContext } from './ServiceStatus.svelte';
   import Sheet from './Sheet.svelte';
+  import TileGuide from './TileGuide.svelte';
 
   let { page, service }: { page: Page; service: ServiceContext } = $props();
 
@@ -65,6 +68,12 @@
         {/if}
       {:else if section.block === 'local_data'}
         <LocalData />
+      {:else if section.block === 'tile_front'}
+        <TileGuide part="front" />
+      {:else if section.block === 'tile_back'}
+        <TileGuide part="back" />
+      {:else if section.block === 'time_badges'}
+        <TileGuide part="badges" />
       {:else if section.block?.startsWith('service_')}
         <ServiceStatus block={section.block as ServiceBlock} context={service} />
       {/if}

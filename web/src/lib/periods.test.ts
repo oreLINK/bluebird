@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import type { Kpi, ResolvedTile, Tile } from './config';
 import type { MassifDaily } from './data';
@@ -14,6 +16,11 @@ import {
   referenceDay,
   skiDayAt,
   slotLabel,
+  slotDates,
+  slotTime,
+  timeLegend,
+  tileTitle,
+  TONE_ICONS,
 } from './periods';
 
 const name = { fr: 'Neige', en: 'Snow', es: 'Snow' };
@@ -135,16 +142,78 @@ describe('periods', () => {
     expect(slotLabel(morning!, late)?.fr).toBe('ce matin');
   });
 
-  it('fills the {period} placeholder, or appends the label to the KPI name', () => {
+  it('titles a tile without its period, and writes the period out on demand', () => {
     const label = { fr: 'ce soir', en: 'this evening', es: 'esta noche' };
-    const titled = tile('t', snowKpi, { fr: 'Chute {period}', en: 'Fall {period}', es: 'Caída {period}' });
+    const titled = tile('t', snowKpi, { fr: 'Chute', en: 'Fall', es: 'Caída' });
+    expect(tileTitle(titled.tile, titled.kpis).fr).toBe('Chute');
     expect(instanceTitle(titled.tile, titled.kpis, label)).toEqual({
       fr: 'Chute ce soir',
       en: 'Fall this evening',
       es: 'Caída esta noche',
     });
     const plain = tile('t', snowKpi);
+    expect(tileTitle(plain.tile, plain.kpis).en).toBe('Snow');
     expect(instanceTitle(plain.tile, plain.kpis, label).en).toBe('Snow this evening');
+  });
+
+  it('builds the time badge of a slot: day, moment and their colours', () => {
+    const at1830 = ms(at(D, '18:30'));
+    const [evening, night, day, morning] = payloadSlots(payload, at1830);
+    const refDay = referenceDay(payload, at1830);
+    expect(slotTime(evening!, refDay)).toEqual({
+      day: { fr: 'Auj.', en: 'Today', es: 'Hoy' },
+      when: 'today',
+      moment: { fr: 'Soir', en: 'Eve', es: 'Noche' },
+      tone: 'evening',
+      offset: 0,
+      label: { fr: 'ce soir', en: 'this evening', es: 'esta noche' },
+    });
+    // Tonight: one cell, no moment.
+    expect(slotTime(night!, refDay)).toMatchObject({
+      day: { fr: 'Cette nuit' },
+      when: 'tonight',
+      moment: null,
+      tone: null,
+    });
+    // A whole day: the day alone.
+    expect(slotTime(day!, refDay)).toMatchObject({ day: { fr: 'Dem.' }, when: 'tomorrow', moment: null });
+    expect(slotTime(morning!, refDay)).toMatchObject({
+      when: 'tomorrow',
+      moment: { fr: 'Matin', en: 'AM' },
+      tone: 'morning',
+    });
+  });
+
+  it('dates a slot for the tile back, in the massif time zone', () => {
+    const at1830 = ms(at(D, '18:30'));
+    const [evening, night, day, morning] = payloadSlots(payload, at1830);
+    expect(slotDates(day!, 'Europe/Paris')).toEqual({ kind: 'day', date: T });
+    expect(slotDates(evening!, 'Europe/Paris')).toMatchObject({ kind: 'slot', date: D });
+    // The night slot of the 14th runs after midnight: its calendar day is the 15th.
+    expect(slotDates(night!, 'Europe/Paris')).toMatchObject({ kind: 'slot', date: T });
+    expect(slotDates(morning!, 'Europe/Paris')).toMatchObject({ kind: 'slot', date: T });
+    const overnight = { ...day!, periodId: 'overnight', skiDay: D };
+    expect(slotDates(overnight, 'Europe/Paris')).toEqual({ kind: 'night', date: D, next: T });
+  });
+
+  it('lists every time badge for the guide page, from the config', () => {
+    const { days, moments } = timeLegend();
+    expect(days.map((d) => [d.time.day.fr, d.name.fr])).toEqual([
+      ['Auj.', "Aujourd'hui"],
+      ['Cette nuit', 'Cette nuit'],
+      ['Dem.', 'Demain'],
+    ]);
+    expect(days.map((d) => d.time.when)).toEqual(['today', 'tonight', 'tomorrow']);
+    expect(moments.map((m) => m.time.tone)).toEqual(['morning', 'midday', 'afternoon', 'evening', 'night']);
+    expect(moments[0]).toMatchObject({ name: { fr: 'Matin' }, hours: ['06:00', '12:00'] });
+  });
+
+  it('gives every moment a tone with an icon', () => {
+    const icons = readFileSync(fileURLToPath(new URL('../components/Icon.svelte', import.meta.url)), 'utf8');
+    for (const period of periodsFile.periods.filter((p) => p.badge)) {
+      expect(period.tone).toBeTruthy();
+      expect(icons).toContain(`name === '${TONE_ICONS[period.tone!]}'`);
+    }
   });
 
   it('expands each tile into one tile per period, in time then layout order', () => {
@@ -158,7 +227,9 @@ describe('periods', () => {
       'snow_tile--morning-2026-12-15',
     ]);
     const powder = tiles[3]!;
-    expect(powder.tile.title?.fr).toBe('Poudreuse demain matin');
+    expect(powder.tile.title?.fr).toBe('Poudreuse');
+    expect(powder.time?.label.fr).toBe('demain matin');
+    expect(powder.time?.moment?.fr).toBe('Matin');
     const powderView = liveView(powderKpi, payload, powder.slot);
     expect(powderView.stale).toBe(true); // computed at 12:07, payload at 18:07
     expect(powderView.forecastDate).toBe(T);

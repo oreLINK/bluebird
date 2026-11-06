@@ -10,6 +10,13 @@
 #                                       (config/sources.yaml)
 #                        photo_credits  credit of every banner photo
 #                                       (web/src/assets/photos/credits.yaml)
+#                        local_data     settings stored on the device and a
+#                                       button to delete them
+#                        tile_front,    an example tile (front or back) with
+#                        tile_back      numbered marks, explained by the
+#                                       numbered paragraphs of the next section
+#                        time_badges    every tile time badge: days, then
+#                                       moments (config/periods.yaml)
 #                        service_summary, service_sources, service_transforms,
 #                        service_kpis, service_tiles
 #                                       status of the last refresh
@@ -18,10 +25,10 @@
 #                                       transformation, indicator and tile of
 #                                       the current mountain range
 #
-# Write long texts with the `>-` folded style, one {fr, en} pair per paragraph.
+# Write long texts with the `>-` folded style, one {fr, en, es} set per paragraph.
 footer:
   repository: https://github.com/oreLINK/bluebird
-  pages: [about, status, legal, privacy]
+  pages: [about, guide, status, legal, privacy]
 
 pages:
   - id: about
@@ -96,6 +103,269 @@ pages:
           en: Data sources
           es: Fuentes de datos
         block: data_sources
+
+  - id: guide
+    title:
+      fr: Lire une tuile
+      en: Reading a tile
+      es: Cómo leer una tarjeta
+    sections:
+      - id: intro
+        title:
+          fr: Une tuile, une question
+          en: One tile, one question
+          es: Una tarjeta, una pregunta
+        paragraphs:
+          - fr: >-
+              Chaque tuile répond à une question pour un moment précis : va-t-il
+              neiger ce matin, y aura-t-il de la poudreuse demain ? Les stations y
+              sont classées de la plus favorable à la moins favorable, comme les
+              cotes d'un match sur un site de paris.
+            en: >-
+              Each tile answers one question for one moment: will it snow this
+              morning, will there be powder tomorrow? Resorts are ranked from the
+              most to the least favourable, like the odds of a match on a betting
+              site.
+            es: >-
+              Cada tarjeta responde a una pregunta para un momento concreto:
+              ¿nevará esta mañana?, ¿habrá nieve polvo mañana? Las estaciones se
+              ordenan de la más favorable a la menos favorable, como las cuotas de
+              un partido en una web de apuestas.
+          - fr: >-
+              Touchez « ? » pour retourner la tuile et lire son verso, puis « × »
+              pour revenir.
+            en: >-
+              Tap "?" to turn the tile over and read its back, then "×" to come
+              back.
+            es: >-
+              Toca «?» para dar la vuelta a la tarjeta y leer su reverso, y «×»
+              para volver.
+      - id: front
+        title:
+          fr: Le recto
+          en: The front
+          es: El anverso
+        paragraphs:
+          - fr: Les numéros renvoient à la liste ci-dessous.
+            en: The numbers refer to the list below.
+            es: Los números remiten a la lista de abajo.
+        block: tile_front
+      - id: front-marks
+        title:
+          fr: Ce que montre le recto
+          en: What the front shows
+          es: Lo que muestra el anverso
+        paragraphs:
+          - fr: >-
+              1. La pastille temporelle : le jour et le moment de la journée de ces
+              prévisions (détails plus bas).
+            en: >-
+              1. The time badge: the day and the moment of the day of these
+              forecasts (details below).
+            es: >-
+              1. La etiqueta de tiempo: el día y el momento del día de estas
+              previsiones (detalles más abajo).
+          - fr: >-
+              2. LIVE : la webcam de la station en tête, à regarder en direct
+              pendant le créneau (nouvel onglet). D'autres badges peuvent prendre
+              cette place : REWIND sur les bilans de saison, ou « Données de
+              06:00 » quand les valeurs viennent d'une mise à jour plus ancienne.
+            en: >-
+              2. LIVE: the webcam of the leading resort, to watch live during the
+              slot (new tab). Other badges can take this place: REWIND on season
+              reviews, or "Data from 06:00" when the values come from an earlier
+              update.
+            es: >-
+              2. LIVE: la webcam de la estación en cabeza, para verla en directo
+              durante la franja (nueva pestaña). Otras etiquetas pueden ocupar
+              este lugar: REWIND en los balances de temporada, o «Datos de las
+              06:00» cuando los valores vienen de una actualización anterior.
+          - fr: >-
+              3. « ? » retourne la tuile pour voir comment l'indicateur est
+              calculé.
+            en: >-
+              3. "?" turns the tile over to see how the indicator is computed.
+            es: >-
+              3. «?» da la vuelta a la tarjeta para ver cómo se calcula el
+              indicador.
+          - fr: >-
+              4. Le titre : ce qui est estimé (neige, poudreuse, grand soleil…).
+            en: >-
+              4. The title: what is estimated (snow, powder, full sun…).
+            es: >-
+              4. El título: lo que se estima (nieve, nieve polvo, pleno sol…).
+          - fr: >-
+              5. Les trois meilleures stations, comme des boutons de cote : leur
+              nom et leur valeur. Selon l'indicateur, la valeur est une
+              probabilité (82 %), une quantité probable (18 cm, 9 h) ou un verdict
+              (Oui, Possible, Non).
+            en: >-
+              5. The three best resorts, as odds buttons: their name and their
+              value. Depending on the indicator, the value is a probability
+              (82 %), a likely amount (18 cm, 9 h) or a verdict (Yes, Possible,
+              No).
+            es: >-
+              5. Las tres mejores estaciones, como botones de cuota: su nombre y
+              su valor. Según el indicador, el valor es una probabilidad (82 %),
+              una cantidad probable (18 cm, 9 h) o un veredicto (Sí, Posible,
+              No).
+          - fr: >-
+              6. La fiabilité, en trois points : plus il y a de points pleins,
+              plus les scénarios de prévision sont d'accord entre eux.
+            en: >-
+              6. Reliability, in three dots: the more filled dots, the more the
+              forecast scenarios agree with each other.
+            es: >-
+              6. La fiabilidad, en tres puntos: cuantos más puntos llenos, más
+              coinciden entre sí los escenarios de previsión.
+          - fr: >-
+              7. La barre montre la même valeur d'un coup d'œil : plus elle est
+              longue, meilleures sont les chances.
+            en: >-
+              7. The bar shows the same value at a glance: the longer it is, the
+              better the chances.
+            es: >-
+              7. La barra muestra el mismo valor de un vistazo: cuanto más larga,
+              mejores son las probabilidades.
+          - fr: >-
+              8. « Voir les stations » déplie le classement complet, avec la
+              fiabilité de chaque station.
+            en: >-
+              8. "See all resorts" opens the full ranking, with the reliability of
+              each resort.
+            es: >-
+              8. «Ver las estaciones» despliega la clasificación completa, con la
+              fiabilidad de cada estación.
+      - id: time-badge
+        title:
+          fr: La pastille temporelle
+          en: The time badge
+          es: La etiqueta de tiempo
+        paragraphs:
+          - fr: >-
+              La case de gauche donne le jour, dans sa couleur sombre ; celle de
+              droite le moment de la journée, dans une couleur claire, avec une
+              icône. Une tuile qui couvre toute la journée n'affiche que le jour,
+              et celles de la nuit qui vient affichent « Cette nuit ». Le verso
+              redonne la date exacte et les heures.
+            en: >-
+              The left box gives the day, in its dark colour; the right box the
+              moment of the day, in a light colour, with an icon. A tile for the
+              whole day only shows the day, and tiles for the coming night show
+              "Tonight". The back gives the exact date and hours.
+            es: >-
+              La casilla de la izquierda indica el día, en su color oscuro; la de
+              la derecha, el momento del día, en un color claro y con un icono.
+              Una tarjeta de todo el día solo muestra el día, y las de la noche
+              que llega muestran «Esta noche». El reverso indica la fecha y las
+              horas exactas.
+        block: time_badges
+      - id: formats
+        title:
+          fr: Trois tailles
+          en: Three sizes
+          es: Tres tamaños
+        paragraphs:
+          - fr: >-
+              Les grandes tuiles montrent une photo de la station en tête (ou un
+              dessin), sur toute la carte ou en bandeau. Les tuiles compactes,
+              sans image, servent aux indicateurs plus bas dans la page. Toutes se
+              lisent de la même façon.
+            en: >-
+              Large tiles show a photo of the leading resort (or a drawing),
+              across the whole card or as a band. Compact tiles, without a
+              picture, are used for the indicators lower on the page. All of them
+              read the same way.
+            es: >-
+              Las tarjetas grandes muestran una foto de la estación en cabeza (o
+              un dibujo), en toda la tarjeta o en una franja. Las tarjetas
+              compactas, sin imagen, sirven para los indicadores más abajo en la
+              página. Todas se leen de la misma manera.
+      - id: back
+        title:
+          fr: Le verso
+          en: The back
+          es: El reverso
+        paragraphs:
+          - fr: Les numéros renvoient à la liste ci-dessous.
+            en: The numbers refer to the list below.
+            es: Los números remiten a la lista de abajo.
+        block: tile_back
+      - id: back-marks
+        title:
+          fr: Ce que dit le verso
+          en: What the back says
+          es: Lo que dice el reverso
+        paragraphs:
+          - fr: "1. Ce que ça mesure : la question à laquelle répond l'indicateur."
+            en: "1. What it measures: the question the indicator answers."
+            es: "1. Qué mide: la pregunta a la que responde el indicador."
+          - fr: >-
+              2. Quand ? : la pastille temporelle, la période en toutes lettres et
+              sa date exacte, avec les heures.
+            en: >-
+              2. When?: the time badge, the period in words and its exact date,
+              with the hours.
+            es: >-
+              2. ¿Cuándo?: la etiqueta de tiempo, el periodo en palabras y su
+              fecha exacta, con las horas.
+          - fr: >-
+              3. Période étudiée : les heures prises en compte par le calcul (par
+              exemple 08:00 → 17:00 pour la neige de la journée).
+            en: >-
+              3. Time window: the hours the computation looks at (for example
+              08:00 → 17:00 for the snow of the day).
+            es: >-
+              3. Franja horaria: las horas que tiene en cuenta el cálculo (por
+              ejemplo 08:00 → 17:00 para la nieve del día).
+          - fr: >-
+              4. Comment c'est calculé : la règle appliquée à chaque scénario de
+              prévision, avec ses seuils.
+            en: >-
+              4. How it is computed: the rule applied to every forecast scenario,
+              with its thresholds.
+            es: >-
+              4. Cómo se calcula: la regla aplicada a cada escenario de previsión,
+              con sus umbrales.
+          - fr: >-
+              5. Fiabilité sur ce créneau : l'accord entre les scénarios, pour
+              l'ensemble des stations.
+            en: >-
+              5. Reliability for this time slot: how much the scenarios agree,
+              over all the resorts.
+            es: >-
+              5. Fiabilidad para esta franja: cuánto coinciden los escenarios, en
+              el conjunto de las estaciones.
+          - fr: "6. Mise à jour : le jour et l'heure du calcul."
+            en: "6. Last update: the day and time of the computation."
+            es: "6. Última actualización: el día y la hora del cálculo."
+          - fr: "7. Sources : d'où viennent les données."
+            en: "7. Sources: where the data comes from."
+            es: "7. Fuentes: de dónde vienen los datos."
+          - fr: "8. Crédit photo : l'auteur et la licence de la photo du recto."
+            en: "8. Photo credit: the author and licence of the front photo."
+            es: "8. Crédito de la foto: el autor y la licencia de la foto del anverso."
+          - fr: "9. « × » revient au recto ; toucher le verso fait de même."
+            en: "9. \"×\" goes back to the front; tapping the back does the same."
+            es: "9. «×» vuelve al anverso; tocar el reverso hace lo mismo."
+      - id: rewind
+        title:
+          fr: Les tuiles Rewind
+          en: Rewind tiles
+          es: Las tarjetas Rewind
+        paragraphs:
+          - fr: >-
+              Sous le filtre rouge Rewind, les tuiles font le bilan d'une saison
+              terminée : des valeurs mesurées (4,43 m de neige, 46 h de chute), en
+              rouge, sans pastille temporelle ni points de fiabilité.
+            en: >-
+              Under the red Rewind filter, tiles review a closed season: measured
+              values (4.43 m of snow, 46 h of snowfall), in red, without a time
+              badge or reliability dots.
+            es: >-
+              Con el filtro rojo Rewind, las tarjetas hacen balance de una
+              temporada terminada: valores medidos (4,43 m de nieve, 46 h de
+              nevada), en rojo, sin etiqueta de tiempo ni puntos de fiabilidad.
 
   - id: legal
     title:

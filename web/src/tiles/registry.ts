@@ -22,6 +22,7 @@
 import type { Component } from 'svelte';
 import type { Kpi, Tile } from '../lib/config';
 import type { KpiView } from '../lib/kpiView';
+import type { TileTime } from '../lib/periods';
 import type { LiveWebcam } from '../lib/webcams';
 import TileBanner from './TileBanner.svelte';
 import TileCompact from './TileCompact.svelte';
@@ -34,6 +35,8 @@ export interface TileProps {
   view: KpiView;
   /** Live webcam link of the leading station, when the tile's `webcam` rule holds. */
   webcam?: LiveWebcam | null;
+  /** Time badge ("Demain | Matin") of a tile of live KPIs; `null` for a Rewind. */
+  time?: TileTime | null;
 }
 
 export const TILE_COMPONENTS: Record<string, Component<TileProps>> = {

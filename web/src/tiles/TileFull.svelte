@@ -4,8 +4,8 @@
   the odds buttons and the "see all" bar are laid over it (the "live match"
   card of betting apps). The rest of the ranking opens below the image, on
   the card surface. Same options, same collapsed size
-  and same back (KpiBack) as `banner`, and the same corner badges (LIVE
-  webcam link, Rewind, data from HH:MM).
+  and same back (KpiBack) as `banner`, and the same corner badges, stacked:
+  time badge, then LIVE webcam link, Rewind or data from HH:MM.
 -->
 <script lang="ts">
   import BannerMedia from '../components/BannerMedia.svelte';
@@ -19,13 +19,16 @@
   import RankingMore from './RankingMore.svelte';
   import type { TileProps } from './registry';
   import TileBadge from './TileBadge.svelte';
+  import TimeBadge from './TimeBadge.svelte';
   import { tileModel } from './tileModel';
 
-  let { tile, view, webcam = null }: TileProps = $props();
+  let { tile, view, webcam = null, time = null }: TileProps = $props();
 
   const model = $derived(tileModel(tile, view));
   const title = $derived(i18n.pick(tile.title ?? view.kpi.name));
-  /** Longer titles ("… demain après-midi") get a smaller font, on up to two lines. */
+  /** The period in words, for screen readers (the time badge is hidden from them). */
+  const period = $derived(time ? i18n.pick(time.label) : '');
+  /** Longer titles ("Poudreuse sur piste") get a smaller font, on up to two lines. */
   const LONG_TITLE = 24;
 
   let selected = $state<string | null>(null);
@@ -45,8 +48,9 @@
         photo={model.photo}
       />
       <div class="shade" aria-hidden="true"></div>
-      {#if webcam || model.badge || model.staleSince}
+      {#if time || webcam || model.badge || model.staleSince}
         <span class="badge-slot">
+          {#if time}<TimeBadge {time} onImage />{/if}
           {#if webcam}<WebcamBadge live={webcam} station={shortName(view, webcam.stationId)} />{/if}
           {#if model.badge}
             <TileBadge label={i18n.pick(model.badge)} icon="rewind" />
@@ -57,13 +61,15 @@
       {/if}
 
       <div class="hero-content">
-        <h2 id="{tile.id}-title" class:long={title.length > LONG_TITLE}>{title}</h2>
+        <h2 id="{tile.id}-title" class:long={title.length > LONG_TITLE}>
+          {title}{#if period}<span class="visually-hidden"> {period}</span>{/if}
+        </h2>
         {#if model.items.length === 0}
           <p class="sub">{i18n.t(model.emptyMessage)}</p>
         {:else}
           <OddsRow
             tileId={tile.id}
-            label={title}
+            label={period ? `${title} ${period}` : title}
             top={model.top}
             {selected}
             onselect={toggle}
@@ -94,7 +100,7 @@
   {/snippet}
 
   {#snippet back()}
-    <KpiBack {tile} {view} photo={model.photo} />
+    <KpiBack {tile} {view} {time} photo={model.photo} />
   {/snippet}
 </FlipCard>
 
@@ -129,14 +135,15 @@
     );
   }
 
+  /* top 17px: the time badge (1.375rem) is centred on the "?" button. */
   .badge-slot {
     position: absolute;
-    top: 14px;
+    top: 17px;
     left: 12px;
     right: 56px; /* clear of the "?" button */
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
+    flex-direction: column; /* time badge first, LIVE / Rewind / stale under it */
+    align-items: flex-start;
     gap: 6px;
   }
 
