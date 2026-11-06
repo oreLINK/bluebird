@@ -420,6 +420,13 @@ npm run dev
 - **SVG gradient ids.** Several inline SVGs on one page share the document's id
   space; a fixed `id="sky"` makes every banner use the first one. Prefix ids
   with `$props.id()` (see `BannerArt.svelte`).
+- **`backface-visibility` and glass.** Mobile browsers (Safari above all)
+  ignore `backface-visibility: hidden` on faces whose content has a
+  `backdrop-filter`: turning a tile showed the front text reversed.
+  `FlipCard` no longer relies on it: the faces swap with a `visibility`
+  transition delayed by half the flip, and the rotation uses a symmetric
+  easing so half the time is exactly 90°. Keep both together (and no
+  transition with reduced motion, or the delay leaves a blank card).
 - **Dots on a photo.** On `full` tiles the odds buttons are white glass on a
   dark image: filled dots in `--prob-high` (blue) vanish there. `OddsRow`
   sets `--dot-on: currentColor` and `--dot-off` at 35 % on `.overlay`; any

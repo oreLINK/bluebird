@@ -1027,7 +1027,9 @@ the data is unavailable.
   its params filled in), the reliability for its period, the last update, the
   data sources and the photo credit. The "×" button, or a tap on the back,
   turns it back; the hidden side is inert. Each face has its own glass card,
-  so it turns with the card.
+  so it turns with the card. The faces swap at mid-turn (a delayed
+  `visibility` switch with a symmetric easing), so neither side is ever
+  seen reversed, even on phones that ignore `backface-visibility`.
 - **Equal sizes**: `full` and `banner` tiles share `--tile-banner-h`, `--tile-front-h` and
   `--tile-more-h` (`styles/base.css`); `compact` tiles the shorter
   `--tile-compact-h`, computed so that two of them plus `--tile-gap` are

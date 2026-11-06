@@ -390,7 +390,9 @@ A theme may make the buttons solid: the Rewind theme sets `--odds-glass:
 
 ### Motion and states
 
-- Turning a card: 0.55s; none with `prefers-reduced-motion`.
+- Turning a card: 0.55s with a symmetric easing; the faces swap at mid-turn
+  (card edge-on), so text is never seen reversed; none with
+  `prefers-reduced-motion`.
 - Tiles arrive and leave with the `arrive` / `leave` transitions; nothing else
   moves, and never the page background.
 - Chosen odds button: `--pill-active-bg` / `--pill-active-ink`, solid.

@@ -6,8 +6,13 @@
   elements (odds buttons, station rows, "see all", links) and on station
   details. The hidden side is inert, so keyboard focus never reaches it.
   The back has the height of the front and scrolls when its content is longer.
-  Each face carries its own card frame (with the striped top corners), so the
-  frame turns with the card and its corners always match the card edges.
+  Each face carries its own glass card, so the card turns with it and its
+  corners always match the card edges.
+  Mirror-free turn: the faces swap at mid-turn (card edge-on), by a delayed
+  `visibility` switch timed with a symmetric easing, instead of relying on
+  `backface-visibility`, which mobile browsers ignore on glass surfaces
+  (`backdrop-filter`): the reversed front text never shows, in either
+  direction.
   `plain`: the front has no image behind the "?" button (TileCompact), which
   then takes the plain style of the back's "×" button.
   `theme`: colour theme of the card (token overrides `[data-tile-theme]` in
@@ -114,23 +119,38 @@
 
 <style>
   .flip-card {
+    --flip-duration: 0.55s;
     perspective: 1600px;
   }
 
+  /* Symmetric easing: half the time = half the turn (90°, edge-on). */
   .flipper {
     position: relative;
     transform-style: preserve-3d;
-    transition: transform 0.55s cubic-bezier(0.2, 0.75, 0.25, 1);
+    transition: transform var(--flip-duration) cubic-bezier(0.45, 0, 0.55, 1);
   }
 
   .flipper.flipped {
     transform: rotateY(180deg);
   }
 
+  /* The faces swap exactly at mid-turn, both ways: the hidden one is never
+     drawn, even where backface-visibility is ignored (glass surfaces). */
   .face {
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
     cursor: pointer;
+    transition: visibility 0s linear calc(var(--flip-duration) / 2);
+  }
+
+  .front,
+  .flipped .back {
+    visibility: visible;
+  }
+
+  .back,
+  .flipped .front {
+    visibility: hidden;
   }
 
   /* Same box as the front, turned to face backwards. */
@@ -200,7 +220,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .flipper {
+    .flipper,
+    .face {
       transition: none;
     }
   }
