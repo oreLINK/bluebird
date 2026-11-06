@@ -296,6 +296,8 @@ before it is built.
 | **Rain at the resort** ⭐ | 6 h | Everyone | Chance of rain up to the summit, making a wet day and heavy snow. |
 | **Snow on the ground** ⭐ | 6 h | Everyone | How deep the snow is on the slopes today, and whether it is building up or melting. |
 | **Snow in the village** | 6 h | Village | Chance that the resort village wakes up white tomorrow (sledging, postcard views). |
+| **Rain-snow line** ⭐ | 6 h | Everyone | At which altitude snow turns to rain today and tomorrow, estimated from the temperatures at mid-altitude and at the summit. |
+| **Snow that lasts** | 6 h | Everyone | Will the fresh snow survive the next 24 hours, with no thaw or rain right after it? |
 | **Powder days** ⭐ | Season | Alpine skiing, snowshoeing | Days with 20 cm or more of new snow in 24 hours. |
 | **Biggest storm** | Season | Everyone | The largest snowfall over 72 hours, with its dates. |
 | **Natural snow season** | Season | Everyone | First and last day with at least 30 cm of snow on the ground, and the number of days in between. |
@@ -303,6 +305,8 @@ before it is built.
 | **Rain days at the resort** | Season | Everyone | Days of rain up to the summit in mid-season. |
 | **Snow cannon nights** | Season | Alpine skiing | Nights cold and dry enough to make snow. |
 | **Slopes vs off-piste gap** | Season | Alpine skiing | Resorts where the terrain around the slopes got much more snow than the slopes. |
+| **Best week** | Season | Everyone | The week of the season when you had to be there, per resort. |
+| **First and last snow** | Season | Everyone | The dates of the season's first and last snowfall at each resort. |
 | **This season in history** ⭐ | History | Everyone | Where the current season ranks since 1950 ("the 12th snowiest"), updated every day. |
 | **Climate trend** ⭐ | History | Everyone | How the number of snow days changes per decade at each resort. |
 | **Snow reliability** | History | Everyone | Share of seasons with at least 100 days of enough snow: useful to choose a season pass. |
@@ -318,6 +322,8 @@ before it is built.
 | Indicator | When | For | Question |
 |---|---|---|---|
 | **Wax of the day** | 6 h | Cross-country skiing | Snow temperature and humidity on the tracks, to choose the right wax. |
+| **Off-piste crust** | 6 h | Off-piste, touring | Rain or a thaw then a refreeze: a breakable crust off-piste ("Hard snow" only covers the groomed slopes). |
+| **Supportive snow** | 6 h | Snowshoeing, touring | Snow that carries your weight, or snow you sink into. |
 | **Coldest morning and freeze-thaw days** | Season | Everyone | The season's coldest morning and the number of spring-snow days. |
 
 #### ☀️ Sky
@@ -326,6 +332,9 @@ before it is built.
 |---|---|---|---|
 | **Sea of clouds** ⭐ | 6 h | Everyone | Chance that the top of the resort is in the sun above a sea of clouds while the valley stays grey. |
 | **Best time slot** | 6 h | Everyone | The best hours of the day per resort, combining visibility, sun and wind. |
+| **Summit in the clouds** ⭐ | 6 h | Alpine skiing | The top of the ski area is in the cloud while mid-altitude is clear: better stay on the lower slopes. |
+| **Full moon night** | 6 h | Snowshoeing, touring | Full moon and a clear sky for a night outing. |
+| **Sunrise** | 6 h | Touring, snowshoeing | A visible sunrise from the top, for dawn outings. |
 | **Sunniest resort** ⭐ | Season | Everyone | Which resort got the most sunshine over the season (the sunlight is already stored)? |
 | **Bluebird days** ⭐ | Season | Everyone | How many bluebird days each resort had. |
 | **Sunset evenings** | Season | Everyone | How many evenings offered a visible sunset from the ski area. |
@@ -344,6 +353,8 @@ before it is built.
 | Indicator | When | For | Question |
 |---|---|---|---|
 | **Expected crowds** | 6 h | Everyone | Crowd index from school holidays by zone, weekends and good weather. |
+| **Chains on the way back** | 6 h | Everyone | Snow on the access road at the end of the day, for the drive home ("Chains needed" looks at the morning). |
+| **Black ice** ⭐ | 6 h | Everyone | Rain falling on frozen ground: slippery roads and slopes. |
 | **Lifts stopped by wind** | Season | Alpine skiing | Days when the wind would have closed the top lifts. |
 | **Chain days** | Season | Everyone | Mornings when chains would have been needed on the access road. |
 | **Holiday luck** | Season | Everyone | Which school-holiday zone (A, B or C) had the best conditions. |
@@ -478,7 +489,23 @@ archive does not include it), on a coarser grid of about 7 km.
   It needs the agreement of the webcam's owner: until then, the tile only
   links to the webcam.
 - **A page per resort**: the same tiles for a single resort, with its own
-  values instead of a ranking.
+  values instead of a ranking, topped by one sentence summing up its day
+  ("Demain, grand beau après 20 cm").
+- **Odds that move**: an arrow ↑ or ↓ on each odds button when the
+  probability rose or fell since the previous update, like the odds of a
+  betting app.
+- **Calendar alerts**: subscribe in your calendar app to a resort or an
+  indicator, and get an event such as "Journée bluebird probable demain à
+  Cauterets (78 %)".
+- **My resorts**: a star on your favourite resorts, remembered on your
+  device, and a "Mes stations" button in the place line.
+- **Share a tile**: send a tile as an image, or a link that reopens the
+  same place and filters.
+- **Offline mode**: install the site on your phone; it keeps the last update
+  for when there is no network in the mountains.
+- **Yesterday's verdict**: what we forecast against what really happened
+  ("we said 12 cm, 9 cm fell"), resort by resort, kept day after day to
+  make the percentages better over time.
 - **Around me**: a first button "Autour de moi" at the far left of the place
   line. It keeps the resorts less than one hour away **by road** from where
   you are, the nearest first, and every ranking then covers only them. Road
@@ -528,7 +555,11 @@ archive does not include it), on a coarser grid of about 7 km.
   Switzerland and Italy for the Alps.
   Météo-France's avalanche massifs (Haute-Bigorre, Vanoise…) will be kept as
   data for the avalanche indicator, not as a navigation level.
-- Checking past forecasts against observed snow to make the percentages more accurate.
+- Checking past forecasts against observed snow to make the percentages more
+  accurate, from a day-to-day history of every forecast, resort by resort
+  and indicator by indicator.
+- Much later, not a priority: a connector so that AI assistants such as
+  Claude can ask Bluebird for its forecasts.
 
 ## Limits and safety
 
