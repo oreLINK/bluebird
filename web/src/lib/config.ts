@@ -21,7 +21,7 @@ import type { DiamondRewind } from './generated/diamond-rewind';
 import type { Footer, Page, PageSection, PagesFile } from './generated/pages';
 import type { Rewind, RewindsFile } from './generated/rewinds';
 import type { Attribution, Source, SourcesFile } from './generated/sources';
-import type { StationsFile } from './generated/stations';
+import type { StationsFile, Webcam } from './generated/stations';
 import type { Tile, TilesFile } from './generated/tiles';
 
 export type {
@@ -36,6 +36,7 @@ export type {
   Rewind,
   Source,
   Tile,
+  Webcam,
 };
 
 /** Enabled massifs, sorted by `order` then id. */
@@ -182,6 +183,20 @@ export const stationNames: Map<string, string> = new Map(
     return file.stations.map((s): [string, string] => [`${massifId}/${s.id}`, s.name]);
   }),
 );
+
+/** Webcams by `<massif_id>/<station_id>`, for stations that have some. */
+export function webcamsOf(files: Record<string, StationsFile>): Map<string, Webcam[]> {
+  return new Map(
+    Object.entries(files).flatMap(([path, file]) => {
+      const massifId = path.split('/').at(-1)?.replace(/\.yaml$/, '') ?? '';
+      return file.stations
+        .filter((s) => s.enabled !== false && (s.webcams?.length ?? 0) > 0)
+        .map((s): [string, Webcam[]] => [`${massifId}/${s.id}`, s.webcams ?? []]);
+    }),
+  );
+}
+
+export const stationWebcams: Map<string, Webcam[]> = webcamsOf(stationFiles);
 
 /** A station of the site with its place in the geography (massif, zone, linked area). */
 export interface SiteStation {

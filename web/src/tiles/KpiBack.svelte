@@ -205,9 +205,9 @@
   h3 {
     margin: 0;
     font-family: var(--font-display);
+    letter-spacing: var(--display-tracking);
     font-size: 1.625rem;
-    font-style: italic;
-    font-weight: 800;
+    font-weight: var(--display-weight);
     line-height: 1.1;
     color: var(--ink);
   }
@@ -237,9 +237,9 @@
 
   .meter strong {
     font-family: var(--font-display);
+    letter-spacing: var(--display-tracking);
     font-size: 1.375rem;
-    font-style: italic;
-    font-weight: 800;
+    font-weight: var(--display-weight);
     text-transform: capitalize;
   }
 

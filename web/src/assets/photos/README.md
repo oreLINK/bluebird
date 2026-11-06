@@ -1,6 +1,6 @@
 # Photos
 
-Photos shown in the banner of `banner` and `banner_full` tiles, bundled by
+Photos shown in the image of `full` and `banner` tiles, bundled by
 Vite at build time (hashed file names, no runtime lookup).
 
 ```
@@ -12,11 +12,13 @@ photos/
         └── <station_id>_2.webp
 ```
 
-| Tile option (`config/tiles.yaml`) | Photo used |
+| Tile field (`config/tiles.yaml`) | Photo used |
 |---|---|
-| `photo: leader` | a random `<massif_id>/<station_id>/<station_id>_<n>.*` of the station ranked first (drawn once per page load) |
-| `photo: <path>` | the file at `<path>.*` (path relative to this folder, no extension) |
-| `photo: none` (default) | none: the tile shows its illustration |
+| `visual: photo` | a random `<massif_id>/<station_id>/<station_id>_<n>.*` of the station ranked first (drawn once per page load), else the illustration |
+| `visual: scene` (default) | none: the tile shows its illustration (option `scene`) |
+
+Webcam images are never bundled nor shown: a tile with a `webcam` rule only
+links the webcam's official page from a LIVE badge.
 
 - Formats: `.webp` (preferred), `.jpg`, `.jpeg`, `.png`, `.avif`.
 - Size: landscape, at least 1200 × 600 px, ideally under 300 KB.

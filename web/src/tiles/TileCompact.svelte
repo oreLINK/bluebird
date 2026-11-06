@@ -1,10 +1,10 @@
 <!--
-  Tile type `simple`: a `banner` tile without the banner, for the KPIs lower
+  Tile format `compact`: a `banner` tile without the image, for the KPIs lower
   on the page. Same width and same parts on a FlipCard, but shorter:
     Front: title (no icon), the best stations as odds buttons (OddsRow), then
            "see all" for the rest (RankingMore).
     Back:  KpiBack, like every tile.
-  Every simple tile has the same collapsed size (--tile-simple-h in base.css).
+  Every compact tile has the same collapsed size (--tile-compact-h in base.css).
   Options (config/tiles.yaml):
     top:       number of odds buttons, 1–3 (default 3)
     show_odds: also show decimal odds 1/p (default false)
@@ -92,7 +92,7 @@
     grid-template-columns: minmax(0, 1fr);
     align-content: center;
     gap: 6px;
-    height: var(--tile-simple-h);
+    height: var(--tile-compact-h);
     padding: 8px 14px 0;
     overflow: hidden;
   }
@@ -109,9 +109,9 @@
   h2 {
     overflow: hidden;
     font-family: var(--font-display);
+    letter-spacing: var(--display-tracking);
     font-size: 1.375rem;
-    font-style: italic;
-    font-weight: 800;
+    font-weight: var(--display-weight);
     line-height: 1.1;
     min-width: 0;
     white-space: nowrap;

@@ -32,18 +32,51 @@
     },
     "Tile": {
       "additionalProperties": false,
-      "description": "A KPI container displayed on the page.",
+      "description": "A KPI container displayed on the page.\n\nTiles are classified on three axes: `scope` (how many stations), `format`\n(size and layout) and `visual` (background of the image). Whether they show\nforecasts or a past season comes from the `kind` of their KPIs.",
       "properties": {
         "id": {
           "pattern": "^[a-z0-9]+(?:[_-][a-z0-9]+)*$",
           "title": "Id",
           "type": "string"
         },
-        "type": {
-          "description": "Frontend tile component id (web/src/tiles/registry.ts).",
-          "pattern": "^[a-z0-9]+(?:[_-][a-z0-9]+)*$",
-          "title": "Type",
+        "scope": {
+          "const": "ranking",
+          "default": "ranking",
+          "description": "`ranking`: every station ranked on one KPI (`station`: planned).",
+          "title": "Scope",
           "type": "string"
+        },
+        "format": {
+          "description": "`full`: the image fills the card; `banner`: image band on top; `compact`: no image, half the height of a banner tile.",
+          "enum": [
+            "full",
+            "banner",
+            "compact"
+          ],
+          "title": "Format",
+          "type": "string"
+        },
+        "visual": {
+          "default": "scene",
+          "description": "Image of a `full` or `banner` tile: `scene` (illustration, option `scene`) or `photo` (photo of the leading station, else the illustration).",
+          "enum": [
+            "scene",
+            "photo"
+          ],
+          "title": "Visual",
+          "type": "string"
+        },
+        "webcam": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TileWebcam"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Live tiles of format `full` or `banner`: a LIVE badge links the webcam of the leading station while today's period is in progress."
         },
         "kpis": {
           "items": {
@@ -102,9 +135,43 @@
       },
       "required": [
         "id",
-        "type"
+        "format"
       ],
       "title": "Tile",
+      "type": "object"
+    },
+    "TileWebcam": {
+      "additionalProperties": false,
+      "description": "When a tile links the live webcam of its leading station (today only).",
+      "properties": {
+        "positions": {
+          "description": "Webcam positions that suit the KPI, by preference (first match wins).",
+          "items": {
+            "enum": [
+              "summit",
+              "slopes",
+              "village",
+              "nordic"
+            ],
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Positions",
+          "type": "array"
+        },
+        "min_probability": {
+          "default": 0.6,
+          "description": "Probability the leading station needs for the webcam link to show.",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Min Probability",
+          "type": "number"
+        }
+      },
+      "required": [
+        "positions"
+      ],
+      "title": "TileWebcam",
       "type": "object"
     }
   },

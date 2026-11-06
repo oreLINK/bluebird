@@ -1,6 +1,6 @@
 /**
  * Everything a tile shows, derived from its configuration and a KpiView
- * (lib/kpiView.ts). Shared by every tile type, for live and historical KPIs.
+ * (lib/kpiView.ts). Shared by every tile format, for live and historical KPIs.
  */
 import { type Filter, type Tile, filters as configFilters, massifs } from '../lib/config';
 import type { Localized } from '../lib/generated/kpis';
@@ -24,6 +24,7 @@ export interface TileModel {
   details: boolean;
   scene: BannerScene;
   skyline: number[];
+  /** Photo of the leading station (`visual: photo`), else undefined: the illustration. */
   photo: Photo | undefined;
   /** Time window shared by every station (live only). */
   timeWindow: TimeWindow | null;
@@ -63,7 +64,7 @@ export function tileModel(tile: Tile, view: KpiView, filters: Filter[] = configF
     details: live && booleanOption(tile.options, 'details', false),
     scene: bannerScene(tile),
     skyline: massifs.find((m) => m.id === view.massifId)?.skyline ?? [],
-    photo: tilePhoto(stringOption(tile.options, 'photo', 'none'), view.massifId, view.items[0]?.stationId),
+    photo: tilePhoto(tile.visual === 'photo' ? 'leader' : 'none', view.massifId, view.items[0]?.stationId),
     timeWindow: live ? sharedWindow(view.ranking) : null,
     theme: tileTheme(tile, view, filters),
     badge: view.kind === 'historical' ? view.rewind.name : undefined,

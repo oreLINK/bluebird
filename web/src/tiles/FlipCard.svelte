@@ -8,7 +8,7 @@
   The back has the height of the front and scrolls when its content is longer.
   Each face carries its own card frame (with the striped top corners), so the
   frame turns with the card and its corners always match the card edges.
-  `plain`: the front has no image behind the "?" button (TileSimple), which
+  `plain`: the front has no image behind the "?" button (TileCompact), which
   then takes the plain style of the back's "×" button.
   `theme`: colour theme of the card (token overrides `[data-tile-theme]` in
   styles/base.css), e.g. `rewind` for the Rewind tiles.
@@ -133,7 +133,7 @@
     cursor: pointer;
   }
 
-  /* Same box as the front (frame padding included), turned to face backwards. */
+  /* Same box as the front, turned to face backwards. */
   .back {
     position: absolute;
     inset: 0;
@@ -167,27 +167,36 @@
     z-index: 3;
     display: grid;
     place-items: center;
-    width: 34px;
-    height: 34px;
+    width: 2.25rem;
+    height: 2.25rem;
     border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    background: var(--banner-label-bg);
+    /* Glass button on the image. */
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
     color: #ffffff;
     font-family: var(--font-display);
+    letter-spacing: var(--display-tracking);
     font-size: 1.125rem;
-    font-style: italic;
-    font-weight: 800;
+    font-weight: var(--display-weight);
     line-height: 1;
     cursor: pointer;
-    -webkit-backdrop-filter: blur(6px);
-    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
   }
 
   .back .flip-button,
   .plain .flip-button {
-    border-color: var(--line);
-    background: var(--surface-2);
-    color: var(--ink);
+    border-color: var(--pill-border);
+    background: var(--pill-bg);
+    box-shadow: none;
+    color: var(--pill-ink);
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .flip-button {
+      background: var(--banner-label-bg);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

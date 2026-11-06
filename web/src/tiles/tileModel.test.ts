@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { filters, kpis, rewindPayload, rewinds } from '../lib/config';
+import { type Tile, filters, kpis, rewindPayload, rewinds } from '../lib/config';
 import type { MassifDaily } from '../lib/data';
 import { liveView, viewFor } from '../lib/kpiView';
 import { payloadSlots } from '../lib/periods';
@@ -12,7 +12,7 @@ const demo = JSON.parse(
 
 const live = kpis.find((k) => k.id === 'offpiste_powder_chance')!;
 const historical = kpis.find((k) => k.id === 'season_total_snowfall')!;
-const tile = { id: 't', type: 'banner', kpis: ['x'] };
+const tile: Tile = { id: 't', format: 'banner', kpis: ['x'] };
 /** The first period of the KPI in the demo payload. */
 const slot = payloadSlots(demo, 0).find((s) => s.key === demo.kpis[live.id]!.periods[0]!.key)!;
 
@@ -46,6 +46,12 @@ describe('tileModel', () => {
     expect(model.showOdds).toBe(false);
     expect(model.details).toBe(false);
     expect(model.emptyMessage).toBe('rewind.noData');
+  });
+
+  it('shows the illustration unless the tile asks for a photo', () => {
+    const view = liveView(live, demo, slot);
+    expect(tileModel(tile, view).photo).toBeUndefined();
+    expect(tileModel({ ...tile, visual: 'scene' }, view).photo).toBeUndefined();
   });
 
   it('lets the tile option override the theme', () => {

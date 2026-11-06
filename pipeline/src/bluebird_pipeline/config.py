@@ -54,6 +54,18 @@ MAX_FILTER_LEVELS = 4
 """Depth of the filter bar: the topic chip (level 1) plus at most three levels."""
 
 HttpUrl = Annotated[str, StringConstraints(pattern=r"^https://\S+$")]
+
+WebcamPosition = Literal["summit", "slopes", "village", "nordic"]
+"""Where a webcam looks: top of the ski area, the slopes, the resort village, a nordic site."""
+
+TileScope = Literal["ranking"]
+"""How many stations a tile shows: `ranking` = every station on one KPI (`station` is planned)."""
+
+TileFormat = Literal["full", "banner", "compact"]
+"""Size and layout of a tile (web/src/tiles/registry.ts)."""
+
+TileVisual = Literal["scene", "photo"]
+"""Background of the image of `full` and `banner` tiles (`webcam` is planned)."""
 """Absolute https:// URL."""
 
 
@@ -166,6 +178,17 @@ class Elevation(StrictModel):
         return self.base if band == "base" else self.summit
 
 
+class Webcam(StrictModel):
+    """A live webcam of a station, linked from its tiles (the image itself is never shown)."""
+
+    id: Slug
+    name: str = Field(min_length=1, description="Place of the camera, e.g. 'Les Crêtes'.")
+    position: WebcamPosition
+    elevation: int | None = Field(default=None, ge=0, le=9000, description="Metres.")
+    provider: Literal["skaping"] = Field(description="Company that streams the webcam.")
+    url: HttpUrl = Field(description="Official page of the webcam, opened in a new tab.")
+
+
 class Station(StrictModel):
     """A ski resort."""
 
@@ -191,6 +214,17 @@ class Station(StrictModel):
     domain: Slug | None = Field(
         default=None, description="Linked ski area it belongs to (`domains` of its file)."
     )
+    webcams: list[Webcam] = Field(
+        default_factory=list, description="Live webcams, linked from the tiles (`webcam` rule)."
+    )
+
+    @field_validator("webcams")
+    @classmethod
+    def _unique_webcams(cls, value: list[Webcam]) -> list[Webcam]:
+        ids = [w.id for w in value]
+        if len(set(ids)) != len(ids):
+            raise ValueError("duplicate webcam id")
+        return value
 
 
 class StationDefaults(StrictModel):
@@ -493,11 +527,54 @@ class PeriodsFile(StrictModel):
 # -------------------------------------------------------------------- tiles/layout
 
 
+class TileWebcam(StrictModel):
+    """When a tile links the live webcam of its leading station (today only)."""
+
+    positions: list[WebcamPosition] = Field(
+        min_length=1,
+        description="Webcam positions that suit the KPI, by preference (first match wins).",
+    )
+    min_probability: float = Field(
+        default=0.6,
+        ge=0,
+        le=1,
+        description="Probability the leading station needs for the webcam link to show.",
+    )
+
+
 class Tile(StrictModel):
-    """A KPI container displayed on the page."""
+    """A KPI container displayed on the page.
+
+    Tiles are classified on three axes: `scope` (how many stations), `format`
+    (size and layout) and `visual` (background of the image). Whether they show
+    forecasts or a past season comes from the `kind` of their KPIs.
+    """
 
     id: Slug
-    type: Slug = Field(description="Frontend tile component id (web/src/tiles/registry.ts).")
+    scope: TileScope = Field(
+        default="ranking",
+        description="`ranking`: every station ranked on one KPI (`station`: planned).",
+    )
+    format: TileFormat = Field(
+        description=(
+            "`full`: the image fills the card; `banner`: image band on top; `compact`: "
+            "no image, half the height of a banner tile."
+        )
+    )
+    visual: TileVisual = Field(
+        default="scene",
+        description=(
+            "Image of a `full` or `banner` tile: `scene` (illustration, option `scene`) or "
+            "`photo` (photo of the leading station, else the illustration)."
+        ),
+    )
+    webcam: TileWebcam | None = Field(
+        default=None,
+        description=(
+            "Live tiles of format `full` or `banner`: a LIVE badge links the webcam of the "
+            "leading station while today's period is in progress."
+        ),
+    )
     kpis: list[Slug] = Field(default_factory=list)
     title: Localized | None = Field(
         default=None,
@@ -515,6 +592,17 @@ class Tile(StrictModel):
         ),
     )
     options: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _check_axes(self) -> Tile:
+        if self.format == "compact":
+            if "visual" in self.model_fields_set:
+                raise ValueError("a compact tile has no image: remove `visual`")
+            if self.webcam is not None:
+                raise ValueError("a compact tile has no image: remove `webcam`")
+        if "photo" in self.options:
+            raise ValueError("option `photo` is replaced by `visual: photo`")
+        return self
 
 
 class TilesFile(StrictModel):
@@ -948,6 +1036,8 @@ class Config:
                         )
             if not live and tile.periods:
                 errors.append(f"Rewind tile '{tile.id}' cannot list periods")
+            if not live and tile.webcam is not None:
+                errors.append(f"Rewind tile '{tile.id}' cannot link a webcam")
             kpi_periods = {p for k in self.kpis if k.id in tile.kpis for p in k.periods}
             for period_id in tile.periods or []:
                 if period_id not in kpi_periods:

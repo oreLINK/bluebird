@@ -15,6 +15,13 @@
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <title>Bluebird</title>
+    <!-- Remembered appearance (lib/theme.ts), applied before the first paint. -->
+    <script>
+      try {
+        var t = localStorage.getItem('bluebird:theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="app"></div>

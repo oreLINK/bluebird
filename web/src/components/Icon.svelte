@@ -60,6 +60,12 @@
   {:else if name === 'fog'}
     <path d="M4 8h12M7 12h13M4 16h11M8 20h8" />
     <path d="M17.5 4.5a3 3 0 0 0-5.6-1" />
+  {:else if name === 'sun-moon'}
+    <!-- Appearance "System": a sun and a moon split by a slash. -->
+    <circle cx="7.5" cy="7.5" r="2.4" />
+    <path d="M7.5 2.6v1.2M7.5 11.2v1.2M2.6 7.5h1.2M11.2 7.5h1.2M4.05 4.05l.85.85M10.1 4.9l.85-.85M4.05 10.95l.85-.85" />
+    <path d="M18.5 5.5 5.5 18.5" />
+    <path d="M21.51 18.16A4.3 4.3 0 1 1 16.44 13.09A3.6 3.6 0 0 0 21.51 18.16Z" />
   {:else if name === 'sun'}
     <circle cx="12" cy="12" r="4" />
     <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" />
@@ -76,6 +82,10 @@
     <path d="M3.5 12.5h17M7 14.5h.01M17 14.5h.01" />
   {:else if name === 'wind'}
     <path d="M3 9h11a3 3 0 1 0-3-3M3 15h15a3 3 0 1 1-3 3M3 12h7" />
+  {:else if name === 'webcam'}
+    <circle cx="12" cy="10" r="6.5" />
+    <circle cx="12" cy="10" r="2.5" />
+    <path d="M8.5 16 7 21h10l-1.5-5" />
   {:else if name === 'rewind'}
     <path d="M11.5 6 5 12l6.5 6M19.5 6 13 12l6.5 6" />
   {:else if name === 'github'}

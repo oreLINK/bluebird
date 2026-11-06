@@ -18,6 +18,7 @@
 
 [Live site](https://orelink.github.io/bluebird/) ·
 [Product overview](PROJECT.md) ·
+[Tiles](TILES.md) ·
 [AI briefing](CONTEXT.md) ·
 [Agent rules](AGENTS.md)
 
@@ -158,7 +159,7 @@ flowchart LR
 |---|---|
 | Pipeline | Python 3.12, uv, pydantic, polars, httpx, Parquet (zstd) |
 | Website | Svelte 5 (runes), TypeScript 6, Vite, `@rollup/plugin-yaml`; no UI framework (≈ 32 KB of gzipped JavaScript) |
-| Fonts | Inter (text) and Barlow Semi Condensed ExtraBold Italic (logo, titles, percentages), OFL, self-hosted with `@fontsource` |
+| Fonts | Sora (text, titles, values) and Barlow Semi Condensed ExtraBold Italic (logo only), OFL, self-hosted with `@fontsource` |
 | Quality | ruff, pytest, svelte-check, Vitest, actionlint |
 | CI/CD | GitHub Actions; site and data published on GitHub Pages (`gh-pages`) |
 
@@ -173,7 +174,9 @@ bluebird/
 ├── PROJECT.md                 # site users: purpose, features, roadmap, limits
 ├── CONTEXT.md                 # AI agents: architecture, invariants, recipes, pitfalls
 ├── AGENTS.md                  # AI agents: mandatory rules for every prompt
+├── TILES.md                   # tile axes with pictures + inventory of every tile
 ├── CLAUDE.md                  # imports AGENTS.md + CONTEXT.md for Claude Code
+├── docs/tiles/                # render.mjs → mockups of TILES.md (generated SVGs)
 ├── config/                    # human-edited configuration (single source of truth)
 │   ├── massifs.yaml
 │   ├── stations/<massif>.yaml
@@ -214,8 +217,8 @@ bluebird/
 │   │   ├── App.svelte  main.ts
 │   │   ├── lib/               # config, data loading, periods, status, i18n, formatting
 │   │   │   └── generated/     # GENERATED TypeScript types (npm run gen:types)
-│   │   ├── tiles/             # registry, tileModel, TileBanner, TileBannerFull, TileSimple, TileRanking, OddsRow…
-│   │   ├── components/        # Logo, LogoMark, AppHeader, LanguagePicker, Flag, FilterBar, ConfidenceDots, BannerArt…
+│   │   ├── tiles/             # registry, tileModel, TileFull, TileBanner, TileCompact, OddsRow…
+│   │   ├── components/        # Logo, LogoMark, AppHeader, ChoicePopup, LanguagePicker, ThemePicker, Flag, FilterBar, ConfidenceDots, BannerArt…
 │   │   ├── assets/photos/     # banner photos + credits.yaml (see its README)
 │   │   └── styles/            # tokens.css, glass.css, base.css
 │   ├── public/                # favicon.svg, apple-touch-icon.png; data/diamond/ = demo data for local development only
@@ -488,11 +491,11 @@ User-facing labels are `{fr, en, es}` objects; every language is required.
 | File | Purpose | Key fields |
 |---|---|---|
 | `massifs.yaml` | Mountain ranges of the massif bar (level 1) | `id`, `name {fr,en,es}`, `timezone`, `enabled`, `order`, `bbox`, `skyline`, `zones[]` (level 2: `id`, `name {fr,en,es}`, `country` ISO alpha-2, default FR, `code?` département number) |
-| `stations/<massif>.yaml` | Resorts of one massif | `defaults {grooming_end, lifts_open}`, `stations[]`: `id`, `name`, `short_name?` (≤ 20 chars, shown in tiles), `lat`, `lon`, `elevation {base, summit, mid?}`, `aspects`, `grooming_end?`, `lifts_open?`, `website?`, `enabled`, `zone` (required when the massif has zones), `domain?`; `domains[]` (linked ski areas, level 3: `id`, `name`) |
+| `stations/<massif>.yaml` | Resorts of one massif | `defaults {grooming_end, lifts_open}`, `stations[]`: `id`, `name`, `short_name?` (≤ 20 chars, shown in tiles), `lat`, `lon`, `elevation {base, summit, mid?}`, `aspects`, `grooming_end?`, `lifts_open?`, `website?`, `enabled`, `zone` (required when the massif has zones), `domain?`, `webcams?[]` (`id`, `name`, `position` `summit` / `slopes` / `village` / `nordic`, `elevation?`, `provider` `skaping`, `url` of the official page); `domains[]` (linked ski areas, level 3: `id`, `name`) |
 | `kpis.yaml` | KPI registry | `id`, `aggregator`, `kind` (`live` / `historical`), `display` (live: `percent` default, optional `note` driver; `value` with `driver`, `range` [p10, p90], `tolerance`, `bands`; `levels` by probability), `order` (`desc` / `asc`: lowest value first, e.g. fewest white days, coldest felt temperature), `value {unit, unit_label, unit_label_one, decimals, scale, max}` (historical; `unit_label` when the unit depends on the language, e.g. jours / days / días, `unit_label_one` its singular, chosen with the language's plural rules; `scale` converts the aggregator's unit, e.g. `0.01` for cm → m; `max` is the value of a full bar, e.g. `100` for a percentage, default the best value), `name`, `description`, `method?` (`{param}` placeholders, shown on the tile back), `params`, `drivers {key: {label, unit, decimals}}`, `filters[]`, `periods[]` (live KPIs; default `[day]`), `enabled` |
 | `periods.yaml` | Time slots of the ski day | `day_start`, `horizon_days`, `days[]` (chips of the `day` filter level: today, tomorrow), `periods[]` (time slots, and day-grain periods with `native_window`: `day`, `sunset`, `overnight`): `id`, `start`, `end`, `native_window?`, `labels[]` (one per day: today, tomorrow), `chip` (chip of the `slot` filter level, required for time slots) |
 | `filters.yaml` | Level-1 chips of the filter bar, in order | `id`, `name`, `icon?`, `theme?` (`default` / `rewind`), `levels?[]` (next levels, at most 3: `group`, `day`, `slot`; live KPIs only), `groups?[]` (sub-categories: `id`, `name`, `kpis[]`) |
-| `tiles.yaml` | KPI containers; a live tile is shown once per period | `id`, `type`, `kpis[]`, `title?` (live: must contain `{period}`; Rewind: must not), `periods?[]` (live), `icon?`, `options` (`details` turns station details on, off by default) |
+| `tiles.yaml` | KPI containers; a live tile is shown once per period | `id`, `scope` (`ranking`, default), `format` (`full` / `banner` / `compact`), `visual` (`scene` default / `photo`; not on `compact`), `webcam?` (`positions[]`, `min_probability` default 0.6; live `full`/`banner` only), `kpis[]`, `title?` (live: must contain `{period}`; Rewind: must not), `periods?[]` (live), `icon?`, `options` (`top`, `show_odds`, `scene`, `theme`; `details` turns station details on, off by default) |
 | `layout.yaml` | Home page and tile order | `home[] {tile, period}` (home page tiles in priority order, live only; first = top), `default[]`, `overrides {massif: [tiles]}` |
 | `sources.yaml` | Data sources | `id`, `extractor`, `transformer`, `schedule` (`daily` / `on_demand` / `reference` / `season`), `params`, `attribution` |
 | `rewinds.yaml` | Rewinds (closed seasons) | `id` (e.g. `2025-26`), `name`, `start`, `end` (local days, included), `massifs[]`, `kpis[]` (historical), `filter` (level-1 filter without levels) |
@@ -524,7 +527,7 @@ of the class (`ExtractorOpenMeteoEnsemble` →
 | Add a resort | [Station](#add-a-station) · [Foreign resort](#add-a-foreign-resort-spain-andorra) · [Massif](#add-a-massif) |
 | Add data | [Data source](#add-a-data-source-api-or-scraper) · [Reference source](#add-a-reference-source-slow-changing-data) · [Storage backend](#add-a-storage-backend) |
 | Add an indicator | [Live KPI](#add-a-kpi) · [Rewind](#add-a-rewind-a-closed-season) · [Historical KPI](#add-a-historical-kpi) · [Period](#add-a-period) |
-| Change the site | [Tile type](#add-a-tile-type) · [Filter](#add-a-filter-filter-bar) · [Filter level kind](#add-a-kind-of-filter-level) · [Banner photo](#add-a-banner-photo) · [Page](#add-a-page-footer-link) · [Tile order](#reorder-tiles) · [UI language](#add-a-ui-language) · [Logo](#change-the-logo) |
+| Change the site | [Tile format](#add-a-tile-format) · [Webcam link](#link-a-station-webcam) · [Filter](#add-a-filter-filter-bar) · [Filter level kind](#add-a-kind-of-filter-level) · [Banner photo](#add-a-banner-photo) · [Page](#add-a-page-footer-link) · [Tile order](#reorder-tiles) · [UI language](#add-a-ui-language) · [Logo](#change-the-logo) |
 
 ### Add a station
 
@@ -536,6 +539,7 @@ of the class (`ExtractorOpenMeteoEnsemble` →
    `domains` of the file).
 3. Create its photo folder `web/src/assets/photos/<massif>/<station_id>/`
    (with a `.gitkeep` until it has a photo; a test checks the folder exists).
+   Optionally list its `webcams` (see [Link a station webcam](#link-a-station-webcam)).
 4. `uv run bluebird reference --massif <massif>` to add its pistes and lifts.
 5. `uv run bluebird validate`.
 
@@ -645,11 +649,11 @@ the workflow).
    id in `config/layout.yaml`. The refresh workflow gets a gold job for it
    automatically.
 4. **Tests**: synthetic silver data with a known answer (see `tests/gold/`).
-5. Update [Tiles on the site](#tiles-on-the-site) and PROJECT.md "Available
-   indicators".
+5. Update [Tiles on the site](#tiles-on-the-site), TILES.md §7 and PROJECT.md
+   "Available indicators".
 
-No frontend change is needed for a KPI shown in a `banner`, `banner_full`,
-`simple` or `ranking` tile.
+No frontend change is needed for a KPI shown in a `full`, `banner` or
+`compact` tile.
 
 ### Add a Rewind (a closed season)
 
@@ -657,8 +661,8 @@ No frontend change is needed for a KPI shown in a `banner`, `banner_full`,
    `massifs`, `kpis`, `filter`).
 2. Add its filter to `config/filters.yaml` (`theme: rewind`, no `levels`),
    first in the list, and tag its historical KPIs with it.
-3. Add one tile per KPI in `config/tiles.yaml`, of any type (`banner_full`,
-   `banner`, `simple`, `ranking`, with `photo: leader` for a banner), and list
+3. Add one tile per KPI in `config/tiles.yaml`, of any format (`full`,
+   `banner`, `compact`, with `visual: photo` for an image), and list
    them in `config/layout.yaml`. The tile finds its Rewind from the KPI and
    takes the theme of the Rewind's filter: no Rewind-specific option.
 4. The day after `end`: `uv run bluebird rewind --rewind <id>` (or the *Build
@@ -689,18 +693,27 @@ No frontend change is needed for a KPI shown in a `banner`, `banner_full`,
 
 The site creates its tiles from the payload; no frontend change is needed.
 
-### Add a tile type
+### Add a tile format
 
-1. Create `web/src/tiles/TileXyz.svelte` (naming convention: type `xyz` →
+[TILES.md](TILES.md) shows every axis value with a picture. Tiles are
+classified on three axes in `config/tiles.yaml`: `scope` (how many
+stations: `ranking` today, `station` planned), `format` (size and layout:
+`full`, `banner`, `compact`) and `visual` (image of `full`/`banner` tiles:
+`scene`, `photo`; `webcam` planned). Live or Rewind comes from the KPI `kind`.
+A new format:
+
+1. Create `web/src/tiles/TileXyz.svelte` (naming convention: format `xyz` →
    `TileXyz`, checked by a test). It receives `TileProps` (`tile` with a
    unique `id` and the title of its period, `kpis`, and `view`, a `KpiView`
-   from `lib/kpiView.ts`). Wrap it in a `FlipCard` (or `TileShell` for a
-   list-style tile) and reuse `OddsRow`, `StationRow`, `RankingMore` and
+   from `lib/kpiView.ts`). Wrap it in a `FlipCard` and reuse `OddsRow`, `StationRow`, `RankingMore` and
    `tileModel`. Read options with `numberOption` / `booleanOption` /
    `stringOption` from `tiles/options.ts`.
 2. Register it in `web/src/tiles/registry.ts` under the id `xyz`, and map it
-   to a loading placeholder shape in `skeletonVariant` (same file).
-3. Use `type: xyz` in `config/tiles.yaml`.
+   to a loading placeholder shape in `skeletonVariant` (same file; unknown
+   formats fall back to the `compact` placeholder).
+3. Add `xyz` to `TileFormat` in `pipeline/src/bluebird_pipeline/config.py`,
+   run `uv run bluebird schemas` and `npm run gen:types`, then use
+   `format: xyz` in `config/tiles.yaml`.
 4. If it needs new data, add a `Displayer` in `pipeline/.../diamond/` or extend
    the diamond models, then run `uv run bluebird schemas` and `npm run gen:types`.
 
@@ -739,15 +752,34 @@ then `uv run bluebird schemas` and `npm run gen:types`.
 
 1. Find the photo on Openverse (see the note above), then put it in `web/src/assets/photos/<massif>/<station_id>/<station_id>_<n>.webp`
    (one folder per massif, then per station; files named with the station id
-   and a number, e.g. `cauterets_1.jpg`, `cauterets_2.jpg`), or any other path
-   for a fixed tile photo. Landscape, at least 1200 × 600 px, ideally
+   and a number, e.g. `cauterets_1.jpg`, `cauterets_2.jpg`). Landscape, at least 1200 × 600 px, ideally
    < 300 KB.
 2. Add its author and licence to `web/src/assets/photos/credits.yaml`
    (publication rights are required; the credit is shown at the bottom of
    the tile back and on the legal notice page, never on the banner).
-3. Set `photo: leader` (or `photo: <path>` without extension) in the tile
-   options of `config/tiles.yaml`. Without a matching photo, the tile shows
-   its illustration, so `leader` is safe even when only some stations have one.
+3. Set `visual: photo` on the tile in `config/tiles.yaml` (`full` or
+   `banner`). Without a photo of the leading station, the tile shows its
+   illustration, so `photo` is safe even when only some stations have one.
+
+### Link a station webcam
+
+A `full` or `banner` live tile can show a red LIVE badge in its top left
+corner that opens the official page of the leading station's webcam in a new
+tab. The webcam image itself is never shown or stored: resort webcams are all
+rights reserved.
+
+1. List the webcams of the station in `config/stations/<massif>.yaml`:
+   `webcams: [{ id, name, position, elevation?, provider, url }]`, with
+   `position` one of `summit`, `slopes`, `village`, `nordic` and `url` the
+   official page (Skaping today: `https://www.skaping.com/<resort>/<cam>/<view>`).
+2. Give the tile a rule: `webcam: { positions: [summit], min_probability: 0.6 }`.
+   The badge shows when the period is today's and in progress, the leading
+   station has a webcam at one of `positions` (first match wins) and its
+   probability reaches `min_probability` (`lib/webcams.ts`, tested).
+3. `uv run bluebird validate`, `npm test`.
+
+First scope: the bluebird day tile with the summit webcam (Cauterets, Les
+Crêtes).
 
 ### Add a page (footer link)
 
@@ -871,13 +903,37 @@ the data is unavailable.
   right opens `components/LanguagePicker.svelte`: a small popup under it, over
   a blurred backdrop, listing each language with its flag and its own name
   (`LOCALE_FLAGS`, `LOCALE_NAMES` in `lib/i18n/core.ts`); choosing one switches
-  the site and closes it. It locks page scrolling (`lib/scrollLock.ts`), makes
-  the page inert, focuses the current language, closes with Escape, the × or
-  the backdrop, and gives focus back to the flag button. Flags are SVG
-  (`components/Flag.svelte`, `--flag-*` tokens), not emoji, which Windows shows
-  as letters.
+  the site and closes it. Flags are SVG (`components/Flag.svelte`, `--flag-*`
+  tokens), not emoji, which Windows shows as letters.
+- **Appearance**: the button left of the flag, same look, shows the icon of
+  the current choice (sun and moon split by a slash for System, sun, moon) and opens
+  `components/ThemePicker.svelte`: System (default, follows the device),
+  Light or Dark. `lib/theme.ts` (tested) sets `data-theme` on `<html>`
+  (removed for System), which `styles/tokens.css` already honours, and makes
+  the `theme-color` metas follow a forced mode; the choice is remembered
+  (`localStorage` key `bluebird:theme`) and applied by a small inline script
+  in `index.html` before the first paint, so a forced mode never flashes.
+- **Header popups**: both use `components/ChoicePopup.svelte` (options with a
+  leading flag or icon, a check on the current one). It locks page scrolling
+  (`lib/scrollLock.ts`), makes the page inert, focuses the current option,
+  closes with Escape, the × or the backdrop, and gives focus back to the
+  button that opened it.
 
 ### Navigation: places and filters
+
+- **Compact header** (`components/AppHeader.svelte`, rule in
+  `lib/compactHeader.ts`, tested): when the page scrolls down more than 12 px
+  below the first 96 px, the massif bar and the filter bar fold away (height,
+  fade and a slight rise, about 0.35 s; instant with reduced motion) and one
+  row recalls the choices: a pill with the deepest chosen place and, when a
+  filter is chosen, a pill with its levels ("Ciel · Soleil · Demain", Rewind
+  in red), two pills at most. Scrolling up 12 px, coming back to the top, or
+  tapping that row (a button, "Show all filters") opens the bars again (with
+  the keyboard, it also focuses the chosen chip). Folded, the two pills stay on
+  one line and shorten with an ellipsis, the filter pill first. The logo and
+  the language button never move. The bars never fold under a keyboard focus
+  (`:focus-visible`), and scroll events are ignored for 420 ms after each
+  fold, since the page height changes.
 
 - **Massif bar** (place levels): under the logo, `components/FilterBar.svelte`
   driven by `lib/geoLevels.ts` (`geoState`, tested) and the bundled station
@@ -917,7 +973,10 @@ the data is unavailable.
 
 ### Tiles
 
-- **Types** (`config/tiles.yaml`, component `Tile` + PascalCase of the type):
+- **Classification** (`config/tiles.yaml`): `scope` (`ranking`: every station
+  on one KPI; `station` planned), `format` (below), `visual` (`scene` or
+  `photo`), optional `webcam` rule; live or Rewind comes from the KPI `kind`.
+- **Formats** (component `Tile` + PascalCase of the format, `tiles/registry.ts`):
   - `banner` (`TileBanner.svelte`): a banner (photo, or a static SVG
     illustration from `components/BannerArt.svelte` with scenes `snowfall`,
     `piste`, `offpiste`, `mountain` and ridges from the massif `skyline`) with
@@ -927,13 +986,17 @@ the data is unavailable.
     (`OddsRow.svelte`), and "see all" for the rest (`RankingMore.svelte`,
     rows with their reliability dots, `StationRow.svelte`; a second "see less"
     button sits between the top stations and the open list).
-  - `banner_full` (`TileBannerFull.svelte`): same content, with the photo or
-    illustration filling the whole card behind the title and odds, like the
-    "live match" cards of betting apps.
-  - `simple` (`TileSimple.svelte`): the same parts without a banner, so the
-    card is shorter; for the KPIs lower on the page. Options `top`,
+  - `full` (`TileFull.svelte`): same content, with the photo or
+    illustration filling the whole collapsed card, down to its bottom edge,
+    behind the title, the odds and the "see all" bar, like the "live match"
+    cards of betting apps; the full ranking opens below the image.
+  - `compact` (`TileCompact.svelte`): the same parts without an image, so the
+    card is half as tall; for the KPIs lower on the page. Options `top`,
     `show_odds` and `details`.
-  - `ranking` (`TileRanking.svelte`): a compact list of every station.
+  - Corner badges of `full` and `banner` tiles (top left): the red LIVE
+    webcam link (`components/WebcamBadge.svelte`, rule in `lib/webcams.ts`,
+    see [Link a station webcam](#link-a-station-webcam)), then the Rewind
+    badge or the "data from HH:MM" badge.
   - Station details (`StationDetails.svelte`: drivers, reliability,
     elevation) open on tap only with the tile option `details: true`. Off by
     default: odds boxes and rows are then static (`data-no-flip`, full summary
@@ -955,7 +1018,7 @@ the data is unavailable.
 - **Themes**: colours come from token overrides on the card
   (`[data-tile-theme]` in `styles/base.css`, set by `FlipCard theme`). A
   historical tile takes the `theme` of its Rewind's filter (`rewind`:
-  Christmas red stripes, podium and pills) and a "REWIND 25/26" badge
+  solid Christmas red odds buttons, bars and pills) and a "REWIND 25/26" badge
   (`TileBadge.svelte`); the tile option `theme` overrides it. A new theme is
   one CSS block and one value in `TILE_THEMES`.
 - **Tile back**: every tile is a `FlipCard`. The "?" button (or a tap outside
@@ -963,13 +1026,13 @@ the data is unavailable.
   what the KPI measures, the time window, how it is computed (`method` with
   its params filled in), the reliability for its period, the last update, the
   data sources and the photo credit. The "×" button, or a tap on the back,
-  turns it back; the hidden side is inert. Each face has its own card frame,
-  so the striped top corners turn with the card.
-- **Equal sizes**: banner tiles share `--tile-banner-h`, `--tile-front-h` and
-  `--tile-more-h` (`styles/base.css`); `simple` tiles the shorter
-  `--tile-simple-h`, computed so that two of them plus `--tile-gap` are
+  turns it back; the hidden side is inert. Each face has its own glass card,
+  so it turns with the card.
+- **Equal sizes**: `full` and `banner` tiles share `--tile-banner-h`, `--tile-front-h` and
+  `--tile-more-h` (`styles/base.css`); `compact` tiles the shorter
+  `--tile-compact-h`, computed so that two of them plus `--tile-gap` are
   exactly as tall as one banner tile, card frame (`--tile-frame-h`) included;
-  odds buttons `--odds-button-h` (`--odds-button-compact-h` in simple tiles).
+  odds buttons `--odds-button-h` (`--odds-button-compact-h` in compact tiles).
   Titles, names and odds buttons are clamped to fixed heights (long titles
   use a smaller font on up to two lines). Stations show their `short_name`;
   full names stay in accessible labels.
@@ -1005,17 +1068,22 @@ the data is unavailable.
 
 ### Design and accessibility
 
-- **Look**: betting-app layout (inspired by Betclic) in dark blue, light blue
-  and white, on a plain page background with no animation. Colours are role
-  tokens in `styles/tokens.css` (light and dark mode); only the sticky header
-  uses a frosted "Liquid Glass" surface (`styles/glass.css`). Cards share a
-  frame with light-blue diagonal stripes at the top corners (`.card`).
-- **Fonts**: Inter (text, chosen for its very legible digits; variable font
-  `@fontsource-variable/inter`, one file for every weight) and Barlow Semi
-  Condensed ExtraBold Italic (logo, titles, percentages,
-  `@fontsource/barlow-semi-condensed`), both OFL and self-hosted: no font CDN.
-  Imported in `src/main.ts`; tokens `--font-sans` and `--font-display`. A
-  static `@fontsource` package needs one CSS import per weight.
+- **Look**: design "Nuit étoilée" (chosen in November 2026 among 40
+  explored designs), fully specified in [TILES.md §9](TILES.md): betting-app
+  layout in midnight blue and electric blue on a plain page background with
+  no animation. Colours are role tokens in `styles/tokens.css` (light and
+  dark mode). Cards (`.card-body`), odds buttons and chips are frosted
+  "Liquid Glass" surfaces (surface at 78 %, light edge, top highlight, blur)
+  with an opaque fallback for reduced transparency; the sticky header uses
+  `styles/glass.css`. Radius 24px, no stripes. `full` tiles show their image
+  down to the bottom of the card, under the "see all" bar.
+- **Fonts**: Sora (variable font `@fontsource-variable/sora`, one file for
+  every weight: titles and values 700 with −0.02em tracking, text 400–600)
+  and Barlow Semi Condensed ExtraBold Italic for the logo wordmark only
+  (`@fontsource/barlow-semi-condensed`), both OFL and self-hosted: no font
+  CDN. Imported in `src/main.ts`; tokens `--font-sans`, `--font-display`,
+  `--font-logo`, `--display-weight`, `--display-tracking`. A static
+  `@fontsource` package needs one CSS import per weight.
 - **Motion**: changing filter makes tiles arrive "from the back" (scale, fade
   and rise, staggered), leaving tiles fade out and the others glide into place
   (`lib/transitions.ts`, `animate:flip`). Durations drop to 0 with "reduce
@@ -1025,8 +1093,8 @@ the data is unavailable.
   missing `backdrop-filter` fall back to opaque surfaces. Buttons expose their
   state with `aria-pressed` / `aria-expanded`.
 - **Responsive**: mobile first; one column, two from 768 px, three from
-  1100 px. From 768 px, `banner` and `banner_full` tiles span two grid rows
-  (`tileRows` in `tiles/registry.ts`), so two simple tiles stack beside a
+  1100 px. From 768 px, `full` and `banner` tiles span two grid rows
+  (`tileRows` in `tiles/registry.ts`), so two compact tiles stack beside a
   banner tile with their edges aligned.
 
 ---
@@ -1034,35 +1102,38 @@ the data is unavailable.
 ## Tiles on the site
 
 Configured in `config/tiles.yaml`, in the order of `config/layout.yaml`.
-**Keep this table in sync** when a tile is added, removed or changed.
+**Keep this table in sync** when a tile is added, removed or changed, and
+[TILES.md](TILES.md) too: it explains the tile axes (scope, format, visual,
+kind) with one picture per value and lists every tile by axis (checked by
+`web/src/lib/tilesDoc.test.ts`).
 
-| Tile id | Type | KPI (kind: periods) | Filter | Title (fr / en / es) | Options |
+| Tile id | Format | KPI (kind: periods) | Filter | Title (fr / en / es) | Visual and options |
 |---|---|---|---|---|---|
-| `snowfall_today` | `banner_full` | `snowfall_chance` (live: day, morning, midday, afternoon, evening, night) | Snow | Neige {period} / Snow {period} / Nieve {period} | `photo: leader`, `scene: snowfall` |
-| `onpiste_powder` | `banner` | `onpiste_powder_chance` (live: day, morning, midday, afternoon) | Snow quality | Poudreuse sur piste / On-piste powder / Nieve polvo en pista {period} | `photo: leader`, `scene: piste` |
-| `offpiste_powder` | `simple` | `offpiste_powder_chance` (live: day, morning, midday, afternoon) | Snow quality | Poudreuse hors-piste / Off-piste powder / Nieve polvo fuera de pista {period} | — |
-| `bluebird_day` | `banner` | `bluebird_day_chance` (live: day) | Sky | Journée bluebird / Bluebird day / Día bluebird {period} | `photo: leader`, `scene: mountain`, icon `sun` |
-| `whiteout` | `simple` | `whiteout_chance` (live: day) | Sky | Jour blanc / White day / Día blanco {period} | `top: 3` |
-| `powder_alert` | `simple` | `powder_alert_chance` (live: day) | Snow | Alerte neige / Snow alert / Alerta de nieve {period} | `top: 3` |
-| `snowmaking` | `simple` | `snowmaking_chance` (live: overnight, night) | Snow | Canons à neige / Snow cannons / Cañones de nieve {period} | `top: 3` |
-| `spring_snow` | `simple` | `spring_snow_chance` (live: day, morning, midday, afternoon) | Snow quality | Neige de printemps / Spring snow / Nieve primavera {period} | `top: 3` |
-| `hard_snow` | `simple` | `hard_snow_chance` (live: day, morning) | Snow quality | Neige dure / Hard snow / Nieve dura {period} | `top: 3` |
-| `heavy_snow` | `simple` | `heavy_snow_chance` (live: day, midday, afternoon) | Snow quality | Neige lourde / Heavy snow / Nieve pesada {period} | `top: 3` |
-| `easy_conditions` | `simple` | `easy_conditions_chance` (live: day, morning, midday, afternoon) | Snow quality | Conditions faciles / Easy conditions / Condiciones fáciles {period} | `top: 3` |
-| `sunset` | `banner` | `sunset_chance` (live: sunset) | Sky | Coucher de soleil / Sunset / Puesta de sol {period} | `photo: leader`, `scene: mountain`, icon `sunset` |
-| `starry_night` | `simple` | `starry_night_chance` (live: sunset, evening) | Sky | Nuit étoilée / Starry night / Noche estrellada {period} | `top: 3` |
-| `sunny_slot` | `simple` | `sunny_slot_chance` (live: day, morning, midday, afternoon) | Sky | Grand soleil / Full sun / Pleno sol {period} | `top: 3` |
-| `wind_chill` | `simple` | `wind_chill_chance` (live: day, morning, midday, afternoon) | Comfort | Froid ressenti / Wind chill / Sensación térmica {period} | `top: 3` |
-| `mild_day` | `simple` | `mild_day_chance` (live: day) | Comfort | Journée douce / Mild day / Día templado {period} | `top: 3` |
-| `chains` | `simple` | `chains_chance` (live: day) | Getting there | Chaînes nécessaires / Chains needed / Cadenas necesarias {period} | `top: 3` |
-| `lift_wind` | `simple` | `lift_wind_chance` (live: day, morning, midday, afternoon) | Getting there | Remontées au vent / Lifts in the wind / Remontes y viento {period} | `top: 3` |
-| `wind_slab` | `simple` | `wind_slab_chance` (live: day) | Safety | Neige ventée / Wind-blown snow / Nieve venteada {period} | `top: 3` |
-| `rewind_2025_26_total_snowfall` | `banner_full` | `season_total_snowfall` (historical, m) | Rewind 25/26 | Le plus de neige / Most snow / Más nieve | `photo: leader`, `scene: snowfall` |
-| `rewind_2025_26_longest_snowfall` | `banner` | `season_longest_snowfall` (historical, h) | Rewind 25/26 | La plus longue chute de neige / Longest snowfall / Nevada más larga | `photo: leader`, `scene: snowfall` |
-| `rewind_2025_26_domain_snowfall` | `banner` | `season_domain_snowfall` (historical, m) | Rewind 25/26 | Le plus de neige sur le domaine / Most snow on the slopes / Más nieve en el dominio | `photo: leader`, `scene: piste` |
-| `rewind_2025_26_offpiste_snowfall` | `banner` | `season_offpiste_snowfall` (historical, m) | Rewind 25/26 | Le plus de neige hors-piste / Most off-piste snow / Más nieve fuera de pista | `photo: leader`, `scene: offpiste` |
-| `rewind_2025_26_deep_snow_days` | `banner` | `season_deep_snow_days` (historical, %, bars 0–100 %) | Rewind 25/26 | L'enneigement idéal / Ideal snow cover / Innivación ideal | `photo: leader`, `scene: piste` |
-| `rewind_2025_26_white_days` | `banner` | `season_white_days` (historical, days, fewest first) | Rewind 25/26 | Le moins de jours blancs / Fewest white days / Menos días blancos | `photo: leader`, `scene: mountain` |
+| `snowfall_today` | `full` | `snowfall_chance` (live: day, morning, midday, afternoon, evening, night) | Snow | Neige {period} / Snow {period} / Nieve {period} | `visual: photo`, `scene: snowfall` |
+| `onpiste_powder` | `banner` | `onpiste_powder_chance` (live: day, morning, midday, afternoon) | Snow quality | Poudreuse sur piste / On-piste powder / Nieve polvo en pista {period} | `visual: photo`, `scene: piste` |
+| `offpiste_powder` | `compact` | `offpiste_powder_chance` (live: day, morning, midday, afternoon) | Snow quality | Poudreuse hors-piste / Off-piste powder / Nieve polvo fuera de pista {period} | — |
+| `bluebird_day` | `banner` | `bluebird_day_chance` (live: day) | Sky | Journée bluebird / Bluebird day / Día bluebird {period} | `visual: photo`, `scene: mountain`, icon `sun`, `webcam` (summit, ≥ 60 %) |
+| `whiteout` | `compact` | `whiteout_chance` (live: day) | Sky | Jour blanc / White day / Día blanco {period} | `top: 3` |
+| `powder_alert` | `compact` | `powder_alert_chance` (live: day) | Snow | Alerte neige / Snow alert / Alerta de nieve {period} | `top: 3` |
+| `snowmaking` | `compact` | `snowmaking_chance` (live: overnight, night) | Snow | Canons à neige / Snow cannons / Cañones de nieve {period} | `top: 3` |
+| `spring_snow` | `compact` | `spring_snow_chance` (live: day, morning, midday, afternoon) | Snow quality | Neige de printemps / Spring snow / Nieve primavera {period} | `top: 3` |
+| `hard_snow` | `compact` | `hard_snow_chance` (live: day, morning) | Snow quality | Neige dure / Hard snow / Nieve dura {period} | `top: 3` |
+| `heavy_snow` | `compact` | `heavy_snow_chance` (live: day, midday, afternoon) | Snow quality | Neige lourde / Heavy snow / Nieve pesada {period} | `top: 3` |
+| `easy_conditions` | `compact` | `easy_conditions_chance` (live: day, morning, midday, afternoon) | Snow quality | Conditions faciles / Easy conditions / Condiciones fáciles {period} | `top: 3` |
+| `sunset` | `banner` | `sunset_chance` (live: sunset) | Sky | Coucher de soleil / Sunset / Puesta de sol {period} | `visual: photo`, `scene: mountain`, icon `sunset` |
+| `starry_night` | `compact` | `starry_night_chance` (live: sunset, evening) | Sky | Nuit étoilée / Starry night / Noche estrellada {period} | `top: 3` |
+| `sunny_slot` | `compact` | `sunny_slot_chance` (live: day, morning, midday, afternoon) | Sky | Grand soleil / Full sun / Pleno sol {period} | `top: 3` |
+| `wind_chill` | `compact` | `wind_chill_chance` (live: day, morning, midday, afternoon) | Comfort | Froid ressenti / Wind chill / Sensación térmica {period} | `top: 3` |
+| `mild_day` | `compact` | `mild_day_chance` (live: day) | Comfort | Journée douce / Mild day / Día templado {period} | `top: 3` |
+| `chains` | `compact` | `chains_chance` (live: day) | Getting there | Chaînes nécessaires / Chains needed / Cadenas necesarias {period} | `top: 3` |
+| `lift_wind` | `compact` | `lift_wind_chance` (live: day, morning, midday, afternoon) | Getting there | Remontées au vent / Lifts in the wind / Remontes y viento {period} | `top: 3` |
+| `wind_slab` | `compact` | `wind_slab_chance` (live: day) | Safety | Neige ventée / Wind-blown snow / Nieve venteada {period} | `top: 3` |
+| `rewind_2025_26_total_snowfall` | `full` | `season_total_snowfall` (historical, m) | Rewind 25/26 | Le plus de neige / Most snow / Más nieve | `visual: photo`, `scene: snowfall` |
+| `rewind_2025_26_longest_snowfall` | `banner` | `season_longest_snowfall` (historical, h) | Rewind 25/26 | La plus longue chute de neige / Longest snowfall / Nevada más larga | `visual: photo`, `scene: snowfall` |
+| `rewind_2025_26_domain_snowfall` | `banner` | `season_domain_snowfall` (historical, m) | Rewind 25/26 | Le plus de neige sur le domaine / Most snow on the slopes / Más nieve en el dominio | `visual: photo`, `scene: piste` |
+| `rewind_2025_26_offpiste_snowfall` | `banner` | `season_offpiste_snowfall` (historical, m) | Rewind 25/26 | Le plus de neige hors-piste / Most off-piste snow / Más nieve fuera de pista | `visual: photo`, `scene: offpiste` |
+| `rewind_2025_26_deep_snow_days` | `banner` | `season_deep_snow_days` (historical, %, bars 0–100 %) | Rewind 25/26 | L'enneigement idéal / Ideal snow cover / Innivación ideal | `visual: photo`, `scene: piste` |
+| `rewind_2025_26_white_days` | `banner` | `season_white_days` (historical, days, fewest first) | Rewind 25/26 | Le moins de jours blancs / Fewest white days / Menos días blancos | `visual: photo`, `scene: mountain` |
 
 The home page (no filter) shows the `home` tiles of `config/layout.yaml`, in
 priority order: `bluebird_day` (day, always first), `snowfall_today` (day),
@@ -1291,15 +1362,15 @@ AGENTS.md §4; scraping must respect the site's terms).
 
 | Feature | What it does | Data and approach | Feasibility |
 |---|---|---|---|
-| Webcams | Resort webcams on the tile back or as banner; also a way to calibrate white days (image brightness and contrast) | Public webcam links/images of the resorts | 🔴 |
+| Webcam background | `visual: webcam`: the live image of the leading station's webcam fills the image of a `full` / `banner` tile, today only and for the KPIs its position suits (first: bluebird day + summit webcam), instead of today's LIVE link; also a way to calibrate white days (image brightness and contrast) | Skaping serves a still JPG every 30 min at a predictable URL (`skaping.s3.gra.io.cloud.ovh.net/<resort>/<cam>/<view>/YYYY/MM/DD/{large,small,thumb}/HH-MM.jpg`, 360° panorama ~4:1: needs a crop per webcam). Needs the written agreement of Skaping or the resort (images all rights reserved), a privacy notice (visitors load an OVH image) and a fallback to the photo when the image is missing (403) or at night | 🔴 |
 | Resort opening status | Share of pistes and lifts open, per station | Resort websites / N'PY (scraper, terms to check) | 🔴 |
-| Near me | Sort resorts by conditions × travel time | Browser geolocation (never stored) + public routing (OSRM) | 🟡 |
+| Around me ("Autour de moi") | A first chip at the far left of the place bar. Tapped, it keeps the N nearest stations **by road** among those less than one hour's drive from the visitor, nearest first, and every ranking then covers only them, like a chosen zone. Road time, not distance as the crow flies: in the mountains 10 minutes as the crow flies is often 30 minutes by car. Stations of other massifs or across the border (Spain, Andorra) count if they are within the hour | **Position**: browser geolocation, asked only on tap, never stored nor sent anywhere; refused or unavailable, the chip says so and the bar stays as it is. **Road times without a server** (GitHub only, AGENTS.md §4): precompute once a season, with `bluebird reference`, one drive-time isochrone per station (15, 30, 45 and 60 min, from the station's access point), committed as reference data in `config/reference/isochrones/<massif>.geojson`; the site then tests the position against those polygons on the phone (point in polygon) and sorts the stations by the smallest band that contains it. Isochrone source: openrouteservice (free API key, so the owner's approval first) or the FOSSGIS Valhalla instance within its usage policy; never at runtime. **Winter closures**: passes closed from November to May (Tourmalet, Aubisque, Portet d'Aspet…) must be excluded when computing (a closed-roads list in config, sent as avoid polygons), otherwise the times are wrong. **In the code**: a place level kind `near` in `lib/geoLevels.ts` (place chip first, before the massifs), the subset passed to `viewFor(…, only)` as for zones (CONTEXT.md invariant 24); the massif shown is the one with most stations in the subset, or several payloads when the hour spans two massifs | 🟡/🔴 |
 | Value for money | Lift pass price per km of pistes | Prices (scraper) + piste km from `domain_features` | 🔴 |
 | Ski area map | Map tile of pistes and lifts | `domain_features` (already collected) | 🟢 |
 | Alps and cross-border resorts | Northern and Southern Alps, Andorra, Spain, Switzerland, Italy in the place levels (zones, linked areas, a flag for foreign resorts) | Config only for the navigation, but two limits: **Open-Meteo quota** — the ensemble request weighs every location and member, and ~120 Alpine resorts × 2 bands is ~7 times today's request (split the source by massif, stagger the refreshes or keep one band); **payload size** — ~360 KB for 18 resorts, ~2 MB for a large massif (publish per-zone payloads, or keep the top N plus the chosen zone per ranking) | 🟢/🟡 |
 | Comparator | Two resorts side by side on every KPI | Existing payloads | 🟢 |
 | Place stories | Full-screen stories personalised by the chosen place (massif, zone, linked area): one screen per highlight of the day (leader, value, next two), progress bar, tap or swipe to the next one | Existing payloads narrowed with `viewFor(…, only)` (`lib/geoLevels.ts`); highlights picked by the planned tile score (`rankTiles`); a full-window component in the spirit of `Sheet.svelte` | 🟢 |
-| Animated KPI banners | When the station ranked first has no free photo, the banner of a `banner` / `banner_full` tile shows an animation of its KPI instead of the static illustration: falling snow (snow, snow alert, powder), sun rays (bluebird day, full sun, mild day), drifting clouds or fog (white day), twinkling stars (starry night), a setting sun (sunset), gusts and swaying cables (lifts in the wind), blowing snow (wind-blown snow), snow cannons (snowmaking)… | Extend `components/BannerArt.svelte`: one animated SVG/CSS scene per KPI (a `scene` per KPI or tile in `tiles.yaml`, default from the KPI), used only when `photo: leader` finds no photo (`lib/photos.ts`). No library, no video: inline SVG with CSS animations on transform/opacity only, paused when the tile is off screen (IntersectionObserver) or turned over, static frame with `prefers-reduced-motion`, colours from tokens (light and dark). Keep it inside the banner: the page background stays plain (CONTEXT.md invariant 14) | 🟢 |
+| Animated KPI banners | When the station ranked first has no free photo, the image of a `full` / `banner` tile shows an animation of its KPI instead of the static illustration: falling snow (snow, snow alert, powder), sun rays (bluebird day, full sun, mild day), drifting clouds or fog (white day), twinkling stars (starry night), a setting sun (sunset), gusts and swaying cables (lifts in the wind), blowing snow (wind-blown snow), snow cannons (snowmaking)… | Extend `components/BannerArt.svelte`: one animated SVG/CSS scene per KPI (a `scene` per KPI or tile in `tiles.yaml`, default from the KPI), used only when `visual: photo` finds no photo (`lib/photos.ts`). No library, no video: inline SVG with CSS animations on transform/opacity only, paused when the tile is off screen (IntersectionObserver) or turned over, static frame with `prefers-reduced-motion`, colours from tokens (light and dark). Keep it inside the banner: the page background stays plain (CONTEXT.md invariant 14) | 🟢 |
 | Slope aspect and steepness | Refine powder KPIs (north faces keep powder) | IGN RGE ALTI or Copernicus DEM | 🟡 |
 | Rewind calendar | Season timeline: storms, white days, bluebird days | Committed season hourly file | 🟢 |
 | All Time data | Season ranks since 1950, trends, records, "when to go" | Open-Meteo ERA5-Land (1950, 9 km) or CERRA (1985–2021, 5.5 km), as a new `schedule: season`-like archive; Météo-France snow observations (open data) to validate | 🟢/🟡 |

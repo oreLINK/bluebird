@@ -2,8 +2,8 @@
   The best stations of a KPI as betting-style "odds buttons": name, value
   ("82 %" for live KPIs, "4,43 m" for historical ones, lib/kpiView.ts) and,
   for live KPIs, reliability dots (ConfidenceDots); a bar below each. `overlay` adapts the bars for a photo or illustration background
-  (TileBannerFull).
-  `compact`: shorter boxes (one line of name, smaller value) for the simple
+  (TileFull).
+  `compact`: shorter boxes (one line of name, smaller value) for the compact
   tiles, so two of them stack beside a banner tile.
   `details`: when true, each box is a button that shows the station details
   (tile option `details`); when false (the default for now) the boxes are
@@ -109,8 +109,14 @@
     height: var(--odds-button-h);
     padding: 10px 6px 8px;
     border-radius: var(--radius-m);
-    border: 1px solid var(--pill-border);
-    background: var(--pill-bg);
+    /* Glass button (design "Nuit étoilée"); solid in themes that set --odds-glass: 100%. */
+    border: 1px solid var(--glass-edge);
+    background: color-mix(in srgb, var(--pill-bg) var(--odds-glass), transparent);
+    box-shadow:
+      inset 0 1px 0 var(--glass-hi),
+      0 6px 16px -8px rgba(0, 0, 0, 0.3);
+    -webkit-backdrop-filter: blur(12px) saturate(1.5);
+    backdrop-filter: blur(12px) saturate(1.5);
     color: var(--pill-ink);
     text-align: center;
     cursor: pointer;
@@ -132,8 +138,31 @@
     color: var(--pill-active-ink);
   }
 
+  /* On an image (full tiles): white glass with white text, and reliability
+     dots in the text colour (blue dots vanish on a dark photo). */
   .overlay .odd-button {
-    box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.6);
+    --dot-on: currentColor;
+    --dot-off: color-mix(in oklch, currentColor 35%, transparent);
+    border-color: var(--odds-overlay-edge);
+    background: var(--odds-overlay-bg);
+    color: var(--odds-overlay-ink);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.45),
+      0 6px 16px -8px rgba(0, 0, 0, 0.6);
+  }
+
+  .overlay .odd-button[aria-pressed='true'] {
+    background: var(--pill-active-bg);
+    border-color: var(--pill-active-bg);
+    color: var(--pill-active-ink);
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .odd-button {
+      background: var(--pill-bg);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
   }
 
   .odd-name {
@@ -154,9 +183,9 @@
 
   .odd-value {
     font-family: var(--font-display);
+    letter-spacing: var(--display-tracking);
     font-size: 1.5rem;
-    font-style: italic;
-    font-weight: 800;
+    font-weight: var(--display-weight);
     line-height: 1.05;
   }
 
@@ -182,7 +211,7 @@
   }
 
   .compact .odd-value {
-    font-size: 1.375rem;
+    font-size: 1.1875rem;
   }
 
   .odd-odds {

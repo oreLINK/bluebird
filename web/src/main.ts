@@ -1,7 +1,8 @@
 import { mount } from 'svelte';
 import App from './App.svelte';
 import { i18n } from './lib/i18n/i18n.svelte';
-import '@fontsource-variable/inter';
+import './lib/theme.svelte'; // applies the remembered appearance
+import '@fontsource-variable/sora';
 import '@fontsource/barlow-semi-condensed/800-italic.css';
 import './styles/tokens.css';
 import './styles/base.css';
