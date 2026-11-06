@@ -35,8 +35,10 @@ links the webcam's official page from a LIVE badge.
 ## Where photos come from
 
 Photos are found with [Openverse](https://openverse.org/fr), the search
-engine of openly licensed images (Wikimedia Commons, Flickr…), and are free
-to reuse under their licence. Openverse lists several licences, so check
+engine of openly licensed images (Wikimedia Commons, Flickr…), or directly
+on Wikimedia Commons, and are free to reuse under their licence. Today 15 of
+the 18 Pyrenean resorts have winter photos; Porté-Puymorens, Ascou-Pailhères
+and Le Mourtis have none yet (only summer photos were found). Openverse lists several licences, so check
 each image:
 
 | Licence | Use it? |

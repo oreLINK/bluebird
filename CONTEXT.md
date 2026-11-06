@@ -253,9 +253,10 @@ with `scripts/ci/fetch-gh-pages-data.sh` before computing (fallback).
 15. **Fonts and photos are self-hosted.** Fonts come from `@fontsource`
     packages, never a CDN. Every photo needs publication rights and a
     `credits.yaml` entry; never commit a photo without them. Photos come
-    from Openverse (https://openverse.org/fr) under a reusable licence
-    (CC0, PDM, CC BY, CC BY-SA; never ND); photos from resort or tourism
-    sites are all rights reserved unless the owner agrees.
+    from Openverse (https://openverse.org/fr) or directly from Wikimedia
+    Commons, its main source, under a reusable licence (CC0, PDM, CC BY,
+    CC BY-SA; never NC or ND); photos from resort or tourism sites are all
+    rights reserved unless the owner agrees.
 16. **Equal tiles, two faces.** `full` and `banner` tiles keep the same collapsed size
     (`--tile-*` tokens in `base.css`), `compact` tiles the shorter
     `--tile-compact-h`, derived in `base.css` so that two compact tiles plus
@@ -383,7 +384,7 @@ npm run dev
 | Reorder tiles | `config/layout.yaml` (`home` = home page in priority order, `default`/`overrides` = order under a filter), README.md "Tiles on the site", TILES.md §7 (layout order) | `bluebird validate`, `npm test` |
 | Add a filter | `config/filters.yaml` (`levels`, `groups`), `filters: [id]` on KPIs in `config/kpis.yaml` | `bluebird validate`, `npm test` |
 | Add a kind of filter level | `FilterLevel` in `config.py`, `LEVEL_KINDS` in `web/src/lib/filterLevels.ts`, its `{fr, en, es}` chip labels in config, tests (max 4 levels: `MAX_FILTER_LEVELS`) | `bluebird schemas`, `npm run gen:types`, `pytest`, `npm test` |
-| Add a banner photo | found on [Openverse](https://openverse.org/fr) under a reusable licence (CC0, PDM, CC BY, CC BY-SA; never ND), checked on its source page; `web/src/assets/photos/<path>.webp` (≤ 300 KB), `credits.yaml` (author, licence, source URL, changes made), tile `visual: photo` | `npm test`, `npm run build`, 390 px screenshots |
+| Add a banner photo | found on [Openverse](https://openverse.org/fr) or Wikimedia Commons (its API gives licence, author, date and categories) under a reusable licence (CC0, PDM, CC BY, CC BY-SA; never ND), checked on its source page; `web/src/assets/photos/<path>.webp` (≤ 300 KB), `credits.yaml` (author, licence, source URL, changes made), tile `visual: photo` | `npm test`, `npm run build`, 390 px screenshots |
 | Add a page | `config/pages.yaml` (`pages[]`, optional `footer.pages`) | `bluebird validate`, `npm test`, 390 px screenshots |
 | Add another kind of over-page | content inside `components/Sheet.svelte`, opened with `sheets.open(id)` (`lib/sheets.svelte.ts`) | `npm run check`, `npm test` |
 | Add a Rewind | `config/rewinds.yaml`, its filter (`theme: rewind`, no levels) first in `filters.yaml`, KPI tags, tiles of any type + layout (Rewind and theme come from the KPI), TILES.md §7 | after the season: `bluebird rewind --rewind <id>`, review and commit `config/rewind/<id>/` |
@@ -420,6 +421,16 @@ npm run dev
 - **SVG gradient ids.** Several inline SVGs on one page share the document's id
   space; a fixed `id="sky"` makes every banner use the first one. Prefix ids
   with `$props.id()` (see `BannerArt.svelte`).
+- **Finding photos by script.** The anonymous Openverse API answers 429
+  (Cloudflare challenge) after a few requests: search Wikimedia Commons
+  instead (`action=query&generator=search&gsrnamespace=6`, `prop=imageinfo`
+  with `extmetadata` for `LicenseShortName`, `Artist`, `DateTimeOriginal`,
+  `Categories`, and `iiurlwidth` for thumbnails), with a descriptive
+  User-Agent. Commons image URLs now end with `?utm_…` parameters: strip
+  them before deriving a file extension or downloading, and download slowly
+  (the media server returns an HTML error page under load, which then fails
+  as an image). The system Python lacks SSL certificates: use `curl`.
+  Pick visually from contact sheets; many resorts only have summer photos.
 - **`backface-visibility` and glass.** Mobile browsers (Safari above all)
   ignore `backface-visibility: hidden` on faces whose content has a
   `backdrop-filter`: turning a tile showed the front text reversed.
@@ -646,6 +657,11 @@ passes excluded) precomputed by `bluebird reference` and committed as
 reference data; the site tests the browser position against them locally,
 never sends or stores it, and narrows views with `viewFor(…, only)`
 (invariant 24). No routing API at runtime.
+Planned tile effects (README.md "Roadmap"): a layer between a tile's
+background and its text, `permanent` (looping, e.g. falling snow on Snow
+tiles; paused off screen and when turned) or `flash` (once per view, started
+by an `IntersectionObserver`, e.g. a sun glint on Bluebird day); off or
+static with reduced motion, inside the tile only (invariant 14).
 Other planned features (README.md "Roadmap"): odds that move (↑/↓ against
 the previous refresh, a `previous`/`delta` in the payload), calendar alerts
 (static `.ics` feeds written by the `publish` job), favourite resorts (a

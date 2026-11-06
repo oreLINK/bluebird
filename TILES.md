@@ -394,7 +394,10 @@ A theme may make the buttons solid: the Rewind theme sets `--odds-glass:
   (card edge-on), so text is never seen reversed; none with
   `prefers-reduced-motion`.
 - Tiles arrive and leave with the `arrive` / `leave` transitions; nothing else
-  moves, and never the page background.
+  moves, and never the page background. Planned: tile effects, a layer
+  between the background and the text, permanent (falling snow) or flash
+  (a sun glint, once per view), always inside the tile and off with reduced
+  motion (README.md "Roadmap").
 - Chosen odds button: `--pill-active-bg` / `--pill-active-ink`, solid.
 - Focus: 3px `--focus` ring, 2px offset.
 
