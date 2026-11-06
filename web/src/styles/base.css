@@ -71,11 +71,14 @@ a {
  * compact tile a shorter one, and the "see all" bar the same height everywhere.
  * Two compact tiles and the gap between them are exactly as tall as one banner
  * tile, so on wide screens they stack beside it (App.svelte: banner tiles span
- * two grid rows). --tile-compact-h is derived to keep that true.
+ * two grid rows). --tile-compact-h is derived to keep that true: 23rem front
+ * gives 151px of compact content, room for the time badge row above the title
+ * (TimeBadge.svelte); the banner keeps 160px for title + odds, the image
+ * takes the rest.
  */
 :root {
-  --tile-banner-h: 9.5rem; /* illustrated banner of a `banner` tile */
-  --tile-front-h: 19.5rem; /* banner + title + odds (whole hero of a `full` tile) */
+  --tile-banner-h: 13rem; /* illustrated banner of a `banner` tile */
+  --tile-front-h: 23rem; /* banner + title + odds (whole hero of a `full` tile) */
   --tile-more-h: 2.875rem; /* "see all" bar */
   --tile-gap: 18px; /* between tiles, both ways (App.svelte .tiles) */
   --tile-frame-h: 2px; /* .card frame: the 2px top and bottom borders of .card-body */

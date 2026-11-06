@@ -1,7 +1,12 @@
 # yaml-language-server: $schema=./schemas/periods.schema.json
 #
-# Time periods the KPIs are computed for, and the labels that name them in
-# tile titles ("Neige {period}" -> "Neige ce soir").
+# Time periods the KPIs are computed for, and how the site names them. Tile
+# titles never carry the period: every tile of live KPIs has a time badge, a
+# small ticket "Dem. | Matin": the day (`badge_days`) on a cell in the dark
+# colour of the day, the moment (`badge`) on a soft cell in the colour of its
+# `tone`. A whole-day period (no `badge`) shows the day alone ("Auj."); today,
+# a period of tone `night` shows `badge_tonight` alone ("Cette nuit")
+# (TILES.md §5 and §9). Badge labels are short and written for each language.
 #
 #   day_start:    local time a "ski day" starts. Ski day D runs from D 06:00 to
 #                 D+1 06:00, so "cette nuit" (00:00-06:00) belongs to the evening
@@ -13,10 +18,19 @@
 #     native_window: the KPI uses its own window (e.g. 08:00-17:00 for snowfall,
 #                    lifts opening for powder); start/end then only decide when
 #                    the period is shown.
-#     labels:        one per day of the horizon: [today, tomorrow].
+#     labels:        one per day of the horizon: [today, tomorrow]; the period
+#                    written out (tile back, screen readers, service status).
 #     chip:          label of the time slot in the `slot` filter level
 #                    (config/filters.yaml); required for time slots.
+#     badge:         short moment cell of the time badge ("Matin", "PM");
+#                    none for a whole-day period (the day alone).
+#     tone:          colour of the moment cell, required with `badge`: morning,
+#                    midday, afternoon, evening or night (--tone-<tone>-* tokens
+#                    in web/src/styles/tokens.css).
 #   days:            chips of the `day` filter level, one per day of the horizon.
+#   badge_days:      day cell of the time badge, one per day of the horizon:
+#                    short label and colour (today, tomorrow; --when-<tone>).
+#   badge_tonight:   replaces today + a `night` moment, in one cell.
 #
 # A period is published and displayed until its end: after 12:00 "ce matin" is
 # gone, after 18:00 "ce midi" and "cet après-midi" are gone. The site also hides
@@ -28,6 +42,10 @@ horizon_days: 2
 days:
   - { fr: Aujourd'hui, en: Today, es: Hoy }
   - { fr: Demain, en: Tomorrow, es: Mañana }
+badge_days:
+  - { tone: today, label: { fr: Auj., en: Today, es: Hoy } }
+  - { tone: tomorrow, label: { fr: Dem., en: Tmrw, es: Mañana } }
+badge_tonight: { tone: tonight, label: { fr: Cette nuit, en: Tonight, es: Esta noche } }
 periods:
   - id: day
     start: "06:00"
@@ -43,6 +61,8 @@ periods:
     start: "06:00"
     end: "22:00"
     native_window: true
+    badge: { fr: Soir, en: Eve, es: Tarde }
+    tone: evening
     labels:
       - { fr: ce soir, en: tonight, es: esta tarde }
       - { fr: demain soir, en: tomorrow evening, es: mañana por la tarde }
@@ -53,6 +73,8 @@ periods:
     start: "06:00"
     end: "06:00"
     native_window: true
+    badge: { fr: Nuit, en: Night, es: Noche }
+    tone: night
     labels:
       - { fr: cette nuit, en: tonight, es: esta noche }
       - { fr: la nuit de demain, en: tomorrow night, es: mañana por la noche }
@@ -60,6 +82,8 @@ periods:
   - id: morning
     start: "06:00"
     end: "12:00"
+    badge: { fr: Matin, en: AM, es: Mañ. }
+    tone: morning
     chip: { fr: Matin, en: Morning, es: Por la mañana }
     labels:
       - { fr: ce matin, en: this morning, es: esta mañana }
@@ -68,6 +92,8 @@ periods:
   - id: midday
     start: "12:00"
     end: "14:00"
+    badge: { fr: Midi, en: Noon, es: Mediod. }
+    tone: midday
     chip: { fr: Midi, en: Lunchtime, es: A mediodía }
     labels:
       - { fr: ce midi, en: at lunchtime, es: a mediodía }
@@ -76,6 +102,8 @@ periods:
   - id: afternoon
     start: "14:00"
     end: "18:00"
+    badge: { fr: Aprèm, en: PM, es: Tarde }
+    tone: afternoon
     chip: { fr: Après-midi, en: Afternoon, es: Por la tarde }
     labels:
       - { fr: cet après-midi, en: this afternoon, es: esta tarde }
@@ -84,6 +112,8 @@ periods:
   - id: evening
     start: "18:00"
     end: "00:00"
+    badge: { fr: Soir, en: Eve, es: Noche }
+    tone: evening
     chip: { fr: Soir, en: Evening, es: Por la noche }
     labels:
       - { fr: ce soir, en: this evening, es: esta noche }
@@ -92,6 +122,8 @@ periods:
   - id: night
     start: "00:00"
     end: "06:00"
+    badge: { fr: Nuit, en: Night, es: Madrug. }
+    tone: night
     chip: { fr: Nuit, en: Night, es: De madrugada }
     labels:
       - { fr: cette nuit, en: tonight, es: esta madrugada }

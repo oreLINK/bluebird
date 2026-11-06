@@ -72,6 +72,22 @@
   {:else if name === 'sunset'}
     <path d="M3 18h18M7 18a5 5 0 0 1 10 0" />
     <path d="M12 6.5V9M5.6 10.6l1.4 1.4M18.4 10.6 17 12M3 21.5h18" />
+  {:else if name === 'sunrise'}
+    <!-- Time badge, tone `morning`: the sun rising over the horizon. -->
+    <path d="M3 19h18M7 19a5 5 0 0 1 10 0" />
+    <path d="M12 4v6M9.5 6.5 12 4l2.5 2.5" />
+  {:else if name === 'sun-high'}
+    <!-- Time badge, tone `midday`: the sun high above the horizon. -->
+    <circle cx="12" cy="9" r="3.5" />
+    <path d="M12 2.5V4M5.5 9H4M20 9h-1.5M7.4 4.4l1 1M16.6 4.4l-1 1M3 19h18" />
+  {:else if name === 'sun-low'}
+    <!-- Time badge, tone `afternoon`: the sun going down to the west. -->
+    <circle cx="15" cy="12.5" r="3.5" />
+    <path d="M15 5v1.5M21.5 12.5H20M19.6 7.9l-1 1M10.4 7.9l1 1M3 19h18" />
+  {:else if name === 'sundown'}
+    <!-- Time badge, tone `evening`: the sun setting under the horizon. -->
+    <path d="M3 19h18M7 19a5 5 0 0 1 10 0" />
+    <path d="M12 3v6M9.5 6.5 12 9l2.5-2.5" />
   {:else if name === 'moon'}
     <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z" />
   {:else if name === 'thermometer'}

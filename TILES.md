@@ -11,9 +11,10 @@ axes. Three are set on the tile, the fourth comes from its KPI:
 | [Visual](#3-visual) | `visual` | `scene` · `photo` · `webcam` *(planned)* | `tiles.yaml` |
 | [Kind](#4-kind) | `kind` | `live` · `historical` | `kpis.yaml` (KPI) |
 
-On top of the axes, a tile can carry [corner badges](#5-corner-badges): the
-LIVE webcam link (tile `webcam` rule), the Rewind badge, or the "data from"
-badge. Every tile follows the same [design rules](#9-design-nuit-étoilée)
+On top of the axes, a tile carries [corner badges](#5-corner-badges): the
+time badge of live tiles ("Auj.", "Dem. | Matin", "Cette nuit": titles
+never carry the period), then the LIVE webcam link (tile `webcam` rule), the Rewind badge or
+the "data from" badge. Every tile follows the same [design rules](#9-design-nuit-étoilée)
 (design "Nuit étoilée"): read them before adding an axis, a value or a format.
 
 Every picture below is the same mockup with the same example data (the
@@ -90,8 +91,9 @@ buttons and "see all". Two grid rows on wide screens.
 <td valign="top">
 
 **`compact`** — `TileCompact.svelte`. No image, half the height
-(`--tile-compact-h`): two compact tiles stack beside one `banner` tile. For
-the KPIs lower on the page.
+(`--tile-compact-h`): two compact tiles stack beside one `banner` tile. A
+badge row level with the "?" button (time badge, or Rewind / "data from"),
+then the title. For the KPIs lower on the page.
 
 </td>
 </tr>
@@ -152,8 +154,9 @@ both kinds; only the data and the theme change.
 <td valign="top">
 
 **`live`** — forecasts, refreshed every 6 hours. The tile is a template
-expanded once per period (title with `{period}`: "Journée bluebird
-aujourd'hui"); values are probabilities, amounts or Oui/Possible/Non, with
+expanded once per period; the title stays the same ("Journée bluebird") and
+the [time badge](#5-corner-badges) names the period ("Auj.", "Dem. |
+Matin"); the back of the tile repeats it with its exact date. Values are probabilities, amounts or Oui/Possible/Non, with
 reliability dots.
 
 </td>
@@ -169,14 +172,39 @@ the KPI unit (4,43 m), no reliability dots, odds or details.
 
 ## 5. Corner badges
 
-Top left of the image of `full` and `banner` tiles, never on `compact`.
+Stacked in the top left corner of the image of `full` and `banner` tiles,
+one under the other: the time badge first, then LIVE, Rewind or "data from".
+On `compact` tiles they share one row level with the "?" button, above the
+title (the time badge, or the Rewind / "data from" badge; never LIVE).
 
 <table>
 <tr>
-<td width="50%"><img src="docs/tiles/badge-webcam.svg" width="300" alt="LIVE badge linking the webcam"></td>
-<td width="50%"><img src="docs/tiles/badge-stale.svg" width="300" alt="Data from 06:00 badge"></td>
+<td width="33%"><img src="docs/tiles/badge-time.svg" width="260" alt="Time badge: Dem., in the colour of tomorrow"></td>
+<td width="33%"><img src="docs/tiles/badge-webcam.svg" width="260" alt="LIVE badge under the time badge"></td>
+<td width="33%"><img src="docs/tiles/badge-stale.svg" width="260" alt="Data from 06:00 badge"></td>
 </tr>
 <tr>
+<td valign="top">
+
+**Time badge** — automatic on every live tile (`TimeBadge.svelte`, model
+`TileTime` in `web/src/lib/periods.ts`). A small rectangular ticket (radius
+5px, against the round pills), with short labels written for each language
+(`config/periods.yaml`):
+
+- day cell, in the dark colour of the day (`badge_days`: "Auj." / "Today" /
+  "Hoy", "Dem." / "Tmrw" / "Mañana"), white text;
+- moment cell, soft, in the colour of the period `tone` with its icon
+  (`badge`: "Matin" / "AM" / "Mañ.", "Aprèm" / "PM" / "Tarde"…);
+- a whole day shows the day alone ("Auj."); today's night (periods of tone
+  `night`) shows `badge_tonight` alone, with a moon ("Cette nuit").
+
+Tile titles never contain the period (`{period}` is refused by
+`bluebird validate`); screen readers get it in words from a hidden part of
+the title ("Journée bluebird aujourd'hui"), the badge itself is hidden from
+them. The back of every live tile has a "Quand ?" section: the badge, the
+period in words and its exact date ("Samedi 16 janvier, de 06:00 à 12:00").
+
+</td>
 <td valign="top">
 
 **LIVE webcam link** — tile field `webcam`, live tiles only
@@ -198,9 +226,7 @@ The webcam image is never shown or stored.
 because the KPI could not be recomputed (`StaleBadge.svelte`).
 
 **REWIND 25/26** — automatic on historical tiles (`TileBadge.svelte`), see
-[Kind](#4-kind).
-
-The LIVE badge comes first when a tile has several.
+[Kind](#4-kind). Rewind tiles have no time badge.
 
 </td>
 </tr>
@@ -215,7 +241,7 @@ The LIVE badge comes first when a tile has several.
   visual: photo                    # optional, scene (default) | photo; not on compact
   webcam: { positions: [summit], min_probability: 0.6 }   # optional, live full/banner only
   kpis: [bluebird_day_chance]      # the tile shows the first KPI
-  title: { fr: "Journée bluebird {period}", en: "Bluebird day {period}", es: "Día bluebird {period}" }
+  title: { fr: Journée bluebird, en: Bluebird day, es: Día bluebird }   # never the period
   icon: sun                        # optional, web/src/components/Icon.svelte
   periods: [day]                   # optional, live only; default: every period of the KPI
   options:                         # free-form, read by the components
@@ -228,7 +254,12 @@ The LIVE badge comes first when a tile has several.
 
 Refused by `bluebird validate`: an unknown `format` or `scope`, `visual` or
 `webcam` on a `compact` tile, `webcam` on a historical tile, an empty
-`positions`, the old option `photo` (use `visual: photo`).
+`positions`, the old option `photo` (use `visual: photo`), `{period}` in a
+title (the time badge shows the period).
+
+The time badge reads `config/periods.yaml`: `badge_days` (one per day of
+the horizon, with its day tone), `badge_tonight`, and per period a short
+`badge` with its `tone` (none for the whole day).
 
 ## 7. Inventory
 
@@ -275,6 +306,8 @@ Totals: 25 tiles — 2 `full`, 8 `banner`, 15 `compact`; 19 live, 6 historical;
 | Add a format | `TileFormat` in `pipeline/src/bluebird_pipeline/config.py`, `web/src/tiles/Tile<Xyz>.svelte`, `registry.ts`, this file (§2 + a picture in `render.mjs`) |
 | Add a visual or a scope | the `Tile*` literal in `config.py`, the components, this file (§1/§3 + a picture) |
 | Link a station webcam | `webcams` in `config/stations/<massif>.yaml`, tile `webcam` rule, this file (§5, §7) |
+| Change what a tile shows (a badge, the odds, a back section) | the components, then the page "Lire une tuile" for users: `TileGuide.svelte` (example front and back with numbered marks) and the numbered paragraphs of the page `guide` in `config/pages.yaml` (`front-marks`, `back-marks`, same count as the marks) |
+| Change the time badge | labels and `tone` of the periods in `config/periods.yaml`, colours `--when-*` / `--tone-*` / `--ticket-*` in `tokens.css`, `TimeBadge.svelte`, `TONE_ICONS` in `web/src/lib/periods.ts`, this file (§5, §9) |
 | Change the look | `tokens.css` / `base.css` first, then the components, §9 of this file, and `render.mjs` so the pictures stay true |
 
 After a change to `config.py`: `uv run bluebird schemas`, `npm run gen:types`.
@@ -319,6 +352,34 @@ fonts, radii) and `web/src/styles/base.css` (tile sizes, glass recipes).
 | Rewind | `--rewind-red` · `--rewind-ink` | `#c8102e` · `#b00d27` | `#c8102e` · `#ff8a98` |
 | LIVE badge | `--live-bg` / `--on-live` | `#d0021b` / white | same |
 
+**Day colours** (`--when-<tone>`, the day cell of the time badge): dark, with
+white text (`--when-ink`), at 88 % over the card, or at 80 % with a blur on
+an image.
+
+| Day tone | Label (fr · en · es) | Light | Dark |
+|---|---|---|---|
+| `today` | Auj. · Today · Hoy | `#0b3b66` | `#1b5c99` |
+| `tonight` | Cette nuit · Tonight · Esta noche | `#2e1a6b` | `#4a3699` |
+| `tomorrow` | Dem. · Tmrw · Mañana | `#0f4c45` | `#17706a` |
+| planned: week-end, next week | Week-end · Sem. proch. | bronze, slate | — |
+
+**Moment colours** (`--tone-<tone>-*`, the moment cell): one hue per moment
+of the ski day, like the lenses of the logo, always soft: `-bg` at 24 % over
+the card with `-text`, or at 42 % over `--ticket-glass` (dark glass) on an
+image with white text and a `-vivid` icon. The same style every day: the day
+colour tells today from tomorrow.
+
+| Tone | Periods | `-bg` | `-text` light · dark | `-vivid` |
+|---|---|---|---|---|
+| `morning` | morning | `#f9a8d4` | `#be185d` · `#f9a8d4` | `#f9a8d4` |
+| `midday` | midday | `#fde047` | `#854d0e` · `#fde047` | `#fde047` |
+| `afternoon` | afternoon | `#f59e0b` | `#92400e` · `#fbbf24` | `#fbbf24` |
+| `evening` | evening, sunset | `#7c3aed` | `#6d28d9` · `#c4b5fd` | `#c4b5fd` |
+| `night` | night, overnight (tomorrow; today: "Cette nuit") | `#1e1b4b` (dark `#3730a3`) | `#3730a3` · `#a5b4fc` | `#a5b4fc` |
+
+These colours never appear elsewhere: none is red (Rewind, LIVE) or amber
+alone on text (stale).
+
 Text pairs keep at least 4.5:1; `--prob-*` and `--sky` are for bars and
 marks only, never text.
 
@@ -330,13 +391,14 @@ Sora Variable, self-hosted (`@fontsource-variable/sora`, `--font-sans`,
 
 | Element | Size | Weight | Notes |
 |---|---|---|---|
-| Tile title, `full` and `banner` | 1.5rem | 700 | long titles (> 24 chars) 1.25rem, two lines max |
-| Tile title, `compact` | 1.375rem | 700 | long titles 1.0625rem, one line, ellipsis |
+| Tile title, `full` and `banner` | 1.5rem | 700 | long titles (> 24 chars) 1.25rem, two lines max; never the period |
+| Tile title, `compact` | 1.375rem | 700 | long titles (> 20 chars) 1.125rem, one line, ellipsis |
 | Odds value | 1.5rem | 700 | `compact`: 1.1875rem; unit at the same size |
 | Station name in an odds button | 0.75rem | 600 | two lines max (`compact`: 0.6875rem, one line) |
 | "See all" / "see less" | 0.875rem | 700 | `--link`, white on an image |
 | Ranking row: rank, name / value pill | 0.9375rem / 1.1875rem | 700, 600 / 700 | pill unit 0.6875rem |
 | Corner badge | 0.6875rem | 800 | uppercase, 0.1em tracking |
+| Time badge | 0.625rem | 700 | uppercase, 0.06em tracking, icon 12px; label line-height 1.4 so accents (MAÑ., APRÈM) are not clipped |
 | Data date (above the tiles) | 1.625rem | 700 | sub-line 0.8125rem |
 | Chips of the bars | 0.8125rem | 600 | |
 | Tile back: title / text / section labels | 1.625rem / 0.875rem / 0.6875rem | 700 / 400 / 800 | labels uppercase; reliability level 1.375rem |
@@ -348,19 +410,21 @@ Sora Variable, self-hosted (`@fontsource-variable/sora`, `--font-sans`,
 | Card radius | `--radius-l` 24px |
 | Odds buttons, inner boxes | `--radius-m` 16px |
 | Chips, badges, pills | 999px |
-| Image band of `banner` | `--tile-banner-h` 9.5rem |
-| Front of `full` / `banner` (image + title + odds) | `--tile-front-h` 19.5rem |
+| Time badge | 5px, height 1.375rem, cells padded 6px (rectangular on purpose) |
+| Image band of `banner` | `--tile-banner-h` 13rem |
+| Front of `full` / `banner` (image + title + odds) | `--tile-front-h` 23rem (title + odds of `banner`: 160px) |
 | "See all" bar | `--tile-more-h` 2.875rem |
 | Gap between tiles | `--tile-gap` 18px |
-| Front of `compact` | `--tile-compact-h` = (front − more − frame − gap) / 2 |
+| Front of `compact` | `--tile-compact-h` = (front − more − frame − gap) / 2 = 151px: badge row (17px from the top, centred on "?"), title, odds |
 | Card frame | `--tile-frame-h` 2px (top and bottom borders) |
 | Odds button | `--odds-button-h` 5.25rem (`compact`: 3.625rem) |
 | Inner padding | 14px |
-| Corner badge slot | top 14px, left 12px, right 56px (clear of "?") |
+| Corner badge slot | top 17px (time badge centred on "?"), left 12px, right 56px (clear of "?"); badges stacked, 6px apart |
 | "?" / "×" button | 2.25rem round, top and right 10px |
 
-Two `compact` tiles plus one gap equal one `full` / `banner` tile: on wide
-screens `full` and `banner` span two grid rows (`tileRows`).
+Two `compact` tiles plus one gap equal one `full` / `banner` tile (2 × 199
++ 18 = 416px with the "see all" bar and the frame): on wide screens `full`
+and `banner` span two grid rows (`tileRows`).
 
 ### Surfaces (glass recipes)
 
@@ -379,7 +443,7 @@ A theme may make the buttons solid: the Rewind theme sets `--odds-glass:
 
 ### Images
 
-- `banner`: the image is a 9.5rem band at the top of the card.
+- `banner`: the image is a 13rem band at the top of the card.
 - `full`: the image covers the whole collapsed card, down to the bottom edge,
   under the "see all" bar; a shade (transparent at the top, 88 % midnight at
   the bottom) keeps white text legible. The ranking opens below the image.
@@ -409,7 +473,10 @@ A theme may make the buttons solid: the Rewind theme sets `--odds-glass:
 - [ ] One of the existing tile sizes, or a new `--tile-*` token shared by
       every tile of the new format, keeping the two-compacts-per-banner rule.
 - [ ] Surfaces from the glass recipes, with their opaque fallback.
-- [ ] Image rules above; badges in the corner slot, never on `compact`.
+- [ ] Image rules above; badges in the corner slot (on `compact`: the badge
+      row), the time badge first on every live tile.
 - [ ] Works in the Rewind theme (through tokens, no kind-specific CSS).
+- [ ] The page "Lire une tuile" (`TileGuide.svelte`, page `guide`) still
+      matches the tile.
 - [ ] Checked at 390 px, light and dark, French, English and Spanish.
 - [ ] A picture in `docs/tiles/render.mjs`, and §1–§5 and §7 of this file.

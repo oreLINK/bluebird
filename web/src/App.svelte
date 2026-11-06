@@ -21,7 +21,6 @@
   } from './lib/config';
   import { geoState, readGeoPath } from './lib/geoLevels';
   import { type MassifDaily, type ServiceStatus, loadMassif, loadStatus } from './lib/data';
-  import { sameInAll } from './lib/i18n/core';
   import { i18n } from './lib/i18n/i18n.svelte';
   import { readPref, writePref } from './lib/prefs';
   import { sheets } from './lib/sheets.svelte';
@@ -30,7 +29,7 @@
   import { filterState, nextPath } from './lib/filterLevels';
   import { viewFor } from './lib/kpiView';
   import { liveWebcam } from './lib/webcams';
-  import { instanceTitle, isLiveTile, nextBoundary } from './lib/periods';
+  import { isLiveTile, nextBoundary, tileTitle } from './lib/periods';
   import { skeletonVariant, tileComponent, tileRows } from './tiles/registry';
   import TileShell from './tiles/TileShell.svelte';
   import TileSkeleton from './tiles/TileSkeleton.svelte';
@@ -197,7 +196,7 @@
           <div class="slot" class:tall={tileRows(tile.format) === 2}>
             <TileSkeleton
               id={tile.id}
-              title={i18n.pick(instanceTitle(tile, kpis, sameInAll(''))).trim()}
+              title={i18n.pick(tileTitle(tile, kpis))}
               variant={skeletonVariant(tile.format)}
             />
           </div>
@@ -208,7 +207,7 @@
     {:else}
       <div class="tiles">
         {#each instances as instance, index (instance.id)}
-          {@const { tile, kpis, slot } = instance}
+          {@const { tile, kpis, slot, time } = instance}
           {@const TileComponent = tileComponent(tile.format)}
           {@const view = viewFor(
             kpis[0],
@@ -233,7 +232,13 @@
                 variant={skeletonVariant(tile.format)}
               />
             {:else if TileComponent}
-              <TileComponent {tile} {kpis} {view} webcam={liveWebcam(tile, view, now, stationWebcams)} />
+              <TileComponent
+                {tile}
+                {kpis}
+                {view}
+                {time}
+                webcam={liveWebcam(tile, view, now, stationWebcams)}
+              />
             {:else if import.meta.env.DEV}
               <TileShell id={tile.id} title={i18n.pick(tile.title ?? kpis[0]?.name)} icon={tile.icon}>
                 <p>{i18n.t('tile.unsupported', { type: tile.format })}</p>

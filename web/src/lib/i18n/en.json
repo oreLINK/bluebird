@@ -57,6 +57,12 @@
   "back.reliabilityHelp": "The index measures how much the scenarios agree: the more they converge, the more reliable the result shown.",
   "back.windowVaries": "Depends on the resort (see each resort's details).",
   "back.what": "What it measures",
+  "back.when": "When?",
+  "back.whenDay": "{date}, all day.",
+  "back.whenNight": "Night of {date} to {next}.",
+  "back.whenDate": "{date}.",
+  "back.whenSlot": "{date}, {start} to {end}.",
+  "back.whenHelp": "The badge gives the day, in its dark colour, and the moment of the day, in a light colour: morning, lunchtime, afternoon, evening or night.",
   "back.updateTitle": "Last update",
   "footer.github": "Bluebird source code on GitHub",
   "footer.pages": "Information",
@@ -83,5 +89,7 @@
   "state.partial": "Partial",
   "state.stale": "Outdated",
   "state.down": "Unavailable",
-  "service.periodIssue": "{period}: {state}"
+  "service.periodIssue": "{period}: {state}",
+  "guide.frontAlt": "Example front of a Snow tile, with marks numbered 1 to 8.",
+  "guide.backAlt": "Example back of a tile, with marks numbered 1 to 9."
 }

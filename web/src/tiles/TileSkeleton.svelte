@@ -46,6 +46,7 @@
   <section class="card" aria-labelledby="{id}-title" aria-busy="true">
     <div class="card-body">
       <div class="content compact">
+        <span class="ticket" aria-hidden="true"></span>
         <h2 id="{id}-title">{title}</h2>
         <div class="odds" aria-hidden="true">
           <span></span><span></span><span></span>
@@ -82,11 +83,20 @@
   }
 
   .content.compact {
-    align-content: center;
+    align-content: start;
     gap: 6px;
     height: var(--tile-compact-h);
-    padding-top: 8px;
+    padding-top: 17px;
     text-align: left;
+  }
+
+  /* Place of the time badge (TimeBadge.svelte) of the compact tile. */
+  .ticket {
+    display: block;
+    width: 6.5rem;
+    height: 1.375rem;
+    border-radius: 5px;
+    background: var(--track);
   }
 
   .content.compact h2 {

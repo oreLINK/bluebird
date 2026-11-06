@@ -104,6 +104,34 @@
   --on-rewind: #ffffff;
   --live-bg: #d0021b; /* LIVE webcam badge on tile images (white text: 5.7:1) */
   --on-live: #ffffff;
+
+  /* Time badge of the tiles ("Dem. | Matin", TILES.md §9). Day cell: a dark
+     colour per day (`badge_days` / `badge_tonight` tones in
+     config/periods.yaml), white text; week-end and next week are planned.
+     Moment cell: one tone per moment of the ski day (`tone`), soft: -bg at
+     24 % over the card with -text, or at 42 % over --ticket-glass on an
+     image with white text and a -vivid icon. Text pairs ≥ 4.5:1. */
+  --when-today: #0b3b66;
+  --when-tonight: #2e1a6b;
+  --when-tomorrow: #0f4c45;
+  --when-ink: #ffffff;
+  --tone-morning-bg: #f9a8d4;
+  --tone-morning-text: #be185d;
+  --tone-morning-vivid: #f9a8d4;
+  --tone-midday-bg: #fde047;
+  --tone-midday-text: #854d0e;
+  --tone-midday-vivid: #fde047;
+  --tone-afternoon-bg: #f59e0b;
+  --tone-afternoon-text: #92400e;
+  --tone-afternoon-vivid: #fbbf24;
+  --tone-evening-bg: #7c3aed;
+  --tone-evening-text: #6d28d9;
+  --tone-evening-vivid: #c4b5fd;
+  --tone-night-bg: #1e1b4b;
+  --tone-night-text: #3730a3;
+  --tone-night-vivid: #a5b4fc;
+  --ticket-glass: rgba(6, 12, 32, 0.55);
+  --ticket-glass-ink: #ffffff;
   --rewind-ink: #b00d27; /* red text on the card surface */
   --rewind-soft: #fde8eb; /* value pills of the list (with --rewind-ink) */
   --rewind-line: #f5c2ca;
@@ -191,6 +219,15 @@
     --on-rewind: #ffffff;
     --live-bg: #d0021b;
     --on-live: #ffffff;
+    --when-today: #1b5c99;
+    --when-tonight: #4a3699;
+    --when-tomorrow: #17706a;
+    --tone-morning-text: #f9a8d4;
+    --tone-midday-text: #fde047;
+    --tone-afternoon-text: #fbbf24;
+    --tone-evening-text: #c4b5fd;
+    --tone-night-bg: #3730a3;
+    --tone-night-text: #a5b4fc;
     --rewind-ink: #ff8a98;
     --rewind-soft: #3b1420;
     --rewind-line: #5c2030;
@@ -255,6 +292,15 @@
   --on-rewind: #ffffff;
   --live-bg: #d0021b;
   --on-live: #ffffff;
+  --when-today: #1b5c99;
+  --when-tonight: #4a3699;
+  --when-tomorrow: #17706a;
+  --tone-morning-text: #f9a8d4;
+  --tone-midday-text: #fde047;
+  --tone-afternoon-text: #fbbf24;
+  --tone-evening-text: #c4b5fd;
+  --tone-night-bg: #3730a3;
+  --tone-night-text: #a5b4fc;
   --rewind-ink: #ff8a98;
   --rewind-soft: #3b1420;
   --rewind-line: #5c2030;

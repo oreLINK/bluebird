@@ -42,6 +42,27 @@ a match on a betting site.
 | Tonight | midnight – 06:00 |
 | Today (whole day) | shown from 06:00 to 18:00 |
 
+Each tile shows its slot on a small **time badge** in its top left corner,
+like a ticket with two boxes and short words in each language: the day
+("Today", "Tmrw"; in French "Auj.", "Dem.") and the moment ("AM", "Noon",
+"PM", "Eve", "Night"). A whole-day tile only shows the day, and tonight's
+tiles only say "Tonight". Each day has its own dark colour, and each moment
+a light one, from dawn to night, so you recognise them at a glance:
+
+| Day | Colour | | Moment | Colour |
+|---|---|---|---|---|
+| Today | midnight blue | | Morning | dawn pink |
+| Tonight | indigo | | Lunchtime | yellow |
+| Tomorrow | dark green | | Afternoon | amber |
+| | | | Evening (and sunset) | violet |
+| | | | Night | deep indigo |
+
+An icon (sun rising, sun high, sun setting, moon) repeats the colour of the
+moment. The title of the tile stays short ("Snow", "Bluebird day") since the
+badge already says when, and the back of the tile repeats the badge with the
+exact date and hours ("Saturday 16 January, 06:00 to 12:00"). Later, the
+week-end and next week will get their own colours too.
+
 Tiles are sorted by time: the slots coming soonest first, then tomorrow's.
 **A tile disappears as soon as its slot is over**, even if the page stays
 open: after noon you no longer see "this morning", after 18:00 you no longer
@@ -429,19 +450,20 @@ archive does not include it), on a coarser grid of about 7 km.
 - A service status page (linked from the footer), and the last valid values kept (and flagged)
   when an update fails.
 - Betting-style tiles: top three resorts as odds buttons with their
-  reliability dots, full ranking on demand, optional odds.
+  reliability dots, full ranking on demand, optional odds, and a coloured
+  time badge for the day and moment of each tile.
   Three tile sizes: large tiles whose picture fills the card, tiles with a
   picture band on top, and compact tiles without a picture for the
   indicators lower on the page. The picture is a photo of the leading resort
   when we have one we may publish, otherwise a drawing.
 - **Live webcam link**: on the **Bluebird day** tile of today, a red LIVE
-  badge appears in the top left corner when the leading resort has a webcam
+  badge appears in the top left corner, under the time badge, when the leading resort has a webcam
   at the top of its ski area and a chance of at least 60 %, while the day is
   in progress. It opens the resort's webcam on its provider's website
   (Skaping) in a new tab, to check the sky with your own eyes. Never for
   tomorrow, since a webcam only shows the present. First resort with
   webcams: Cauterets.
-- Two-sided tiles: the back explains the indicator and the reliability for its slot.
+- Two-sided tiles: the back explains the indicator, gives the exact date and hours of its slot, and the reliability for that slot.
 - Filters in levels, like a music app: category of indicator (Snow, Snow
   quality, Sky, Comfort, Getting there, Safety) or the Rewind, then sub-category, then day (Today, Tomorrow), then time
   slot (the only level showing time-slot tiles); a home page led by the
@@ -474,8 +496,12 @@ archive does not include it), on a coarser grid of about 7 km.
   photo is found. Each photo is credited on the back of its tile and in the
   legal notice.
 - A short footer: the GitHub logo (link to the project's source code) and
-  small links to **About**, **Legal notice** and **Privacy** (which lists the
-  settings kept on your device and can delete them). Each opens as
+  small links to **About**, **Reading a tile** (an example tile, front and
+  back, with numbered marks explaining every part: the time badge and its
+  colours, the LIVE badge, the values and reliability dots, the ranking, and
+  each section of the back), **Service status**, **Legal notice** and
+  **Privacy** (which lists the settings kept on your device and can delete
+  them). Each opens as
   a full-screen page over a blurred background, sliding up from the bottom;
   close it with the **×**, the Escape key or your phone's back gesture.
 - Works on any modern phone browser; add it to your home screen for an
@@ -494,6 +520,12 @@ archive does not include it), on a coarser grid of about 7 km.
 - **A page per resort**: the same tiles for a single resort, with its own
   values instead of a ranking, topped by one sentence summing up its day
   ("Demain, grand beau après 20 cm").
+- **Warmer texts**: every indicator explained like a friend would, without
+  losing any information: the question it answers ("Demain, neige fraîche
+  et grand ciel bleu ?"), a practical tip, a verdict in words next to the
+  number ("Foncez", "Ça se tente"), how it is computed in three simple
+  steps (the technical details stay one tap away), and how far you can
+  trust it ("les prévisions sont d'accord" or "elles hésitent").
 - **Tile effects**: a light animation between the picture and the text of
   a tile. Some stay on, like snow falling on the Snow tiles; others play
   once, like a glint of sun across the Bluebird day tile when it comes into

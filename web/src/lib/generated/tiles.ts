@@ -61,7 +61,7 @@ export interface Tile {
   webcam?: TileWebcam | null;
   kpis?: Kpis;
   /**
-   * Defaults to the first KPI's name. A tile of live KPIs must contain `{period}`, replaced by the period label (e.g. 'Neige {period}' -> 'Neige ce soir'); a tile of historical KPIs (Rewind) must not.
+   * Defaults to the first KPI's name. Never contains the period: the site shows it on the time badge of each tile instance (day + moment, `config/periods.yaml`).
    */
   title?: Localized | null;
   icon?: Icon;

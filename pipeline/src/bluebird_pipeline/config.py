@@ -66,6 +66,13 @@ TileFormat = Literal["full", "banner", "compact"]
 
 TileVisual = Literal["scene", "photo"]
 """Background of the image of `full` and `banner` tiles (`webcam` is planned)."""
+
+TimeTone = Literal["morning", "midday", "afternoon", "evening", "night"]
+"""Colour of the moment cell of the tile time badge (`--tone-<tone>-*` tokens of the site)."""
+
+DayTone = Literal["today", "tonight", "tomorrow"]
+"""Colour of the day cell of the tile time badge (`--when-<tone>` tokens; week-end, next week
+are planned)."""
 """Absolute https:// URL."""
 
 
@@ -455,12 +462,36 @@ class Period(StrictModel):
     )
     labels: list[Localized] = Field(
         min_length=1,
-        description="Label per day offset: [today, tomorrow, …], used in tile titles.",
+        description=(
+            "Label per day offset: [today, tomorrow, …], where the period is written out "
+            "(tile back, screen readers, service status)."
+        ),
     )
     chip: Localized | None = Field(
         default=None,
         description="Chip of the `slot` filter level (Matin, Soir…); required for time slots.",
     )
+    badge: Localized | None = Field(
+        default=None,
+        description=(
+            "Short moment cell of the tile time badge, beside the day ('Matin', 'PM'); "
+            "none for a whole-day period, whose badge shows the day alone."
+        ),
+    )
+    tone: TimeTone | None = Field(
+        default=None,
+        description=(
+            "Colour of the moment cell; required with `badge`. Today, a `night` tone "
+            "shows `badge_tonight` alone ('Cette nuit')."
+        ),
+    )
+
+
+class BadgeDay(StrictModel):
+    """Day cell of the tile time badge: a short label in the colour of the day."""
+
+    tone: DayTone
+    label: Localized
 
 
 class PeriodsFile(StrictModel):
@@ -476,6 +507,16 @@ class PeriodsFile(StrictModel):
     days: list[Localized] = Field(
         default_factory=list,
         description="Chips of the `day` filter level, one per day of the horizon: [today, …].",
+    )
+    badge_days: list[BadgeDay] = Field(
+        default_factory=list,
+        description="Day cell of the tile time badge, one per day of the horizon: [today, …].",
+    )
+    badge_tonight: BadgeDay | None = Field(
+        default=None,
+        description=(
+            "Replaces today + a `night` moment on the time badge, in one cell ('Cette nuit')."
+        ),
     )
     periods: list[Period] = Field(min_length=1)
 
@@ -508,6 +549,15 @@ class PeriodsFile(StrictModel):
                 slots.append((start, end, period.id))
                 if period.chip is None:
                     errors.append(f"time slot '{period.id}' needs a `chip` label (filter bar)")
+            if period.badge is not None and period.tone is None:
+                errors.append(f"period '{period.id}' needs a `tone` for its `badge`")
+        if len(self.badge_days) < self.horizon_days:
+            errors.append(
+                f"`badge_days` needs {self.horizon_days} labels "
+                f"(one per day of the horizon), has {len(self.badge_days)}"
+            )
+        if any(p.tone == "night" for p in self.periods) and self.badge_tonight is None:
+            errors.append("`badge_tonight` is needed by the periods of tone `night`")
         if len(self.days) < self.horizon_days:
             errors.append(
                 f"`days` needs {self.horizon_days} chip labels "
@@ -579,9 +629,8 @@ class Tile(StrictModel):
     title: Localized | None = Field(
         default=None,
         description=(
-            "Defaults to the first KPI's name. A tile of live KPIs must contain `{period}`, "
-            "replaced by the period label (e.g. 'Neige {period}' -> 'Neige ce soir'); a "
-            "tile of historical KPIs (Rewind) must not."
+            "Defaults to the first KPI's name. Never contains the period: the site shows "
+            "it on the time badge of each tile instance (day + moment, `config/periods.yaml`)."
         ),
     )
     icon: str | None = None
@@ -770,6 +819,9 @@ class PageSection(StrictModel):
             "data_sources",
             "photo_credits",
             "local_data",
+            "tile_front",
+            "tile_back",
+            "time_badges",
             "service_summary",
             "service_sources",
             "service_transforms",
@@ -784,6 +836,9 @@ class PageSection(StrictModel):
             "attribution of every enabled source (config/sources.yaml); photo_credits "
             "lists every banner photo credit (web/src/assets/photos/credits.yaml); "
             "local_data lists the settings stored on the device and a button to delete them; "
+            "tile_front and tile_back draw an example tile (front, back) with numbered marks "
+            "that the paragraphs of the next section explain; time_badges lists every time "
+            "badge (days and moments, from config/periods.yaml); "
             "service_* show the status of the last refresh (diamond/status.json): "
             "summary, data sources, transformations, KPIs, tiles of the current massif."
         ),
@@ -1028,13 +1083,10 @@ class Config:
             live = self.is_live_tile(tile)
             if tile.title is not None:
                 for language, text in tile.title.model_dump().items():
-                    if live and "{period}" not in text:
+                    if "{period}" in text:
                         errors.append(
-                            f"tile '{tile.id}' title ({language}) must contain '{{period}}'"
-                        )
-                    elif not live and "{period}" in text:
-                        errors.append(
-                            f"Rewind tile '{tile.id}' title ({language}) cannot use '{{period}}'"
+                            f"tile '{tile.id}' title ({language}) cannot use '{{period}}': "
+                            "the time badge shows the period"
                         )
             if not live and tile.periods:
                 errors.append(f"Rewind tile '{tile.id}' cannot list periods")

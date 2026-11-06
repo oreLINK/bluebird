@@ -246,8 +246,8 @@ def test_repository_periods_cover_the_ski_day(repo_config: Config) -> None:
 def test_footer_pages_must_exist(tmp_path: Path) -> None:
     config_dir = tiny_config_dir(tmp_path)
     pages = (config_dir / "pages.yaml").read_text(encoding="utf-8")
-    assert "pages: [about, status, legal, privacy]" in pages
-    pages = pages.replace("pages: [about, status, legal, privacy]", "pages: [about, nope]")
+    assert "pages: [about, guide, status, legal, privacy]" in pages
+    pages = pages.replace("pages: [about, guide, status, legal, privacy]", "pages: [about, nope]")
     (config_dir / "pages.yaml").write_text(pages, encoding="utf-8")
     with pytest.raises(ConfigError, match="footer references unknown page 'nope'"):
         load_config(config_dir)
@@ -298,11 +298,42 @@ def test_kpi_and_tile_periods_must_exist(tmp_path: Path) -> None:
         load_config(config_dir)
 
 
-def test_tile_titles_need_the_period_placeholder(tmp_path: Path) -> None:
+def test_tile_titles_cannot_use_the_period_placeholder(tmp_path: Path) -> None:
     config_dir = tiny_config_dir(tmp_path)
-    _edit(config_dir, "tiles.yaml", '"Snow {period}"', '"Snow today"')
-    with pytest.raises(ConfigError, match=r"title \(en\) must contain '\{period\}'"):
+    _edit(config_dir, "tiles.yaml", "en: Snow,", 'en: "Snow {period}",')
+    with pytest.raises(ConfigError, match=r"title \(en\) cannot use '\{period\}'"):
         load_config(config_dir)
+
+
+def test_periods_need_a_day_badge_per_day(tmp_path: Path) -> None:
+    config_dir = tiny_config_dir(tmp_path)
+    _edit(
+        config_dir,
+        "periods.yaml",
+        "  - { tone: tomorrow, label: { fr: Dem., en: Tmrw, es: Mañana } }\n",
+        "",
+    )
+    with pytest.raises(ConfigError, match="`badge_days` needs 2 labels"):
+        load_config(config_dir)
+
+
+def test_a_period_badge_needs_a_tone(tmp_path: Path) -> None:
+    config_dir = tiny_config_dir(tmp_path)
+    _edit(config_dir, "periods.yaml", "    tone: midday\n", "")
+    with pytest.raises(ConfigError, match="period 'midday' needs a `tone`"):
+        load_config(config_dir)
+
+
+def test_repository_periods_have_short_time_badges(repo_config: Config) -> None:
+    periods = repo_config.periods
+    assert [d.tone for d in periods.badge_days] == ["today", "tomorrow"]
+    assert periods.badge_tonight is not None
+    assert repo_config.period("day").badge is None  # whole day: the day alone
+    assert repo_config.period("sunset").tone == "evening"
+    assert repo_config.period("overnight").tone == "night"
+    for period in periods.periods:
+        if period.badge is not None:
+            assert len(period.badge.fr) <= 6, period.id
 
 
 def test_tile_periods_default_to_those_of_its_kpis(repo_config: Config) -> None:
@@ -377,6 +408,21 @@ def test_service_status_page_is_linked_from_the_footer(repo_config: Config) -> N
         "service_kpis",
         "service_tiles",
     ]
+
+
+def test_tile_guide_page_explains_every_mark(repo_config: Config) -> None:
+    pages = {p.id: p for p in repo_config.pages.pages}
+    assert "guide" in repo_config.pages.footer.pages
+    sections = {s.id: s for s in pages["guide"].sections}
+    assert [s.block for s in pages["guide"].sections if s.block] == [
+        "tile_front",
+        "time_badges",
+        "tile_back",
+    ]
+    # One numbered paragraph per mark drawn by web/src/components/TileGuide.svelte.
+    for section_id, marks in (("front-marks", 8), ("back-marks", 9)):
+        numbers = [p.fr.split(".")[0] for p in sections[section_id].paragraphs]
+        assert numbers == [str(n) for n in range(1, marks + 1)]
 
 
 @pytest.mark.parametrize(

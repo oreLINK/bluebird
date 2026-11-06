@@ -38,10 +38,15 @@ const C = {
   staleBg: '#fff1d6',
   staleInk: '#7a4b00',
   planned: '#8a99ad',
+  whenToday: '#0b3b66', // --when-today (day cell of the time badge, white text)
+  whenTomorrow: '#0f4c45', // --when-tomorrow
 };
 
 // ------------------------------------------------------------- example data
-const TITLE = 'Journée bluebird aujourd’hui';
+const TITLE = 'Journée bluebird'; // the period is on the time badge, never in the title
+// A whole day: the time badge shows the day alone, in the colour of the day.
+const TODAY = { day: 'AUJ.', color: C.whenToday };
+const TOMORROW = { day: 'DEM.', color: C.whenTomorrow };
 const LIVE = [
   { name: 'Cauterets', value: '82 %', share: 0.82 },
   { name: 'Gourette', value: '64 %', share: 0.64 },
@@ -55,7 +60,7 @@ const REWIND = [
 
 // ------------------------------------------------------------- geometry
 const W = 320;
-const H = 330;
+const H = 340;
 const X = 16; // card left
 const Y = 16; // card top
 const CW = 288; // card width
@@ -169,6 +174,17 @@ function badge(x, y, label, { bg, ink = '#fff', dot = false, icon = '' }) {
   return `<g><rect x="${x}" y="${y}" width="${w}" height="20" rx="10" fill="${bg}"/>${parts}${text(cx, y + 14, label, { size: 9, weight: 800, fill: ink, anchor: 'start' })}</g>`;
 }
 
+/**
+ * Time badge (TimeBadge.svelte) of a whole-day tile: the short day label in
+ * the dark colour of the day (88 % over the card, 80 % on an image), white
+ * text. Moments ("Dem. | Matin") add a soft second cell, not drawn here.
+ */
+function ticket(x, y, { day, color }, onImage) {
+  const w = 12 + day.length * 6;
+  return `<g><rect x="${x}" y="${y}" width="${w}" height="17" rx="4" fill="${color}" opacity="${onImage ? 0.8 : 0.88}"/>
+  ${text(x + 6, y + 12, day, { size: 8.5, weight: 800, fill: '#fff', anchor: 'start' })}</g>`;
+}
+
 /** The three best stations as odds buttons, with their bars. */
 function odds(y, items, { compact = false, rewind = false, overlay = false } = {}) {
   const boxH = compact ? 40 : 54;
@@ -224,53 +240,64 @@ ${body}
  * `visual`: scene | photo | webcam; `kind`: live | historical; `badge`:
  * webcam | stale | undefined; `planned`: grey caption tag.
  */
-function tile({ format = 'banner', scope = 'ranking', visual = 'scene', kind = 'live', badge: corner, planned = false }) {
+function tile({ format = 'banner', scope = 'ranking', visual = 'scene', kind = 'live', badge: corner, time = TODAY, planned = false }) {
   const rewind = kind === 'historical';
   const items = rewind ? REWIND : LIVE;
   const title = rewind ? 'Le plus de neige' : TITLE;
   const titleInk = rewind ? C.rewindInk : C.ink;
   const clip = `c${++uid}`;
-  const cardH = format === 'compact' ? 138 : 270;
+  // Same proportions as the site: image 13rem of a 23rem front (+ "see all"),
+  // and one compact tile = half a banner tile minus half the gap.
+  const cardH = format === 'compact' ? 140 : 292;
+  const imageH = 150;
   let body = card(cardH);
-  const clipPath = format === 'full' ? rounded(X, Y, CW, cardH, R) : topRounded(X, Y, CW, 120, R);
+  const clipPath = format === 'full' ? rounded(X, Y, CW, cardH, R) : topRounded(X, Y, CW, imageH, R);
   body += `<defs><clipPath id="${clip}"><path d="${clipPath}"/></clipPath></defs>`;
 
-  const corners = () => {
+  /** Corner stack: time badge first (live tiles), then LIVE, Rewind or stale under it. */
+  const corners = (onImage) => {
     const out = [];
-    let x = X + 12;
-    if (rewind) out.push(badge(x, Y + 12, 'REWIND 25/26', { bg: C.rewind, icon: 'rewind' }));
-    if (corner === 'webcam') out.push(badge(x, Y + 12, 'LIVE', { bg: C.live, dot: true, icon: 'webcam' }));
-    if (corner === 'stale') out.push(badge(x, Y + 12, 'Données de 06:00', { bg: C.staleBg, ink: C.staleInk, icon: 'clock' }));
+    const x = X + 12;
+    let y = Y + 12;
+    if (!rewind) {
+      out.push(ticket(x, y, time, onImage));
+      y += 23;
+    }
+    if (rewind) out.push(badge(x, y, 'REWIND 25/26', { bg: C.rewind, icon: 'rewind' }));
+    if (corner === 'webcam') out.push(badge(x, y, 'LIVE', { bg: C.live, dot: true, icon: 'webcam' }));
+    if (corner === 'stale') out.push(badge(x, y, 'Données de 06:00', { bg: C.staleBg, ink: C.staleInk, icon: 'clock' }));
     return out.join('');
   };
 
   if (format === 'compact') {
-    body += text(X + 16, Y + 30, title, { size: 15, fill: titleInk, anchor: 'start', display: true });
-    body += helpButton(X + CW - 22, Y + 24, false);
-    body += odds(Y + 42, items, { compact: true, rewind });
-    body += seeAll(Y + 102);
+    // A badge row level with the "?" button, then the title, then the odds.
+    body += rewind ? badge(X + 12, Y + 13, 'REWIND 25/26', { bg: C.rewind, icon: 'rewind' }) : ticket(X + 12, Y + 15, time, false);
+    body += helpButton(X + CW - 22, Y + 23, false);
+    body += text(X + 14, Y + 54, title, { size: 15, fill: titleInk, anchor: 'start', display: true });
+    body += odds(Y + 62, items, { compact: true, rewind });
+    body += seeAll(Y + 114);
   } else if (format === 'full') {
     // The image runs down to the bottom of the card, under the "see all" bar.
     body += IMAGES[visual](Y, cardH, clip);
     body += `<defs><linearGradient id="${clip}g" x1="0" y1="0" x2="0" y2="1"><stop offset=".28" stop-color="#050b1e" stop-opacity="0"/><stop offset=".68" stop-color="#050b1e" stop-opacity=".62"/><stop offset="1" stop-color="#050b1e" stop-opacity=".88"/></linearGradient></defs>`;
     body += `<path d="${rounded(X, Y, CW, cardH, R)}" fill="url(#${clip}g)"/>`;
-    body += helpButton(X + CW - 24, Y + 24, true) + corners();
-    body += text(X + CW / 2, Y + 140, title, { size: 17, fill: '#fff', display: true });
-    body += odds(Y + 154, items, { rewind, overlay: true });
-    body += seeAll(Y + 236, true);
+    body += helpButton(X + CW - 24, Y + 24, true) + corners(true);
+    body += text(X + CW / 2, Y + 162, title, { size: 17, fill: '#fff', display: true });
+    body += odds(Y + 176, items, { rewind, overlay: true });
+    body += seeAll(Y + 258, true);
   } else {
-    body += IMAGES[visual](Y, 120, clip);
-    body += helpButton(X + CW - 24, Y + 24, true) + corners();
-    body += text(X + CW / 2, Y + 148, title, { size: 16, fill: titleInk, display: true });
+    body += IMAGES[visual](Y, imageH, clip);
+    body += helpButton(X + CW - 24, Y + 24, true) + corners(true);
+    body += text(X + CW / 2, Y + 178, title, { size: 16, fill: titleInk, display: true });
     if (scope === 'station') {
-      body += text(X + CW / 2, Y + 176, 'Cauterets', { size: 12, weight: 600, fill: C.ink });
-      body += text(X + CW / 2, Y + 210, '82 %', { size: 32, fill: C.brand, display: true });
-      body += [0, 1, 2].map((d) => `<circle cx="${X + CW / 2 - 6 + d * 6}" cy="${Y + 222}" r="2.2" fill="${C.brand}"/>`).join('');
-      body += `<line x1="${X}" y1="${Y + 236}" x2="${X + CW}" y2="${Y + 236}" stroke="${C.line}"/>`;
-      body += text(X + CW / 2, Y + 257, 'Ce matin 82 % · Demain 71 %', { size: 11, weight: 600, fill: C.inkFaint });
+      body += text(X + CW / 2, Y + 200, 'Cauterets', { size: 12, weight: 600, fill: C.ink });
+      body += text(X + CW / 2, Y + 234, '82 %', { size: 32, fill: C.brand, display: true });
+      body += [0, 1, 2].map((d) => `<circle cx="${X + CW / 2 - 6 + d * 6}" cy="${Y + 246}" r="2.2" fill="${C.brand}"/>`).join('');
+      body += `<line x1="${X}" y1="${Y + 258}" x2="${X + CW}" y2="${Y + 258}" stroke="${C.line}"/>`;
+      body += text(X + CW / 2, Y + 279, 'Ce matin 82 % · Demain 71 %', { size: 11, weight: 600, fill: C.inkFaint });
     } else {
-      body += odds(Y + 160, items, { rewind });
-      body += seeAll(Y + 236);
+      body += odds(Y + 188, items, { rewind });
+      body += seeAll(Y + 258);
     }
   }
   return body;
@@ -285,6 +312,7 @@ const FILES = {
   'visual-webcam': [{ visual: 'webcam', planned: true }, 'visual: webcam', true],
   'scope-station': [{ scope: 'station', planned: true }, 'scope: station', true],
   rewind: [{ kind: 'historical' }, 'kind: historical (Rewind)'],
+  'badge-time': [{ time: TOMORROW }, 'time badge: tomorrow (its colour)'],
   'badge-webcam': [{ visual: 'photo', badge: 'webcam' }, 'webcam rule: LIVE badge'],
   'badge-stale': [{ badge: 'stale' }, 'stale values: "data from" badge'],
 };

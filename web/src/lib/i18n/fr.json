@@ -57,6 +57,12 @@
   "back.reliabilityHelp": "L'indice mesure l'accord entre les scénarios : plus ils convergent, plus le résultat affiché est fiable.",
   "back.windowVaries": "Selon la station (voir le détail de chaque station).",
   "back.what": "Ce que ça mesure",
+  "back.when": "Quand ?",
+  "back.whenDay": "{date}, toute la journée.",
+  "back.whenNight": "Nuit du {date} au {next}.",
+  "back.whenDate": "{date}.",
+  "back.whenSlot": "{date}, de {start} à {end}.",
+  "back.whenHelp": "La pastille donne le jour, dans sa couleur sombre, et le moment de la journée, dans une couleur claire : matin, midi, après-midi, soir ou nuit.",
   "back.updateTitle": "Mise à jour",
   "footer.github": "Code source de Bluebird sur GitHub",
   "footer.pages": "Informations",
@@ -83,5 +89,7 @@
   "state.partial": "Partiel",
   "state.stale": "Ancien",
   "state.down": "Indisponible",
-  "service.periodIssue": "{period} : {state}"
+  "service.periodIssue": "{period} : {state}",
+  "guide.frontAlt": "Exemple de recto d'une tuile Neige, avec des repères numérotés de 1 à 8.",
+  "guide.backAlt": "Exemple de verso d'une tuile, avec des repères numérotés de 1 à 9."
 }

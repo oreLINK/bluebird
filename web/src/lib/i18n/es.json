@@ -57,6 +57,12 @@
   "back.reliabilityHelp": "El índice mide cuánto coinciden los escenarios: cuanto más convergen, más fiable es el resultado mostrado.",
   "back.windowVaries": "Depende de la estación (consulta los detalles de cada estación).",
   "back.what": "Qué mide",
+  "back.when": "¿Cuándo?",
+  "back.whenDay": "{date}, todo el día.",
+  "back.whenNight": "Noche del {date} al {next}.",
+  "back.whenDate": "{date}.",
+  "back.whenSlot": "{date}, de {start} a {end}.",
+  "back.whenHelp": "La etiqueta indica el día, en su color oscuro, y el momento del día, en un color claro: mañana, mediodía, tarde, noche o madrugada.",
   "back.updateTitle": "Última actualización",
   "footer.github": "Código fuente de Bluebird en GitHub",
   "footer.pages": "Información",
@@ -83,5 +89,7 @@
   "state.partial": "Parcial",
   "state.stale": "Antiguo",
   "state.down": "No disponible",
-  "service.periodIssue": "{period}: {state}"
+  "service.periodIssue": "{period}: {state}",
+  "guide.frontAlt": "Ejemplo del anverso de una tarjeta Nieve, con marcas numeradas del 1 al 8.",
+  "guide.backAlt": "Ejemplo del reverso de una tarjeta, con marcas numeradas del 1 al 9."
 }

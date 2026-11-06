@@ -1,8 +1,10 @@
 <!--
   Tile format `compact`: a `banner` tile without the image, for the KPIs lower
   on the page. Same width and same parts on a FlipCard, but shorter:
-    Front: title (no icon), the best stations as odds buttons (OddsRow), then
-           "see all" for the rest (RankingMore).
+    Front: a row of badges level with the "?" button (time badge, or the
+           Rewind / "data from HH:MM" badge), the title (no icon, no period),
+           the best stations as odds buttons (OddsRow), then "see all" for
+           the rest (RankingMore).
     Back:  KpiBack, like every tile.
   Every compact tile has the same collapsed size (--tile-compact-h in base.css).
   Options (config/tiles.yaml):
@@ -19,14 +21,17 @@
   import type { TileProps } from './registry';
   import StaleBadge from '../components/StaleBadge.svelte';
   import TileBadge from './TileBadge.svelte';
+  import TimeBadge from './TimeBadge.svelte';
   import { tileModel } from './tileModel';
 
-  let { tile, view }: TileProps = $props();
+  let { tile, view, time = null }: TileProps = $props();
 
   const model = $derived(tileModel(tile, view));
   const title = $derived(i18n.pick(tile.title ?? view.kpi.name));
-  /** Longer titles ("… demain après-midi") get a smaller font, on up to two lines. */
-  const LONG_TITLE = 24;
+  /** The period in words, for screen readers (the time badge is hidden from them). */
+  const period = $derived(time ? i18n.pick(time.label) : '');
+  /** Longer titles ("Nieve polvo fuera de pista") get a smaller font, still on one line. */
+  const LONG_TITLE = 20;
 
   let selected = $state<string | null>(null);
   let showAll = $state(false);
@@ -40,19 +45,26 @@
   {#snippet front()}
     <div class="content">
       <header class="headline">
-        {#if model.badge}
-          <TileBadge label={i18n.pick(model.badge)} icon="rewind" />
-        {:else if model.staleSince}
-          <StaleBadge since={model.staleSince} timezone={view.timezone} />
+        {#if time || model.badge || model.staleSince}
+          <div class="badges">
+            {#if time}<TimeBadge {time} />{/if}
+            {#if model.badge}
+              <TileBadge label={i18n.pick(model.badge)} icon="rewind" />
+            {:else if model.staleSince}
+              <StaleBadge since={model.staleSince} timezone={view.timezone} />
+            {/if}
+          </div>
         {/if}
-        <h2 id="{tile.id}-title" class:long={title.length > LONG_TITLE}>{title}</h2>
+        <h2 id="{tile.id}-title" class:long={title.length > LONG_TITLE}>
+          {title}{#if period}<span class="visually-hidden"> {period}</span>{/if}
+        </h2>
       </header>
       {#if model.items.length === 0}
         <p class="empty">{i18n.t(model.emptyMessage)}</p>
       {:else}
         <OddsRow
           tileId={tile.id}
-          label={title}
+          label={period ? `${title} ${period}` : title}
           top={model.top}
           {selected}
           onselect={toggle}
@@ -82,28 +94,38 @@
   {/snippet}
 
   {#snippet back()}
-    <KpiBack {tile} {view} photo={model.photo} />
+    <KpiBack {tile} {view} {time} photo={model.photo} />
   {/snippet}
 </FlipCard>
 
 <style>
+  /* The badge row (1.375rem) is centred on the "?" button of the FlipCard
+     (top 10px, 2.25rem): 17px from the top. */
   .content {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    align-content: center;
+    align-content: start;
     gap: 6px;
     height: var(--tile-compact-h);
-    padding: 8px 14px 0;
+    padding: 17px 14px 0;
     overflow: hidden;
   }
 
   .headline {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .badges {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     min-width: 0;
+    height: 1.375rem;
     /* Room for the "?" button of the FlipCard. */
-    padding-right: 40px;
+    padding-right: 44px;
   }
 
   h2 {
@@ -120,12 +142,7 @@
   }
 
   h2.long {
-    display: -webkit-box;
-    font-size: 1.0625rem;
-    white-space: normal;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
+    font-size: 1.125rem;
   }
 
   .empty {
