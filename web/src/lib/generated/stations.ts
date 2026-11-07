@@ -63,6 +63,10 @@ export type Url = string;
  * Live webcams, linked from the tiles (`webcam` rule).
  */
 export type Webcams = Webcam[];
+/**
+ * Number of the Météo-France avalanche massif the station belongs to (its avalanche bulletin, KPI `avalanche_risk`); none for a resort without a French bulletin.
+ */
+export type AvalancheMassif = number | null;
 export type Stations = Station[];
 
 /**
@@ -106,6 +110,7 @@ export interface Station {
   zone?: Zone;
   domain?: Domain1;
   webcams?: Webcams;
+  avalanche_massif?: AvalancheMassif;
 }
 /**
  * Elevations of a ski area, in metres.

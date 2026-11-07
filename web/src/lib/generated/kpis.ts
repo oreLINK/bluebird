@@ -22,9 +22,9 @@ export type Es = string;
  * Value (in `unit`) of a full bar in the tiles, e.g. 100 for a percentage. Default: the best value of the ranking.
  */
 export type Max = number | null;
-export type Kind1 = 'percent' | 'value' | 'levels';
+export type Kind1 = 'percent' | 'value' | 'levels' | 'scale';
 /**
- * value: driver holding the median.
+ * value: driver holding the median; scale: the level.
  */
 export type Driver = string | null;
 /**
@@ -40,6 +40,18 @@ export type Bands = DisplayBand[];
 export type Min = number;
 export type Levels = DisplayLevel[];
 /**
+ * The level, as held by the display `driver`.
+ */
+export type Value = number;
+/**
+ * Colour of the level on the tiles (`--scale-<tone>-*` tokens in tokens.css).
+ */
+export type Tone = 'danger-1' | 'danger-2' | 'danger-3' | 'danger-4' | 'danger-5';
+/**
+ * scale: the levels, by increasing `value`.
+ */
+export type Steps = ScaleStep[];
+/**
  * Driver shown in small type.
  */
 export type Note = string | null;
@@ -48,6 +60,14 @@ export type Note = string | null;
  */
 export type Order = 'desc' | 'asc';
 export type Enabled = boolean;
+/**
+ * The value is relayed as is from an official source (e.g. the Météo-France avalanche bulletin), never computed by Bluebird: a blue rosette next to the tile title, explained on the back.
+ */
+export type Certified = boolean;
+/**
+ * Official page (e.g. the avalanche bulletins), new tab.
+ */
+export type Url = string;
 export type Unit1 = string | null;
 export type Decimals1 = number;
 /**
@@ -110,6 +130,11 @@ export interface Kpi {
   display?: KpiDisplay;
   order?: Order;
   enabled?: Enabled;
+  certified?: Certified;
+  /**
+   * certified KPIs: the official page to read the source itself (e.g. the full avalanche bulletin), linked from the back of the tiles, opened in a new tab.
+   */
+  official_link?: OfficialLink | null;
   name: Localized;
   description: Localized;
   /**
@@ -151,7 +176,7 @@ export interface Localized {
   es: Es;
 }
 /**
- * Live KPIs: shown as a percent (default), a value or levels.
+ * Live KPIs: shown as a percent (default), a value, levels or a scale.
  */
 export interface KpiDisplay {
   kind?: Kind1;
@@ -160,6 +185,7 @@ export interface KpiDisplay {
   tolerance?: Tolerance;
   bands?: Bands;
   levels?: Levels;
+  steps?: Steps;
   note?: Note;
 }
 /**
@@ -175,6 +201,41 @@ export interface DisplayBand {
 export interface DisplayLevel {
   min: Min;
   label: Localized;
+}
+/**
+ * A step of a `scale` display: one level of an official scale (e.g. avalanche danger 4).
+ */
+export interface ScaleStep {
+  value: Value;
+  tone: Tone;
+  label: Localized1;
+  /**
+   * What to do at this level, shown on the tile back.
+   */
+  advice?: Localized | null;
+}
+/**
+ * A user-facing string in every supported UI language.
+ */
+export interface Localized1 {
+  fr: Fr;
+  en: En;
+  es: Es;
+}
+/**
+ * Link from the back of a `certified` KPI's tiles to the official source itself.
+ */
+export interface OfficialLink {
+  url: Url;
+  label: Localized2;
+}
+/**
+ * A user-facing string in every supported UI language.
+ */
+export interface Localized2 {
+  fr: Fr;
+  en: En;
+  es: Es;
 }
 export interface Params {
   [k: string]: unknown;

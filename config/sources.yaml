@@ -72,6 +72,26 @@ sources:
       url: https://open-meteo.com/
       license: CC BY 4.0
 
+  # Avalanche bulletins (BRA) of Météo-France, API DonneesPubliquesBRA: one
+  # request per avalanche massif of the stations (9 for the Pyrenees) for the
+  # KPI avalanche_risk. The API key comes from the GitHub secret
+  # METEOFRANCE_BRA_API_KEY (sent in the `apikey` header, never stored); a
+  # missing or expired key fails this source only. Bulletins run from early
+  # November to late May: out of season, no bulletin is a normal state.
+  # `bluebird demo` writes synthetic bulletins (pipeline/src/bluebird_pipeline/demo.py).
+  - id: meteofrance_bra
+    extractor: meteofrance_bra
+    transformer: meteofrance_bra
+    enabled: true
+    schedule: daily
+    params:
+      min_interval_s: 1.5 # well under the rate limit of the Météo-France portal
+      timeout_s: 30
+    attribution:
+      name: Météo-France (bulletins d'estimation du risque d'avalanche)
+      url: https://meteofrance.com/meteo-montagne
+      license: Licence Ouverte Etalab 2.0
+
   # Rewind: the season archive of AROME HD (1.5 km), hour by hour, at the station
   # point and at points along and around each ski area. A five-month season
   # weighs ~11 calls per point for Open-Meteo: keep min_interval_s high.

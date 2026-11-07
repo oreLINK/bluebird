@@ -27,6 +27,11 @@
 # `webcam` rule (config/tiles.yaml) link that page from a LIVE badge; the
 # image itself is never shown on the site (no reuse rights).
 #
+# `avalanche_massif` is the number of the Météo-France avalanche massif whose
+# bulletin (BERA) gives the station's avalanche danger (KPI `avalanche_risk`).
+# Checked against the official massif outlines (metadata_massifs.geojson of
+# Météo-France, data.gouv.fr): each resort lies inside its massif.
+#
 # Times are local (massif timezone), formatted HH:MM.
 #   grooming_end: when piste grooming usually finishes. If it is later than
 #                 lifts_open (e.g. 22:00), it refers to the previous evening.
@@ -43,6 +48,7 @@ stations:
     lat: 42.515
     lon: 2.010
     elevation: { base: 1750, summit: 2213 }
+    avalanche_massif: 73
     aspects: [N, NE, E]
 
   - id: les-angles
@@ -52,6 +58,7 @@ stations:
     lat: 42.570
     lon: 2.050
     elevation: { base: 1600, summit: 2400 }
+    avalanche_massif: 73
     aspects: [N, NE, E]
 
   - id: formigueres
@@ -61,6 +68,7 @@ stations:
     lat: 42.620
     lon: 2.055
     elevation: { base: 1700, summit: 2350 }
+    avalanche_massif: 73
     aspects: [NE, E]
 
   - id: porte-puymorens
@@ -70,6 +78,7 @@ stations:
     lat: 42.553
     lon: 1.815
     elevation: { base: 1600, summit: 2500 }
+    avalanche_massif: 73
     aspects: [N, NW, W]
 
   - id: ax-3-domaines
@@ -79,6 +88,7 @@ stations:
     lat: 42.685
     lon: 1.795
     elevation: { base: 1400, summit: 2400 }
+    avalanche_massif: 70
     aspects: [N, NE]
 
   - id: ascou-pailheres
@@ -88,6 +98,7 @@ stations:
     lat: 42.740
     lon: 1.900
     elevation: { base: 1500, summit: 2030 }
+    avalanche_massif: 72
     aspects: [N]
 
   - id: guzet
@@ -97,6 +108,7 @@ stations:
     lat: 42.788
     lon: 1.300
     elevation: { base: 1100, summit: 2100 }
+    avalanche_massif: 69
     aspects: [N, NW]
 
   - id: le-mourtis
@@ -106,6 +118,7 @@ stations:
     lat: 42.877
     lon: 0.770
     elevation: { base: 1380, summit: 1860 }
+    avalanche_massif: 69
     aspects: [N, NE]
 
   - id: peyragudes
@@ -115,6 +128,7 @@ stations:
     lat: 42.795
     lon: 0.455
     elevation: { base: 1600, summit: 2400 }
+    avalanche_massif: 67
     aspects: [N, E, W]
 
   - id: saint-lary
@@ -124,6 +138,7 @@ stations:
     lat: 42.800
     lon: 0.322
     elevation: { base: 1700, summit: 2515 }
+    avalanche_massif: 67
     aspects: [N, NE, E]
 
   - id: piau-engaly
@@ -133,6 +148,7 @@ stations:
     lat: 42.788
     lon: 0.158
     elevation: { base: 1420, summit: 2600 }
+    avalanche_massif: 66
     aspects: [N, NE]
 
   - id: val-louron
@@ -142,6 +158,7 @@ stations:
     lat: 42.807
     lon: 0.413
     elevation: { base: 1450, summit: 2150 }
+    avalanche_massif: 67
     aspects: [N, E]
 
   - id: grand-tourmalet
@@ -151,6 +168,7 @@ stations:
     lat: 42.910
     lon: 0.180
     elevation: { base: 1400, summit: 2500 }
+    avalanche_massif: 66
     aspects: [N, E, S]
 
   - id: luz-ardiden
@@ -160,6 +178,7 @@ stations:
     lat: 42.876
     lon: -0.070
     elevation: { base: 1680, summit: 2500 }
+    avalanche_massif: 66
     aspects: [N, E]
 
   - id: cauterets
@@ -169,6 +188,7 @@ stations:
     lat: 42.866
     lon: -0.145
     elevation: { base: 1850, summit: 2415 }
+    avalanche_massif: 66
     aspects: [N, NE]
     webcams:
       - { id: les-cretes, name: Les Crêtes, position: summit, elevation: 2400, provider: skaping, url: "https://www.skaping.com/cauterets/les-cretes/panoramique" }
@@ -184,6 +204,7 @@ stations:
     lat: 42.957
     lon: -0.333
     elevation: { base: 1400, summit: 2400 }
+    avalanche_massif: 65
     aspects: [N, E, W]
 
   - id: la-pierre-saint-martin
@@ -193,6 +214,7 @@ stations:
     lat: 42.978
     lon: -0.757
     elevation: { base: 1450, summit: 2200 }
+    avalanche_massif: 64
     aspects: [N, NE]
 
   - id: superbagneres
@@ -202,4 +224,5 @@ stations:
     lat: 42.757
     lon: 0.580
     elevation: { base: 1440, summit: 2260 }
+    avalanche_massif: 68
     aspects: [N, E, W]

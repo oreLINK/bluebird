@@ -64,6 +64,10 @@ export type Ranking = DiamondRankingEntry[];
  * Periods not over yet, by start time.
  */
 export type Periods = DiamondKpiPeriod[];
+/**
+ * Ids of the payload `sources` that feed this KPI (cited on the back of its tiles); empty in older payloads, which then cite every source.
+ */
+export type SourceIds = string[];
 export type Id1 = string;
 export type Name1 = string;
 export type Url = string;
@@ -108,6 +112,7 @@ export interface DiamondKpi {
   kpi_id: KpiId;
   aggregator_version: AggregatorVersion;
   periods: Periods;
+  source_ids?: SourceIds;
 }
 /**
  * The ranking of one KPI for one period of one ski day.

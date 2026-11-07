@@ -31,6 +31,12 @@ class SeasonWhiteDaysParams(WhiteoutRule):
 @register_aggregator("season_white_days")
 class AggregatorSeasonWhiteDays(SeasonAggregator):
     Params: ClassVar[type[AggregatorParams]] = SeasonWhiteDaysParams
+    required_columns: ClassVar[tuple[str, ...]] = (
+        "relative_humidity_pct",
+        "shortwave_wm2",
+        "snowfall_cm",
+        "cloud_cover_pct",
+    )
     params: SeasonWhiteDaysParams
 
     def aggregate(

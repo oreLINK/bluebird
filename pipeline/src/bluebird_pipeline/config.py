@@ -72,6 +72,10 @@ TileVisual = Literal["scene", "photo"]
 """Background of the image of `full` and `banner` tiles (`webcam` is planned)."""
 
 TimeTone = Literal["morning", "midday", "afternoon", "evening", "night"]
+
+# Colours of the levels of a `scale` display (`--scale-<tone>-*` tokens): the
+# European avalanche danger scale, 1 (green) to 5 (red and black checkerboard).
+ScaleTone = Literal["danger-1", "danger-2", "danger-3", "danger-4", "danger-5"]
 """Colour of the moment cell of the tile time badge (`--tone-<tone>-*` tokens of the site)."""
 
 DayTone = Literal["today", "tonight", "tomorrow"]
@@ -228,6 +232,14 @@ class Station(StrictModel):
     webcams: list[Webcam] = Field(
         default_factory=list, description="Live webcams, linked from the tiles (`webcam` rule)."
     )
+    avalanche_massif: int | None = Field(
+        default=None,
+        ge=1,
+        description=(
+            "Number of the Météo-France avalanche massif the station belongs to (its avalanche "
+            "bulletin, KPI `avalanche_risk`); none for a resort without a French bulletin."
+        ),
+    )
 
     @field_validator("webcams")
     @classmethod
@@ -331,6 +343,26 @@ class DisplayBand(StrictModel):
     label: Localized
 
 
+class OfficialLink(StrictModel):
+    """Link from the back of a `certified` KPI's tiles to the official source itself."""
+
+    url: HttpUrl = Field(description="Official page (e.g. the avalanche bulletins), new tab.")
+    label: Localized = Field(description="Text of the link (e.g. Lire le bulletin officiel).")
+
+
+class ScaleStep(StrictModel):
+    """A step of a `scale` display: one level of an official scale (e.g. avalanche danger 4)."""
+
+    value: int = Field(ge=0, description="The level, as held by the display `driver`.")
+    tone: ScaleTone = Field(
+        description="Colour of the level on the tiles (`--scale-<tone>-*` tokens in tokens.css)."
+    )
+    label: Localized = Field(description="Name of the level, shown on the tile back.")
+    advice: Localized | None = Field(
+        default=None, description="What to do at this level, shown on the tile back."
+    )
+
+
 class KpiDisplay(StrictModel):
     """How a live KPI is shown on its tiles (the probability is always computed).
 
@@ -341,11 +373,16 @@ class KpiDisplay(StrictModel):
              reliability comes from the spread between the two `range` drivers
              (p10, p90): high within `tolerance`, medium within twice it;
              `bands` name ranges of values (e.g. the wind chill risk);
-    levels   a decision from the probability ("Oui", "Possible", "Non").
+    levels   a decision from the probability ("Oui", "Possible", "Non");
+    scale    a level of an official scale, from `driver` (e.g. avalanche danger
+             1 to 5): the tiles show the number on a block in the colour of its
+             `steps` tone; the back lists every step with its name and advice.
     """
 
-    kind: Literal["percent", "value", "levels"] = "percent"
-    driver: str | None = Field(default=None, description="value: driver holding the median.")
+    kind: Literal["percent", "value", "levels", "scale"] = "percent"
+    driver: str | None = Field(
+        default=None, description="value: driver holding the median; scale: the level."
+    )
     range: list[str] | None = Field(
         default=None, min_length=2, max_length=2, description="value: p10 and p90 drivers."
     )
@@ -354,12 +391,21 @@ class KpiDisplay(StrictModel):
     )
     bands: list[DisplayBand] = Field(default_factory=list)
     levels: list[DisplayLevel] = Field(default_factory=list)
+    steps: list[ScaleStep] = Field(
+        default_factory=list, description="scale: the levels, by increasing `value`."
+    )
     note: str | None = Field(default=None, description="Driver shown in small type.")
 
     @model_validator(mode="after")
     def _complete(self) -> KpiDisplay:
         if self.kind == "value" and not (self.driver and self.range and self.tolerance):
             raise ValueError("a `value` display needs `driver`, `range` and `tolerance`")
+        if self.kind == "scale":
+            values = [step.value for step in self.steps]
+            if not self.driver or len(values) < 2 or values != sorted(set(values)):
+                raise ValueError(
+                    "a `scale` display needs `driver` and 2+ `steps` by increasing value"
+                )
         if self.kind == "levels":
             mins = [level.min for level in self.levels]
             if len(mins) < 2 or mins != sorted(mins, reverse=True) or mins[-1] != 0:
@@ -439,7 +485,7 @@ class Kpi(StrictModel):
     )
     display: KpiDisplay = Field(
         default_factory=KpiDisplay,
-        description="Live KPIs: shown as a percent (default), a value or levels.",
+        description="Live KPIs: shown as a percent (default), a value, levels or a scale.",
     )
     order: Literal["desc", "asc"] = Field(
         default="desc",
@@ -449,6 +495,21 @@ class Kpi(StrictModel):
         ),
     )
     enabled: bool = True
+    certified: bool = Field(
+        default=False,
+        description=(
+            "The value is relayed as is from an official source (e.g. the Météo-France "
+            "avalanche bulletin), never computed by Bluebird: a blue rosette next to the tile "
+            "title, explained on the back."
+        ),
+    )
+    official_link: OfficialLink | None = Field(
+        default=None,
+        description=(
+            "certified KPIs: the official page to read the source itself (e.g. the full "
+            "avalanche bulletin), linked from the back of the tiles, opened in a new tab."
+        ),
+    )
     name: Localized
     description: Localized
     method: Localized | None = Field(
@@ -485,7 +546,7 @@ class Kpi(StrictModel):
         """What the visibility thresholds compare: the display value or the probability."""
         if self.visibility and self.visibility.measure:
             return self.visibility.measure
-        return "value" if self.display.kind == "value" else "probability"
+        return "value" if self.display.kind in ("value", "scale") else "probability"
 
     @model_validator(mode="after")
     def _visibility(self) -> Kpi:
@@ -495,8 +556,10 @@ class Kpi(StrictModel):
         if self.kind == "historical":
             raise ValueError(f"historical KPI '{self.id}' cannot have `visibility`")
         measure = self.visibility_measure
-        if measure == "value" and self.display.kind != "value":
-            raise ValueError(f"KPI '{self.id}': visibility measure `value` needs a `value` display")
+        if measure == "value" and self.display.kind not in ("value", "scale"):
+            raise ValueError(
+                f"KPI '{self.id}': visibility measure `value` needs a `value` or `scale` display"
+            )
         thresholds = [vis.floor, vis.strong, *([vis.alert] if vis.alert is not None else [])]
         if vis.slots:
             thresholds += [vis.slots.floor, vis.slots.strong]
@@ -504,6 +567,12 @@ class Kpi(StrictModel):
                 raise ValueError(f"KPI '{self.id}': `slots` thresholds go the other way")
         if measure == "probability" and not all(0 <= t <= 1 for t in thresholds):
             raise ValueError(f"KPI '{self.id}': probability thresholds are between 0 and 1")
+        return self
+
+    @model_validator(mode="after")
+    def _official_link(self) -> Kpi:
+        if self.official_link is not None and not self.certified:
+            raise ValueError(f"KPI '{self.id}': `official_link` needs `certified: true`")
         return self
 
     @model_validator(mode="after")

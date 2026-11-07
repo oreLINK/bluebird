@@ -13,6 +13,7 @@
     details:   tapping a station shows its details (default false for now)
 -->
 <script lang="ts">
+  import CertifiedBadge from '../components/CertifiedBadge.svelte';
   import { i18n } from '../lib/i18n/i18n.svelte';
   import FlipCard from './FlipCard.svelte';
   import KpiBack from './KpiBack.svelte';
@@ -55,9 +56,12 @@
             {/if}
           </div>
         {/if}
-        <h2 id="{tile.id}-title" class:long={title.length > LONG_TITLE}>
-          {title}{#if period}<span class="visually-hidden"> {period}</span>{/if}
-        </h2>
+        <div class="title-row">
+          <h2 id="{tile.id}-title" class:long={title.length > LONG_TITLE}>
+            {title}{#if period}<span class="visually-hidden"> {period}</span>{/if}
+          </h2>
+          {#if view.kpi.certified}<CertifiedBadge size={20} onImage={false} />{/if}
+        </div>
       </header>
       {#if model.items.length === 0}
         <p class="empty">{i18n.t(model.emptyMessage)}</p>
@@ -158,5 +162,18 @@
 
   .below :global(.details) {
     margin-bottom: 12px;
+  }
+
+  /* Title and, for an official value, the "certified" rosette right after it. */
+  .title-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .title-row h2 {
+    min-width: 0;
   }
 </style>

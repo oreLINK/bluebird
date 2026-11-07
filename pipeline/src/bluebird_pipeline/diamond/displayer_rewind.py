@@ -12,7 +12,7 @@ from typing import ClassVar, Literal
 from ..context import RunContext
 from ..gold.base import frame_to_season_results
 from ..storage import rewind_gold_key, rewind_key
-from ._payload import source_payloads, station_payloads
+from ._payload import kpi_source_ids, source_payloads, station_payloads
 from .base import DiamondArtifact, Displayer, register_displayer
 from .models import DiamondRewind, DiamondRewindEntry, DiamondRewindKpi
 
@@ -61,6 +61,7 @@ class DisplayerRewind(Displayer):
                         )
                         for r in rows
                     ],
+                    source_ids=kpi_source_ids(ctx.config, ctx.config.kpi(kpi_id)),
                 )
             if not kpis:
                 continue

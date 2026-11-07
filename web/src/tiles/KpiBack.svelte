@@ -7,8 +7,14 @@
                  confidence of every station) and the last update;
     historical:  the season (Rewind dates) and when it was computed;
   and finally the data sources and the banner photo credit.
+  A `certified` KPI (an official value relayed as is, e.g. the avalanche
+  bulletin) adds a "Donnée officielle" box under the description, explaining
+  the rosette of the front, and a reliability text based on the bulletin's
+  freshness (no scenarios). A `scale` display lists every level with its
+  name and advice ("Que faire selon le niveau ?").
 -->
 <script lang="ts">
+  import CertifiedBadge from '../components/CertifiedBadge.svelte';
   import ConfidenceDots from '../components/ConfidenceDots.svelte';
   import Icon from '../components/Icon.svelte';
   import type { Tile } from '../lib/config';
@@ -22,7 +28,7 @@
     formatWindow,
   } from '../lib/format';
   import { i18n } from '../lib/i18n/i18n.svelte';
-  import type { KpiView } from '../lib/kpiView';
+  import { displayOf, type KpiView } from '../lib/kpiView';
   import { slotDates, type TileTime } from '../lib/periods';
   import type { Photo } from '../lib/photos';
   import TimeBadge from './TimeBadge.svelte';
@@ -59,6 +65,8 @@
   const ranking = $derived(view.kind === 'live' ? view.ranking : []);
   const today = $derived(reliability(ranking));
   const timeWindow = $derived(sharedWindow(ranking));
+  const certified = $derived(Boolean(kpi.certified));
+  const steps = $derived(view.kind === 'live' && displayOf(kpi).kind === 'scale' ? (kpi.display?.steps ?? []) : []);
   const method = $derived(
     kpi.method ? formatMethod(i18n.pick(kpi.method), kpi.params, i18n.locale) : '',
   );
@@ -82,6 +90,43 @@
     <h4>{i18n.t('back.what')}</h4>
     <p class="strong">{i18n.pick(kpi.description)}</p>
   </section>
+
+  {#if certified}
+    <section class="certified">
+      <h4>{i18n.t('back.certified')}</h4>
+      <div class="certified-box">
+        <CertifiedBadge size={28} />
+        <div>
+          <strong>{i18n.t('back.certifiedTitle')}</strong>
+          <p>{i18n.t('back.certifiedText')}</p>
+          {#if kpi.official_link}
+            <a class="official" href={kpi.official_link.url} target="_blank" rel="noopener noreferrer">
+              {i18n.pick(kpi.official_link.label)}
+              <Icon name="external" size={15} />
+              <span class="visually-hidden">{i18n.t('back.newTab')}</span>
+            </a>
+          {/if}
+        </div>
+      </div>
+    </section>
+  {/if}
+
+  {#if steps.length}
+    <section>
+      <h4>{i18n.t('back.scale')}</h4>
+      <ol class="steps">
+        {#each steps as step (step.value)}
+          <li>
+            <span class="step-value tabular" data-scale={step.tone}><span>{step.value}</span></span>
+            <div>
+              <strong>{i18n.pick(step.label)}</strong>
+              {#if step.advice}<p>{i18n.pick(step.advice)}</p>{/if}
+            </div>
+          </li>
+        {/each}
+      </ol>
+    </section>
+  {/if}
 
   {#if time && when}
     <section>
@@ -137,10 +182,14 @@
           {i18n.t('back.index', { score: formatPercent(today.score, i18n.locale) })}
         </span>
       </div>
-      <p class="help">{i18n.t('back.reliabilityHelp')}</p>
+      <p class="help">
+        {i18n.t(certified ? 'back.reliabilityHelpOfficial' : 'back.reliabilityHelp')}
+      </p>
       <ul>
         <li>{i18n.t('back.breakdown', today.counts)}</li>
-        <li>{i18n.t('back.scenarios', { members: today.members })}</li>
+        {#if today.members > 0}
+          <li>{i18n.t('back.scenarios', { members: today.members })}</li>
+        {/if}
       </ul>
     </section>
   {/if}
@@ -311,6 +360,79 @@
     gap: 4px;
     margin: 0;
     padding-left: 18px;
+  }
+
+  .certified-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius-m);
+    background: color-mix(in srgb, var(--verified-bg) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--verified-bg) 35%, transparent);
+  }
+
+  .certified-box strong {
+    color: var(--ink);
+  }
+
+  .certified-box p {
+    margin-bottom: 8px;
+  }
+
+  /* The way to the source itself: a real link, opened in a new tab. */
+  .official {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 2.25rem;
+    padding: 6px 14px;
+    border-radius: 999px;
+    /* Brand pair: >= 4.5:1 in both modes (white on --verified-bg is not in dark). */
+    background: var(--brand);
+    color: var(--on-brand);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .official:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  .steps {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .steps li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .steps strong {
+    color: var(--ink);
+  }
+
+  /* The level on its official colour, as on the odds buttons (base.css [data-scale]). */
+  .step-value {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 8px;
+    border: 1px solid var(--scale-edge, color-mix(in srgb, var(--scale-bg) 70%, #000000));
+    background: var(--scale-fill, var(--scale-bg));
+    color: var(--scale-ink);
+    font-family: var(--font-display);
+    font-size: 1.0625rem;
+    font-weight: var(--display-weight);
+    text-shadow: var(--scale-number-shadow, none);
   }
 
 </style>

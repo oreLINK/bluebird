@@ -27,6 +27,7 @@ class SeasonAreaSnowfallParams(AggregatorParams):
 @register_aggregator("season_area_snowfall")
 class AggregatorSeasonAreaSnowfall(SeasonAggregator):
     Params: ClassVar[type[AggregatorParams]] = SeasonAreaSnowfallParams
+    required_columns: ClassVar[tuple[str, ...]] = ("snowfall_cm",)
     params: SeasonAreaSnowfallParams
 
     def aggregate(

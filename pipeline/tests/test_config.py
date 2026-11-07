@@ -243,7 +243,7 @@ def test_every_live_kpi_competes_for_the_home_page(repo_config: Config) -> None:
             "kpis.yaml",
             "visibility: { priority: 0.75, floor: 0.4, strong: 0.8 }",
             "visibility: { priority: 0.75, measure: value, floor: 0.4, strong: 0.8 }",
-            "measure `value` needs a `value` display",
+            "measure `value` needs a `value` or `scale` display",
         ),
         (
             "kpis.yaml",

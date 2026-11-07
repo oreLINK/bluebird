@@ -59,8 +59,9 @@ filters:
         moods:
           - id: freerider
             name: { fr: Freerider, en: Freerider, es: Freerider }
-            kpis: [offpiste_powder_chance, powder_alert_chance, snowfall_chance, wind_slab_chance,
-                   whiteout_chance, bluebird_day_chance, lift_wind_chance, hard_snow_chance]
+            kpis: [offpiste_powder_chance, avalanche_risk, powder_alert_chance, snowfall_chance,
+                   wind_slab_chance, whiteout_chance, bluebird_day_chance, lift_wind_chance,
+                   hard_snow_chance]
           - id: carver
             name: { fr: Carveur, en: Carver, es: Carver }
             kpis: [onpiste_powder_chance, hard_snow_chance, snowfall_chance, lift_wind_chance,
@@ -166,8 +167,9 @@ filters:
         name: { fr: Remontées, en: Lifts, es: Remontes }
         kpis: [lift_wind_chance]
 
-  # Which mountain hazards to watch? Never instead of the avalanche bulletin.
-  # Wind-blown snow is computed for the whole day only: no `slot` level.
+  # Which mountain hazards to watch? Avalanche danger relays the official
+  # bulletin; wind-blown snow is a warning sign, never instead of it. Both are
+  # whole-day KPIs: no `slot` level.
   - id: safety
     name: { fr: Sécurité, en: Safety, es: Seguridad }
     icon: alert
@@ -175,4 +177,4 @@ filters:
     groups:
       - id: offpiste
         name: { fr: Hors-piste, en: Off-piste, es: Fuera de pista }
-        kpis: [wind_slab_chance]
+        kpis: [avalanche_risk, wind_slab_chance]

@@ -203,6 +203,20 @@
           },
           "title": "Webcams",
           "type": "array"
+        },
+        "avalanche_massif": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Number of the Météo-France avalanche massif the station belongs to (its avalanche bulletin, KPI `avalanche_risk`); none for a resort without a French bulletin.",
+          "title": "Avalanche Massif"
         }
       },
       "required": [

@@ -115,10 +115,36 @@ def open_meteo_transport(values: ValueFn = default_values) -> httpx.MockTranspor
     return httpx.MockTransport(handler)
 
 
+def without_avalanche_source(config_dir: Path) -> None:
+    """Disable the Météo-France avalanche source and its KPI in a config copy.
+
+    The source needs the Météo-France API key (and the network), so the
+    weather pipeline tests run without it; the source and the KPI have their
+    own tests (tests/bronze, tests/silver and tests/gold/test_avalanche_risk.py).
+    """
+    for name, old, new in [
+        (
+            "kpis.yaml",
+            "    aggregator: avalanche_risk\n",
+            "    aggregator: avalanche_risk\n    enabled: false\n",
+        ),
+        (
+            "sources.yaml",
+            "    transformer: meteofrance_bra\n    enabled: true\n",
+            "    transformer: meteofrance_bra\n    enabled: false\n",
+        ),
+    ]:
+        path = config_dir / name
+        text = path.read_text(encoding="utf-8")
+        assert old in text, (name, old)
+        path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
 def tiny_config_dir(tmp_path: Path, stations_yaml: str | None = None) -> Path:
     """Copy of the repository config, optionally with a smaller Pyrenees station list."""
     target = tmp_path / "config"
     shutil.copytree(repo_root() / "config", target)
+    without_avalanche_source(target)
     if stations_yaml is not None:
         (target / "stations" / "pyrenees.yaml").write_text(stations_yaml, encoding="utf-8")
     return target

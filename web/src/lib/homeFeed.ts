@@ -100,7 +100,8 @@ function thresholds(vis: KpiVisibility, period: Period | undefined): { floor: nu
 
 /** What the thresholds compare: the display value or the probability. */
 export function measureKind(kpi: Kpi): 'value' | 'probability' {
-  return kpi.visibility?.measure ?? (displayOf(kpi).kind === 'value' ? 'value' : 'probability');
+  const kind = displayOf(kpi).kind;
+  return kpi.visibility?.measure ?? (kind === 'value' || kind === 'scale' ? 'value' : 'probability');
 }
 
 /**

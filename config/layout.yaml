@@ -85,6 +85,7 @@ default:
   - mild_day
   - chains
   - lift_wind
+  - avalanche_risk
   - wind_slab
   - rewind_2025_26_total_snowfall
   - rewind_2025_26_longest_snowfall

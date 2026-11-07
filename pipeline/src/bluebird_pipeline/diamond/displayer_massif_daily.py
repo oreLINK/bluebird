@@ -20,7 +20,7 @@ from ..config import Kpi, Massif
 from ..context import RunContext
 from ..gold.base import KpiResult, frame_to_results, read_gold
 from ..storage import diamond_key
-from ._payload import source_payloads, station_payloads
+from ._payload import kpi_source_ids, source_payloads, station_payloads
 from .base import DiamondArtifact, Displayer, register_displayer
 from .models import (
     DiamondKpi,
@@ -106,6 +106,7 @@ class DisplayerMassifDaily(Displayer):
                 kpi_id=kpi.id,
                 aggregator_version=str(versions.max()),
                 periods=periods,
+                source_ids=kpi_source_ids(ctx.config, kpi),
             )
         return DiamondMassifDaily(
             massif_id=massif.id,

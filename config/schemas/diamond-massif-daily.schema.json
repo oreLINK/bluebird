@@ -44,6 +44,14 @@
           },
           "title": "Periods",
           "type": "array"
+        },
+        "source_ids": {
+          "description": "Ids of the payload `sources` that feed this KPI (cited on the back of its tiles); empty in older payloads, which then cite every source.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Source Ids",
+          "type": "array"
         }
       },
       "required": [

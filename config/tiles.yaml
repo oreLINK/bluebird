@@ -212,6 +212,16 @@ tiles:
     options:
       top: 3
 
+  - id: avalanche_risk
+    format: full
+    visual: photo
+    kpis: [avalanche_risk]
+    title: { fr: Risque d'avalanche, en: Avalanche danger, es: Peligro de aludes }
+    icon: alert
+    options:
+      top: 3
+      scene: mountain
+
   - id: wind_slab
     format: compact
     kpis: [wind_slab_chance]

@@ -102,6 +102,9 @@
     <circle cx="12" cy="10" r="6.5" />
     <circle cx="12" cy="10" r="2.5" />
     <path d="M8.5 16 7 21h10l-1.5-5" />
+  {:else if name === 'external'}
+    <path d="M14 4h6v6M20 4l-9 9" />
+    <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
   {:else if name === 'rewind'}
     <path d="M11.5 6 5 12l6.5 6M19.5 6 13 12l6.5 6" />
   {:else if name === 'github'}
