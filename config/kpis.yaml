@@ -974,6 +974,107 @@ kpis:
       max_wind_kmh_p50: { label: { fr: Vent maximal (médiane), en: Maximum wind (median), es: Viento máximo (mediana) }, unit: km/h }
       members: { label: { fr: Scénarios analysés, en: Scenarios analysed, es: Escenarios analizados } }
 
+  - id: avalanche_risk
+    aggregator: avalanche_risk
+    filters: [safety]
+    periods: [day]
+    certified: true
+    official_link:
+      url: https://meteofrance.com/meteo-montagne
+      label: { fr: Lire le bulletin officiel, en: Read the official bulletin, es: Leer el boletín oficial }
+    visibility: { priority: 0.9, floor: 3, strong: 4, alert: 4 }
+    name: { fr: Risque d'avalanche, en: Avalanche danger, es: Peligro de aludes }
+    description:
+      fr: Niveau de danger d'avalanche du bulletin officiel de Météo-France, pour le massif de chaque station, à l'altitude de son sommet.
+      en: Avalanche danger level from the official Météo-France bulletin, for the massif of each resort, at the elevation of its summit.
+      es: Nivel de peligro de aludes del boletín oficial de Météo-France, para el macizo de cada estación, a la altitud de su cima.
+    method:
+      fr: >-
+        Météo-France publie chaque jour vers 16 h, de début novembre à fin mai, un
+        bulletin d'estimation du risque d'avalanche par massif pour le lendemain.
+        Bluebird retient, pour chaque station, le niveau de son massif au-dessus ou en
+        dessous de l'altitude limite du bulletin selon l'altitude de son sommet, sans le
+        modifier. Quand le niveau change dans la journée, ou diffère selon le versant du
+        massif, Bluebird garde le plus élevé. Avant 16 h, demain affiche la tendance
+        donnée la veille par Météo-France (niveau maximal), remplacée par le bulletin
+        dès sa sortie. La fiabilité est haute jusqu'à {fresh_hours} heures après
+        l'émission du bulletin, moyenne ensuite et pour une tendance. Le niveau ne dit
+        pas tout : lisez le bulletin complet (pentes et orientations concernées,
+        évolution dans la journée) et emportez DVA, pelle et sonde.
+      en: >-
+        Every day around 4 pm, from early November to late May, Météo-France publishes
+        an avalanche risk bulletin per massif for the next day. For each resort,
+        Bluebird takes the level of its massif above or below the bulletin's altitude
+        limit, depending on the elevation of its summit, without changing it. When the
+        level changes during the day, or differs between the two sides of the massif,
+        Bluebird keeps the higher one. Before 4 pm, tomorrow shows the trend Météo-France
+        gave the day before (maximum level), replaced by the bulletin as soon as it is
+        out. Reliability is high up to {fresh_hours} hours after the bulletin was issued,
+        medium afterwards and for a trend. The level does not tell everything: read the
+        full bulletin (slopes and aspects concerned, changes during the day) and carry a
+        transceiver, shovel and probe.
+      es: >-
+        Cada día hacia las 16 h, de principios de noviembre a finales de mayo,
+        Météo-France publica un boletín de riesgo de aludes por macizo para el día
+        siguiente. Para cada estación, Bluebird toma el nivel de su macizo por encima o
+        por debajo de la altitud límite del boletín, según la altitud de su cima, sin
+        modificarlo. Cuando el nivel cambia durante el día, o difiere según la vertiente
+        del macizo, Bluebird conserva el más alto. Antes de las 16 h, mañana muestra la
+        tendencia dada la víspera por Météo-France (nivel máximo), sustituida por el
+        boletín en cuanto sale. La fiabilidad es alta hasta {fresh_hours} horas después de
+        la emisión del boletín, media después y para una tendencia. El nivel no lo dice
+        todo: lee el boletín completo (pendientes y orientaciones afectadas, evolución
+        durante el día) y lleva ARVA, pala y sonda.
+    params:
+      fresh_hours: 24
+    display:
+      kind: scale
+      driver: level
+      steps:
+        - value: 1
+          tone: danger-1
+          label: { fr: Faible, en: Low, es: Débil }
+          advice:
+            fr: Conditions généralement favorables. Restez prudent sur les pentes extrêmes.
+            en: Generally favourable conditions. Stay careful on extreme slopes.
+            es: Condiciones generalmente favorables. Ten cuidado en las pendientes extremas.
+        - value: 2
+          tone: danger-2
+          label: { fr: Limité, en: Moderate, es: Limitado }
+          advice:
+            fr: "Quelques pentes raides sont instables : évitez celles que signale le bulletin."
+            en: A few steep slopes are unstable; avoid those named in the bulletin.
+            es: "Algunas pendientes empinadas son inestables: evita las que señala el boletín."
+        - value: 3
+          tone: danger-3
+          label: { fr: Marqué, en: Considerable, es: Notable }
+          advice:
+            fr: "Hors-piste réservé aux skieurs expérimentés et équipés : un seul skieur peut déclencher une avalanche. C'est le niveau des accidents les plus nombreux."
+            en: Off-piste for experienced, equipped skiers only; a single skier can trigger an avalanche. Most accidents happen at this level.
+            es: "Fuera de pista solo para esquiadores expertos y equipados: un solo esquiador puede desencadenar un alud. Es el nivel con más accidentes."
+        - value: 4
+          tone: danger-4
+          label: { fr: Fort, en: High, es: Fuerte }
+          advice:
+            fr: Hors-piste fortement déconseillé. Restez sur les pistes ouvertes et balisées.
+            en: Off-piste strongly discouraged. Stay on open, marked pistes.
+            es: Fuera de pista muy desaconsejado. Quédate en las pistas abiertas y balizadas.
+        - value: 5
+          tone: danger-5
+          label: { fr: Très fort, en: Very high, es: Muy fuerte }
+          advice:
+            fr: Ne quittez pas les pistes ouvertes. De grandes avalanches spontanées sont attendues, parfois jusque dans des zones habituellement sûres.
+            en: Do not leave the open pistes. Large natural avalanches are expected, sometimes reaching areas that are usually safe.
+            es: No salgas de las pistas abiertas. Se esperan grandes aludes espontáneos, a veces hasta zonas normalmente seguras.
+    drivers:
+      level: { label: { fr: Niveau de danger, en: Danger level, es: Nivel de peligro } }
+      level_low: { label: { fr: Niveau sous l'altitude limite, en: Level below the altitude limit, es: Nivel bajo la altitud límite } }
+      level_high: { label: { fr: Niveau au-dessus de l'altitude limite, en: Level above the altitude limit, es: Nivel sobre la altitud límite } }
+      altitude_limit_m: { label: { fr: Altitude limite, en: Altitude limit, es: Altitud límite }, unit: m }
+      summit_m: { label: { fr: Altitude du sommet, en: Summit elevation, es: Altitud de la cima }, unit: m }
+      massif: { label: { fr: Massif du bulletin, en: Bulletin massif, es: Macizo del boletín } }
+      issued_at: { label: { fr: Bulletin émis le, en: Bulletin issued, es: Boletín emitido } }
+
   # ------------------------------------------------------------ historical KPIs
   # Rewind 25/26 (config/rewinds.yaml). Season: from December 1 to May 1.
   - id: season_total_snowfall

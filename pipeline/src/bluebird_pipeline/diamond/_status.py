@@ -5,7 +5,8 @@ The status says, for the site footer, what is fresh, partial, stale or down:
 - sources (bronze) and transformations (silver): from the step reports, a
   missing report (job crashed or cancelled) counts as ``down``;
 - KPIs: from the gold data itself, per period, so values carried over from an
-  earlier run show as ``stale``;
+  earlier run show as ``stale``; a KPI whose aggregator is ``empty_ok`` (the
+  avalanche bulletin, out of season) with no value at all is ``ok``;
 - tiles: from the published massif payloads, i.e. exactly what visitors see.
 
 Runs once per refresh, after every massif payload is written: locally at the
@@ -20,7 +21,7 @@ import polars as pl
 
 from ..config import Massif, Tile
 from ..context import PeriodInstance, RunContext
-from ..gold.base import read_gold
+from ..gold.base import AGGREGATORS, read_gold
 from ..report import SEVERITY, State, StepReport, coverage_state, worst
 from ..silver.base import TRANSFORMERS
 from ..storage import diamond_key, status_key
@@ -45,9 +46,13 @@ def _period_status(
     ok: int,
     expected: int,
     updated_at: datetime | None,
+    empty_ok: bool = False,
 ) -> DiamondStatusPeriod:
-    if ok == 0 or updated_at is None:
-        state: State = "down"
+    if empty_ok and ok == 0:
+        state: State = "ok"  # nothing to show, rightly (e.g. no bulletin out of season)
+        expected = 0
+    elif ok == 0 or updated_at is None:
+        state = "down"
     elif updated_at < ctx.generated_at:
         state = "stale"
     else:
@@ -83,6 +88,7 @@ def kpi_status(ctx: RunContext, gold: pl.DataFrame) -> list[DiamondStatusKpi]:
     """Per-KPI, per-period state of the gold data visible at the run time."""
     out: list[DiamondStatusKpi] = []
     for kpi in ctx.config.enabled_kpis(kind="live"):
+        empty_ok = getattr(AGGREGATORS.get(kpi.aggregator), "empty_ok", False)
         by_key: dict[str, list[DiamondStatusPeriod]] = {}
         order: list[str] = []
         for massif in ctx.massifs():
@@ -100,6 +106,7 @@ def kpi_status(ctx: RunContext, gold: pl.DataFrame) -> list[DiamondStatusKpi]:
                     ok=rows["station_id"].n_unique(),
                     expected=expected,
                     updated_at=rows["generated_at"].min() if not rows.is_empty() else None,  # type: ignore[arg-type]
+                    empty_ok=empty_ok,
                 )
                 if instance.key not in by_key:
                     order.append(instance.key)
@@ -137,12 +144,12 @@ def tile_status(ctx: RunContext, massif: Massif) -> list[DiamondStatusTile]:
     """State of every tile and period visitors of ``massif`` should see now."""
     payload = read_massif_payload(ctx, massif.id)
     expected = sum(1 for ref in ctx.stations() if ref.massif.id == massif.id)
-    enabled = {k.id for k in ctx.config.enabled_kpis(kind="live")}
+    kpis = {k.id: k for k in ctx.config.enabled_kpis(kind="live")}
     out: list[DiamondStatusTile] = []
     for tile in _layout_tiles(ctx, massif):
         for instance in ctx.period_instances(massif, ctx.config.tile_periods(tile)):
             parts: list[DiamondStatusPeriod] = []
-            for kpi_id in (k for k in tile.kpis if k in enabled):
+            for kpi_id in (k for k in tile.kpis if k in kpis):
                 kpi = payload.kpis.get(kpi_id) if payload else None
                 period = (
                     next((p for p in kpi.periods if p.key == instance.key), None) if kpi else None
@@ -154,6 +161,9 @@ def tile_status(ctx: RunContext, massif: Massif) -> list[DiamondStatusTile]:
                         ok=len(period.ranking) if period else 0,
                         expected=expected,
                         updated_at=period.generated_at if period else None,
+                        empty_ok=getattr(
+                            AGGREGATORS.get(kpis[kpi_id].aggregator), "empty_ok", False
+                        ),
                     )
                 )
             if parts:

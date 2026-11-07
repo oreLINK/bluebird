@@ -8,6 +8,9 @@
   `details`: when true, each box is a button that shows the station details
   (tile option `details`); when false (the default for now) the boxes are
   static and a tap on them does nothing (not even a flip).
+  `scale` display (avalanche danger): each box and its bar take the colour of
+  the level (`data-scale`, tokens in styles/base.css), on the card as on an
+  image; the box shows the number only, the level names are on the back.
 -->
 <script lang="ts">
   import ConfidenceDots from '../components/ConfidenceDots.svelte';
@@ -61,11 +64,12 @@
 
 <div class="odds" class:overlay class:compact role="group" aria-label={label} style="--n: {top.length}">
   {#each top as item, index (item.stationId)}
-    <div class="odd">
+    <div class="odd" data-scale={item.step?.tone}>
       {#if details && item.entry}
         <button
           type="button"
           class="odd-button"
+          data-scale={item.step?.tone}
           aria-pressed={selected === item.stationId}
           aria-controls="{tileId}-top-details"
           aria-label={summary(item, index)}
@@ -74,7 +78,7 @@
           {@render face(item)}
         </button>
       {:else}
-        <div class="odd-button static" data-no-flip>
+        <div class="odd-button static" data-scale={item.step?.tone} data-no-flip>
           <span class="visually-hidden">{summary(item, index)}</span>
           {@render face(item)}
         </div>
@@ -155,6 +159,44 @@
     background: var(--pill-active-bg);
     border-color: var(--pill-active-bg);
     color: var(--pill-active-ink);
+  }
+
+  /* `scale` display: a solid button in the colour of the level, on the card and
+     on an image alike; a patterned level (danger 5) outlines its number and
+     lays the name and the dots on a dark plate (styles/base.css). */
+  .odd-button[data-scale],
+  .overlay .odd-button[data-scale] {
+    --dot-on: currentColor;
+    --dot-off: color-mix(in oklch, currentColor 28%, transparent);
+    border-color: var(--scale-edge, color-mix(in srgb, var(--scale-bg) 70%, #000000));
+    background: var(--scale-fill, var(--scale-bg));
+    color: var(--scale-ink);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.4),
+      0 6px 16px -8px rgba(0, 0, 0, 0.35);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .odd-button[data-scale] .odd-value {
+    text-shadow: var(--scale-number-shadow, none);
+  }
+
+  .odd-button[data-scale] .odd-name {
+    padding: var(--scale-plate-pad, 0);
+    border-radius: 6px;
+    background: var(--scale-plate, transparent);
+  }
+
+  .odd-button[data-scale] :global(.dots) {
+    padding: var(--scale-dots-pad, 0);
+    border-radius: 999px;
+    background: var(--scale-plate, transparent);
+  }
+
+  .odd[data-scale] .odd-bar > span,
+  .overlay .odd[data-scale] .odd-bar > span {
+    background: var(--scale-bg);
   }
 
   @media (prefers-reduced-transparency: reduce) {

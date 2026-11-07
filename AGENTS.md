@@ -26,9 +26,11 @@ before you report the work as done.
 | [CONTEXT.md](CONTEXT.md) | AI agents | file map, invariants, recipes, commands, pitfalls met, roadmap context |
 | [PROJECT.md](PROJECT.md) | Site users | what users see or can do, how numbers are computed, data sources, schedule, features (now and next), limits, **the list of KPIs** ("Available indicators") |
 | [TILES.md](TILES.md) | Developers, AI agents | anything about tiles: an axis (`scope`, `format`, `visual`, kind), a value, a format component, an option, a corner badge, the tile design (§9: palette, type scale, sizes, glass recipes; a new axis, value or format follows it), a tile added, removed or changed in `config/tiles.yaml` (its inventory is checked by `web/src/lib/tilesDoc.test.ts`); regenerate its pictures with `node docs/tiles/render.mjs` when the look of a tile changes |
+| `docs/kpi/<kpi_id>/<kpi_id>.md` | Developers, AI agents | anything about that KPI, from its source to its tile: source, request, parsing, maths, periods, display, tile, back, home page, visuals in `docs/kpi/<kpi_id>/screenshots/` (the tile formats able to show it, by size, a format that cannot in grey and struck through; front and back) (one folder per KPI, `avalanche_risk` first; the others and one file per feature in `docs/features/` will follow) |
 | AGENTS.md | AI agents | the rules themselves |
 
-- Check all four documents each time. Most changes touch README and
+- Check all four documents each time, and the KPI page in `docs/kpi/` of
+  every KPI the change touches. Most changes touch README and
   CONTEXT; PROJECT changes whenever user-visible behaviour, data sources or
   the roadmap change; TILES.md changes with every tile-related change.
 - Keep the documents true: remove or rewrite statements your change made

@@ -23,6 +23,7 @@
   import BannerMedia from '../components/BannerMedia.svelte';
   import StaleBadge from '../components/StaleBadge.svelte';
   import WebcamBadge from '../components/WebcamBadge.svelte';
+  import CertifiedBadge from '../components/CertifiedBadge.svelte';
   import { i18n } from '../lib/i18n/i18n.svelte';
   import { shortName } from '../lib/kpiView';
   import FlipCard from './FlipCard.svelte';
@@ -70,9 +71,12 @@
 
     <div class="content">
       <div class="headline">
-        <h2 id="{tile.id}-title" class:long={title.length > LONG_TITLE}>
-          {title}{#if period}<span class="visually-hidden"> {period}</span>{/if}
-        </h2>
+        <div class="title-row">
+          <h2 id="{tile.id}-title" class:long={title.length > LONG_TITLE}>
+            {title}{#if period}<span class="visually-hidden"> {period}</span>{/if}
+          </h2>
+          {#if view.kpi.certified}<CertifiedBadge size={22} onImage={false} />{/if}
+        </div>
       </div>
       {#if model.items.length === 0}
         <p class="empty">{i18n.t(model.emptyMessage)}</p>
@@ -179,5 +183,18 @@
 
   .below :global(.details) {
     margin-bottom: 12px;
+  }
+
+  /* Title and, for an official value, the "certified" rosette right after it. */
+  .title-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .title-row h2 {
+    min-width: 0;
   }
 </style>

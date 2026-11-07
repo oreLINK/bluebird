@@ -10,6 +10,12 @@ schema changes.
 
 ``now`` picks the refresh to simulate (default: the 06:00 one); e.g. 17:07 UTC
 shows what the page looks like after the 18:00 refresh.
+
+The avalanche bulletins need a Météo-France API key, so the demo does not
+fetch them: :func:`write_demo_bulletins` writes synthetic ones to silver
+between the silver and gold layers (:func:`run_demo_pipeline`), issued at
+16:00 local the day before they are valid, each with its day-after trend, so
+tomorrow first shows the trend, then its own bulletin after the afternoon.
 """
 
 from __future__ import annotations
@@ -24,11 +30,13 @@ from typing import Any
 from urllib.parse import parse_qs
 
 import httpx
+import polars as pl
 
-from .config import Config
+from .config import Config, Source
 from .context import RunContext
-from .runner import LAYERS, RunReport, run_pipeline
-from .storage import LocalStorage
+from .runner import RunReport, finalize, run_pipeline
+from .silver._avalanche import AVALANCHE_DATASET, AVALANCHE_SCHEMA
+from .storage import LocalStorage, silver_key
 
 DEMO_DATE = date(2027, 1, 15)
 DEMO_NOW = datetime(2027, 1, 15, 5, 7, tzinfo=UTC)  # the 06:00 refresh, Paris time
@@ -155,6 +163,90 @@ def demo_transport(today: date = DEMO_DATE) -> httpx.MockTransport:
     return httpx.MockTransport(handler)
 
 
+# Synthetic avalanche bulletins per Météo-France massif number: (name, level below
+# the altitude limit, level above it, altitude limit or None) for today; tomorrow
+# the danger rises by one on the Atlantic side (massifs up to 66), capped at 5.
+_DEMO_BULLETINS: dict[int, tuple[str, int, int, int | None]] = {
+    64: ("Pays-Basque", 3, 3, None),
+    65: ("Aspe Ossau", 3, 4, 1800),
+    66: ("Haute-Bigorre", 3, 4, 2000),
+    67: ("Aure Louron", 3, 3, None),
+    68: ("Luchonnais", 2, 3, 2000),
+    69: ("Couserans", 2, 2, None),
+    70: ("Haute-Ariège", 2, 2, None),
+    71: ("Andorre", 2, 2, None),
+    72: ("Orlu St-Barthélemy", 2, 2, None),
+    73: ("Capcir Puymorens", 1, 2, 2300),
+    74: ("Cerdagne Canigou", 1, 1, None),
+}
+
+
+def _demo_levels(number: int, offset: int) -> tuple[str, int, int, int | None]:
+    name, low, high, limit = _DEMO_BULLETINS[number]
+    rise = 1 if offset and number <= 66 else 0
+    return name, min(5, low + rise), min(5, high + rise), limit
+
+
+def demo_bulletins(ctx: RunContext) -> pl.DataFrame:
+    """Bulletins (and their day-after trends) already issued at ``ctx.generated_at``."""
+    tz = ctx.massifs()[0].tz
+    rows = []
+    for offset in (0, 1):
+        valid = ctx.run_date + timedelta(days=offset)
+        issued = datetime.combine(valid - timedelta(days=1), datetime.min.time(), tz)
+        issued = (issued + timedelta(hours=16)).astimezone(UTC)
+        if issued > ctx.generated_at:
+            continue
+        for number in _DEMO_BULLETINS:
+            name, low, high, limit = _demo_levels(number, offset)
+            _, _, trend, _ = _demo_levels(number, offset + 1)
+            common = {"massif_number": number, "massif_name": name, "issued_at": issued}
+            rows.append(
+                {
+                    **common,
+                    "valid_date": valid,
+                    "level_low": low,
+                    "level_high": high,
+                    "altitude_limit_m": limit,
+                    "trend": False,
+                }
+            )
+            rows.append(
+                {
+                    **common,
+                    "valid_date": valid + timedelta(days=1),
+                    "level_low": trend,
+                    "level_high": trend,
+                    "altitude_limit_m": None,
+                    "trend": True,
+                }
+            )
+    return pl.DataFrame(rows, schema=AVALANCHE_SCHEMA)
+
+
+def write_demo_bulletins(ctx: RunContext) -> str:
+    """Write :func:`demo_bulletins` as this run's ``avalanche_bulletin`` silver table."""
+    key = silver_key(AVALANCHE_DATASET, ctx.run_date, ctx.run_id)
+    ctx.storage.write_parquet(key, demo_bulletins(ctx))
+    return key
+
+
+def run_demo_pipeline(
+    ctx: RunContext, sources: list[Source], http: httpx.Client | None = None
+) -> RunReport:
+    """Every layer, with the demo avalanche bulletins written between silver and gold."""
+    report = run_pipeline(ctx, ["bronze", "silver"], sources, http=http, final=False)
+    report.wrote(write_demo_bulletins(ctx))
+    report.step("bronze", "meteofrance_bra", "ok", message="synthetic demo bulletins")
+    report.step("silver", "meteofrance_bra", "ok", message="synthetic demo bulletins")
+    later = run_pipeline(ctx, ["gold", "diamond"], [], final=False)
+    report.written += later.written
+    report.errors += later.errors
+    report.steps += later.steps
+    finalize(ctx, report)
+    return report
+
+
 def build_demo(config: Config, out_dir: Path, now: datetime = DEMO_NOW) -> RunReport:
     """Run every layer on synthetic weather and copy the diamond output to ``out_dir``."""
     sources = [
@@ -166,7 +258,7 @@ def build_demo(config: Config, out_dir: Path, now: datetime = DEMO_NOW) -> RunRe
         storage = LocalStorage(Path(tmp))
         ctx = RunContext.create(config, storage, now=now)
         with httpx.Client(transport=demo_transport(now.astimezone(UTC).date())) as http:
-            report = run_pipeline(ctx, list(LAYERS), sources, http=http)
+            report = run_demo_pipeline(ctx, sources, http=http)
         target = out_dir / "diamond"
         if target.exists():
             shutil.rmtree(target)

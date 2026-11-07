@@ -121,7 +121,7 @@
         },
         "display": {
           "$ref": "#/$defs/KpiDisplay",
-          "description": "Live KPIs: shown as a percent (default), a value or levels."
+          "description": "Live KPIs: shown as a percent (default), a value, levels or a scale."
         },
         "order": {
           "default": "desc",
@@ -137,6 +137,24 @@
           "default": true,
           "title": "Enabled",
           "type": "boolean"
+        },
+        "certified": {
+          "default": false,
+          "description": "The value is relayed as is from an official source (e.g. the Météo-France avalanche bulletin), never computed by Bluebird: a blue rosette next to the tile title, explained on the back.",
+          "title": "Certified",
+          "type": "boolean"
+        },
+        "official_link": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OfficialLink"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "certified KPIs: the official page to read the source itself (e.g. the full avalanche bulletin), linked from the back of the tiles, opened in a new tab."
         },
         "name": {
           "$ref": "#/$defs/Localized"
@@ -211,14 +229,15 @@
     },
     "KpiDisplay": {
       "additionalProperties": false,
-      "description": "How a live KPI is shown on its tiles (the probability is always computed).\n\npercent  the probability (\"82 %\"), optionally with a `note` driver in small\n         type (e.g. the sunset time);\nvalue    the median of the scenarios, from `driver`, in the KPI `value` unit\n         (\"4 cm\", \"-24 °C\"); the ranking follows that value (`order`), and\n         reliability comes from the spread between the two `range` drivers\n         (p10, p90): high within `tolerance`, medium within twice it;\n         `bands` name ranges of values (e.g. the wind chill risk);\nlevels   a decision from the probability (\"Oui\", \"Possible\", \"Non\").",
+      "description": "How a live KPI is shown on its tiles (the probability is always computed).\n\npercent  the probability (\"82 %\"), optionally with a `note` driver in small\n         type (e.g. the sunset time);\nvalue    the median of the scenarios, from `driver`, in the KPI `value` unit\n         (\"4 cm\", \"-24 °C\"); the ranking follows that value (`order`), and\n         reliability comes from the spread between the two `range` drivers\n         (p10, p90): high within `tolerance`, medium within twice it;\n         `bands` name ranges of values (e.g. the wind chill risk);\nlevels   a decision from the probability (\"Oui\", \"Possible\", \"Non\");\nscale    a level of an official scale, from `driver` (e.g. avalanche danger\n         1 to 5): the tiles show the number on a block in the colour of its\n         `steps` tone; the back lists every step with its name and advice.",
       "properties": {
         "kind": {
           "default": "percent",
           "enum": [
             "percent",
             "value",
-            "levels"
+            "levels",
+            "scale"
           ],
           "title": "Kind",
           "type": "string"
@@ -233,7 +252,7 @@
             }
           ],
           "default": null,
-          "description": "value: driver holding the median.",
+          "description": "value: driver holding the median; scale: the level.",
           "title": "Driver"
         },
         "range": {
@@ -280,6 +299,14 @@
             "$ref": "#/$defs/DisplayLevel"
           },
           "title": "Levels",
+          "type": "array"
+        },
+        "steps": {
+          "description": "scale: the levels, by increasing `value`.",
+          "items": {
+            "$ref": "#/$defs/ScaleStep"
+          },
+          "title": "Steps",
           "type": "array"
         },
         "note": {
@@ -397,6 +424,75 @@
         "es"
       ],
       "title": "Localized",
+      "type": "object"
+    },
+    "OfficialLink": {
+      "additionalProperties": false,
+      "description": "Link from the back of a `certified` KPI's tiles to the official source itself.",
+      "properties": {
+        "url": {
+          "description": "Official page (e.g. the avalanche bulletins), new tab.",
+          "pattern": "^https://\\S+$",
+          "title": "Url",
+          "type": "string"
+        },
+        "label": {
+          "$ref": "#/$defs/Localized",
+          "description": "Text of the link (e.g. Lire le bulletin officiel)."
+        }
+      },
+      "required": [
+        "url",
+        "label"
+      ],
+      "title": "OfficialLink",
+      "type": "object"
+    },
+    "ScaleStep": {
+      "additionalProperties": false,
+      "description": "A step of a `scale` display: one level of an official scale (e.g. avalanche danger 4).",
+      "properties": {
+        "value": {
+          "description": "The level, as held by the display `driver`.",
+          "minimum": 0,
+          "title": "Value",
+          "type": "integer"
+        },
+        "tone": {
+          "description": "Colour of the level on the tiles (`--scale-<tone>-*` tokens in tokens.css).",
+          "enum": [
+            "danger-1",
+            "danger-2",
+            "danger-3",
+            "danger-4",
+            "danger-5"
+          ],
+          "title": "Tone",
+          "type": "string"
+        },
+        "label": {
+          "$ref": "#/$defs/Localized",
+          "description": "Name of the level, shown on the tile back."
+        },
+        "advice": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Localized"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "What to do at this level, shown on the tile back."
+        }
+      },
+      "required": [
+        "value",
+        "tone",
+        "label"
+      ],
+      "title": "ScaleStep",
       "type": "object"
     },
     "SlotThresholds": {

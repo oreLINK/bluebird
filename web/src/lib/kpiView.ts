@@ -14,8 +14,10 @@
  * A live KPI is shown as its `display` says (config/kpis.yaml): `percent`
  * (the probability, optionally with a `note` driver such as the sunset time),
  * `value` (the median of the scenarios, from a driver, with an optional band
- * label such as the wind chill risk) or `levels` (Oui / Possible / Non from
- * the probability). The ranking order comes from the pipeline.
+ * label such as the wind chill risk), `levels` (Oui / Possible / Non from
+ * the probability) or `scale` (a level of an official scale, from a driver,
+ * coloured by its step: the avalanche danger 1 to 5). The ranking order comes
+ * from the pipeline.
  */
 import { type DiamondRewind, type Kpi, type Rewind, stationCountries } from './config';
 import { HOME_COUNTRY, flagOf } from './geoLevels';
@@ -23,7 +25,7 @@ import type { MassifDaily, RankingEntry, StationInfo } from './data';
 import type { Slot } from './periods';
 import { formatDriver, formatPercent } from './format';
 import { type Locale, pickLocalized } from './i18n/core';
-import type { KpiDisplay, Localized } from './generated/kpis';
+import type { KpiDisplay, Localized, ScaleStep } from './generated/kpis';
 
 export type Confidence = RankingEntry['confidence'];
 
@@ -52,6 +54,8 @@ export interface RankItem {
   entry?: RankingEntry;
   /** Small text next to the value: a band label ("risque modéré") or a note driver ("17:41"). */
   note?: Localized | string;
+  /** `scale` display only: the step of the value (its tone colours the odds button and the pill). */
+  step?: ScaleStep;
 }
 
 interface ViewBase {
@@ -86,7 +90,7 @@ export interface HistoricalView extends ViewBase {
 export type KpiView = LiveView | HistoricalView;
 
 /** The display of a KPI, `percent` when not configured. */
-export function displayOf(kpi: Kpi): KpiDisplay & { kind: 'percent' | 'value' | 'levels' } {
+export function displayOf(kpi: Kpi): KpiDisplay & { kind: 'percent' | 'value' | 'levels' | 'scale' } {
   return { ...kpi.display, kind: kpi.display?.kind ?? 'percent' };
 }
 
@@ -101,10 +105,36 @@ export function levelOf(display: KpiDisplay, probability: number): Localized | u
   return display.levels?.find((level) => probability >= level.min)?.label;
 }
 
+/** The step of a `scale` value (steps sorted by increasing `value`), if any. */
+export function stepOf(display: KpiDisplay, value: number): ScaleStep | undefined {
+  return display.steps?.find((step) => step.value === value);
+}
+
+/** Highest step of a `scale` display (the full bar), 0 without steps. */
+export function scaleMax(display: KpiDisplay): number {
+  return Math.max(0, ...(display.steps ?? []).map((step) => step.value));
+}
+
 const round = (value: number, decimals: number) => Number(value.toFixed(decimals));
 
 function liveItems(kpi: Kpi, ranking: RankingEntry[]): RankItem[] {
   const display = displayOf(kpi);
+  if (display.kind === 'scale' && display.driver) {
+    const driver = display.driver;
+    const max = scaleMax(display);
+    return ranking.map((entry) => {
+      const value = entry.drivers[driver];
+      const known = typeof value === 'number';
+      return {
+        stationId: entry.station_id,
+        value: known ? value : Number.NaN,
+        share: known && max > 0 ? Math.max(0, Math.min(1, value / max)) : 0,
+        confidence: entry.confidence,
+        entry,
+        step: known ? stepOf(display, value) : undefined,
+      };
+    });
+  }
   if (display.kind === 'value' && display.driver) {
     const driver = display.driver;
     const decimals = kpi.value?.decimals ?? 0;
@@ -211,6 +241,7 @@ export function itemLabel(view: KpiView, item: RankItem, locale: Locale): string
     }
     if (display.kind === 'percent') return formatPercent(item.value, locale);
     if (!Number.isFinite(item.value)) return '—';
+    if (display.kind === 'scale') return String(item.value);
   }
   const spec = view.kpi.value;
   const singular = new Intl.PluralRules(locale).select(item.value) === 'one';

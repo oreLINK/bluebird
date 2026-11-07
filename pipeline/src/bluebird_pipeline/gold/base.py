@@ -108,6 +108,10 @@ class Aggregator(ABC):
     version: ClassVar[str] = "1"
     Params: ClassVar[type[AggregatorParams]] = AggregatorParams
     required_datasets: ClassVar[tuple[str, ...]] = ()
+    #: True when the source may rightly have nothing to compute (e.g. no
+    #: avalanche bulletin out of season): no result is then reported ``ok``,
+    #: not ``down``. A missing silver table still fails the KPI.
+    empty_ok: ClassVar[bool] = False
 
     def __init__(self, kpi: Kpi) -> None:
         self.kpi = kpi
@@ -156,19 +160,22 @@ class Aggregator(ABC):
         window_start: datetime,
         window_end: datetime,
         drivers: dict[str, DriverValue],
+        confidence: Confidence | None = None,
     ) -> KpiResult:
         """Build a :class:`KpiResult` with the standard fields filled in.
 
         Reliability is the agreement of the scenarios on the probability, or,
-        for a KPI shown as a value, the spread of its ``range`` drivers.
+        for a KPI shown as a value, the spread of its ``range`` drivers. A KPI
+        without scenarios (an official bulletin) passes its own ``confidence``.
         """
         probability = min(1.0, max(0.0, float(probability)))
         display = self.kpi.display
-        if display.kind == "value" and display.range and display.tolerance:
-            low, high = (drivers.get(name) for name in display.range)
-            confidence = spread_confidence(low, high, display.tolerance, members)
-        else:
-            confidence = confidence_level(probability, members)
+        if confidence is None:
+            if display.kind == "value" and display.range and display.tolerance:
+                low, high = (drivers.get(name) for name in display.range)
+                confidence = spread_confidence(low, high, display.tolerance, members)
+            else:
+                confidence = confidence_level(probability, members)
         return KpiResult(
             kpi_id=self.kpi.id,
             station_id=ref.station.id,

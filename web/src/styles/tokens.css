@@ -105,6 +105,28 @@
   --live-bg: #d0021b; /* LIVE webcam badge on tile images (white text: 5.7:1) */
   --on-live: #ffffff;
 
+  /* Levels of a `scale` display (config/kpis.yaml `steps`, TILES.md §9): the
+     European avalanche danger scale, official colours, the same in both modes
+     (like the flags). -bg fills the odds button and the pill, -ink is its text
+     (>= 4.5:1). Level 5 is a red and black checkerboard: white number outlined
+     in --danger-5-alt, station name and dots on a --danger-5-plate. */
+  --danger-1-bg: #3fa34d;
+  --danger-1-ink: #06200c;
+  --danger-2-bg: #ffe11a;
+  --danger-2-ink: #3a2f00;
+  --danger-3-bg: #ff9317;
+  --danger-3-ink: #331800;
+  --danger-4-bg: #dc0712;
+  --danger-4-ink: #ffffff;
+  --danger-5-bg: #dc0712;
+  --danger-5-alt: #120a0a;
+  --danger-5-ink: #ffffff;
+  --danger-5-plate: rgba(18, 10, 10, 0.84);
+  /* "Certified" rosette next to the title of a tile whose value comes as is
+     from an official source (KPI `certified`); white check mark. */
+  --verified-bg: #1d6ff2;
+  --verified-ink: #ffffff;
+
   /* Time badge of the tiles ("Dem. | Matin", TILES.md §9). Day cell: a dark
      colour per day (`badge_days` / `badge_tonight` tones in
      config/periods.yaml), white text; week-end and next week are planned.
@@ -232,6 +254,7 @@
     --on-rewind: #ffffff;
     --live-bg: #d0021b;
     --on-live: #ffffff;
+    --verified-bg: #3b82f6;
     --when-today: #1b5c99;
     --when-tonight: #4a3699;
     --when-tomorrow: #17706a;
@@ -310,6 +333,7 @@
   --on-rewind: #ffffff;
   --live-bg: #d0021b;
   --on-live: #ffffff;
+  --verified-bg: #3b82f6;
   --when-today: #1b5c99;
   --when-tonight: #4a3699;
   --when-tomorrow: #17706a;

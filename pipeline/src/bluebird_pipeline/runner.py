@@ -137,8 +137,9 @@ def run_gold_kpi(ctx: RunContext, kpi: Kpi, report: RunReport) -> None:
     error) keep the rows of the latest run that did; they are flagged ``stale``.
     """
     error: str | None = None
+    aggregator_cls = AGGREGATORS.get(kpi.aggregator)
     try:
-        results = AGGREGATORS.get(kpi.aggregator)(kpi).aggregate(ctx)
+        results = aggregator_cls(kpi).aggregate(ctx)
         log.info("gold/%s: %d station-period result(s)", kpi.id, len(results))
     except Exception as exc:
         results = []
@@ -151,6 +152,9 @@ def run_gold_kpi(ctx: RunContext, kpi: Kpi, report: RunReport) -> None:
     merged = pl.concat([fresh, carried]) if not carried.is_empty() else fresh
 
     expected = _expected_instances(ctx, kpi)
+    if merged.is_empty() and error is None and getattr(aggregator_cls, "empty_ok", False):
+        report.step("gold", kpi.id, "ok", ok=0, expected=0, message="nothing to compute today")
+        return
     if merged.is_empty():
         report.failed(f"gold/{kpi.id}: no result and nothing to keep from earlier runs")
         report.step("gold", kpi.id, "down", ok=0, expected=len(expected), message=error)

@@ -19,6 +19,7 @@
 [Live site](https://orelink.github.io/bluebird/) ·
 [Product overview](PROJECT.md) ·
 [Tiles](TILES.md) ·
+[KPI pages](docs/kpi/) ·
 [AI briefing](CONTEXT.md) ·
 [Agent rules](AGENTS.md)
 
@@ -39,9 +40,10 @@ read [PROJECT.md](PROJECT.md); AI agents read [AGENTS.md](AGENTS.md) and
 
 ## Highlights
 
-- **19 live indicators** in six categories (snow, snow quality, sky, comfort,
+- **20 live indicators** in six categories (snow, snow quality, sky, comfort,
   getting there, safety), each computed for today and tomorrow, per time slot
-  (morning, lunchtime, afternoon, evening, night) and for the whole day.
+  (morning, lunchtime, afternoon, evening, night) and for the whole day; the
+  avalanche danger is relayed as is from the Météo-France bulletin.
 - **Rewinds**: historical indicators that review a closed season from
   archived forecasts. The first one, *Rewind 25/26* (1 December 2025 – 1 May
   2026, Pyrenees), ranks the resorts on season snowfall, longest snowfall,
@@ -401,11 +403,21 @@ The probability is always computed, but a tile shows what speaks best:
   twice it, `spread_confidence` in `gold/base.py`); `bands` name the value's
   range (Environment Canada wind chill risk, light / strong wind).
 - `levels`: Yes / Possible / No from the probability (`min` thresholds).
+- `scale`: a level of an official scale, from `driver` (the avalanche danger,
+  1 to 5); `steps` give each level its `tone` (`danger-1` … `danger-5`,
+  `--scale-*` tokens), name and advice, listed on the tile back.
+
+A KPI with `certified: true` relays an official value as is (the
+Météo-France avalanche bulletin): a blue rosette next to the tile title
+(`CertifiedBadge.svelte`), explained on the back; `official_link {url,
+label}` adds a link to the source itself there (new tab), allowed only on a
+certified KPI.
 
 The site reads the display in `lib/kpiView.ts` (`displayOf`, `itemLabel`,
-`itemNote`); decimal odds only exist for `percent`. Values: Snow, Snow alert,
-Snow cannons, Powder on piste, Full sun, Wind chill, Lifts in the wind;
-levels: Chains, Hard snow, Wind-blown snow; the others are percentages.
+`itemNote`, `stepOf`); decimal odds only exist for `percent`. Values: Snow,
+Snow alert, Snow cannons, Powder on piste, Full sun, Wind chill, Lifts in the
+wind; levels: Chains, Hard snow, Wind-blown snow; scale: Avalanche danger;
+the others are percentages.
 
 </details>
 
@@ -493,7 +505,7 @@ User-facing labels are `{fr, en, es}` objects; every language is required.
 |---|---|---|
 | `massifs.yaml` | Mountain ranges of the massif bar (level 1) | `id`, `name {fr,en,es}`, `timezone`, `enabled`, `order`, `bbox`, `skyline`, `zones[]` (level 2: `id`, `name {fr,en,es}`, `country` ISO alpha-2, default FR, `code?` département number) |
 | `stations/<massif>.yaml` | Resorts of one massif | `defaults {grooming_end, lifts_open}`, `stations[]`: `id`, `name`, `short_name?` (≤ 20 chars, shown in tiles), `lat`, `lon`, `elevation {base, summit, mid?}`, `aspects`, `grooming_end?`, `lifts_open?`, `website?`, `enabled`, `zone` (required when the massif has zones), `domain?`, `webcams?[]` (`id`, `name`, `position` `summit` / `slopes` / `village` / `nordic`, `elevation?`, `provider` `skaping`, `url` of the official page); `domains[]` (linked ski areas, level 3: `id`, `name`) |
-| `kpis.yaml` | KPI registry | `id`, `aggregator`, `kind` (`live` / `historical`), `display` (live: `percent` default, optional `note` driver; `value` with `driver`, `range` [p10, p90], `tolerance`, `bands`; `levels` by probability), `order` (`desc` / `asc`: lowest value first, e.g. fewest white days, coldest felt temperature), `value {unit, unit_label, unit_label_one, decimals, scale, max}` (historical; `unit_label` when the unit depends on the language, e.g. jours / days / días, `unit_label_one` its singular, chosen with the language's plural rules; `scale` converts the aggregator's unit, e.g. `0.01` for cm → m; `max` is the value of a full bar, e.g. `100` for a percentage, default the best value), `name`, `description`, `method?` (`{param}` placeholders, shown on the tile back), `params`, `drivers {key: {label, unit, decimals}}`, `filters[]`, `periods[]` (live KPIs; default `[day]`), `visibility` (live, required by the scored home page: `priority`, `measure?`, `floor`, `strong`, `alert?`, `slots? {floor, strong}`; see [Home page visibility score](#home-page-visibility-score)), `enabled` |
+| `kpis.yaml` | KPI registry | `id`, `aggregator`, `kind` (`live` / `historical`), `display` (live: `percent` default, optional `note` driver; `value` with `driver`, `range` [p10, p90], `tolerance`, `bands`; `levels` by probability; `scale` with `driver` and `steps {value, tone, label, advice?}`), `certified` (official value relayed as is: rosette), `official_link {url, label}` (certified only: link on the back, new tab), `order` (`desc` / `asc`: lowest value first, e.g. fewest white days, coldest felt temperature), `value {unit, unit_label, unit_label_one, decimals, scale, max}` (historical; `unit_label` when the unit depends on the language, e.g. jours / days / días, `unit_label_one` its singular, chosen with the language's plural rules; `scale` converts the aggregator's unit, e.g. `0.01` for cm → m; `max` is the value of a full bar, e.g. `100` for a percentage, default the best value), `name`, `description`, `method?` (`{param}` placeholders, shown on the tile back), `params`, `drivers {key: {label, unit, decimals}}`, `filters[]`, `periods[]` (live KPIs; default `[day]`), `visibility` (live, required by the scored home page: `priority`, `measure?`, `floor`, `strong`, `alert?`, `slots? {floor, strong}`; see [Home page visibility score](#home-page-visibility-score)), `enabled` |
 | `periods.yaml` | Time slots of the ski day | `day_start`, `horizon_days`, `days[]` (chips of the `day` filter level: today, tomorrow), `badge_days[]` (day cell of the tile time badge, one per day: `tone` today / tomorrow and a short `label`, "Auj."), `badge_tonight` (replaces today + a night moment: "Cette nuit"), `periods[]` (time slots, and day-grain periods with `native_window`: `day`, `sunset`, `overnight`): `id`, `start`, `end`, `native_window?`, `labels[]` (one per day: today, tomorrow; the period written out on the tile back, for screen readers and on the status page), `chip` (chip of the `slot` filter level, required for time slots), `badge?` (short moment cell of the tile time badge, "Matin" / "AM" / "Mañ."; none for the whole day), `tone?` (`morning`, `midday`, `afternoon`, `evening`, `night`: colour of the moment cell, required with `badge`) |
 | `filters.yaml` | Level-1 chips of the filter bar, in order | `id`, `name`, `icon?`, `theme?` (`default` / `rewind` / `mood`: moving multicolour chip), `levels?[]` (next levels, at most 3: `group`, `day`, `slot`, or exactly `[mood_group, mood]`; live KPIs only), `groups?[]` (sub-categories: `id`, `name`, `kpis[]`), `moods?[]` (sub-moods: `id`, `name`, `icon?`, `tomorrow_only?`, `moods[] {id, name, icon?, kpis[]}`; see [Moods](#moods)) |
 | `tiles.yaml` | KPI containers; a live tile is shown once per period | `id`, `scope` (`ranking`, default), `format` (`full` / `banner` / `compact`), `visual` (`scene` default / `photo`; not on `compact`), `webcam?` (`positions[]`, `min_probability` default 0.6; live `full`/`banner` only), `kpis[]`, `title?` (never the period: `{period}` is refused; live tiles show a time badge), `periods?[]` (live), `icon?`, `options` (`top`, `show_odds`, `scene`, `theme`; `details` turns station details on, off by default) |
@@ -1225,6 +1237,7 @@ of live KPIs shows it on its time badge ("Auj.", "Dem. | Matin", "Cette nuit", s
 | `mild_day` | `compact` | `mild_day_chance` (live: day) | Comfort | Journée douce / Mild day / Día templado | `top: 3` |
 | `chains` | `compact` | `chains_chance` (live: day) | Getting there | Chaînes nécessaires / Chains needed / Cadenas necesarias | `top: 3` |
 | `lift_wind` | `compact` | `lift_wind_chance` (live: day, morning, midday, afternoon) | Getting there | Remontées au vent / Lifts in the wind / Remontes y viento | `top: 3` |
+| `avalanche_risk` | `full` | `avalanche_risk` (live: day) | Safety | Risque d'avalanche / Avalanche danger / Peligro de aludes | `scene: mountain`, icon `alert`, `top: 3`; certified rosette |
 | `wind_slab` | `compact` | `wind_slab_chance` (live: day) | Safety | Neige ventée / Wind-blown snow / Nieve venteada | `top: 3` |
 | `rewind_2025_26_total_snowfall` | `full` | `season_total_snowfall` (historical, m) | Rewind 25/26 | Le plus de neige / Most snow / Más nieve | `visual: photo`, `scene: snowfall` |
 | `rewind_2025_26_longest_snowfall` | `banner` | `season_longest_snowfall` (historical, h) | Rewind 25/26 | La plus longue chute de neige / Longest snowfall / Nevada más larga | `visual: photo`, `scene: snowfall` |
@@ -1289,6 +1302,7 @@ place, the same ones as the odds buttons:
   display `driver`;
 - KPIs shown as a **percentage** or as **levels** (Oui / Possible / Non):
   the probability (Possible from 25 %, Oui from 60 %);
+- KPIs shown on a **scale**: the level (avalanche danger 1 to 5);
 - `measure: probability` forces the probability (full sun, whose hours
   depend on the length of the slot).
 
@@ -1312,20 +1326,21 @@ significant (but stays pinned first, see below).
 | 3 | `snowfall_chance` | Snow | 1.0 | cm (median) | 5 cm (slots: 2 cm) | 30 cm (slots: 15 cm) | — |
 | 4 | `onpiste_powder_chance` | On-piste powder | 0.95 | cm after grooming (median) | 5 cm | 20 cm | — |
 | 5 | `offpiste_powder_chance` | Off-piste powder | 0.9 | probability | 30 % | 70 % | — |
-| 6 | `lift_wind_chance` | Lifts in the wind | 0.85 | km/h, max wind (median) | 45 km/h | 70 km/h | ≥ 60 km/h |
-| 7 | `chains_chance` | Chains needed | 0.85 | probability (levels) | 25 % (Possible) | 60 % (Oui) | ≥ 60 % (Oui) |
-| 8 | `wind_slab_chance` | Wind-blown snow | 0.85 | probability (levels) | 25 % (Possible) | 60 % (Oui) | ≥ 60 % (Oui) |
-| 9 | `sunny_slot_chance` | Full sun | 0.75 | probability | 50 % | 90 % | — |
-| 10 | `whiteout_chance` | White day | 0.75 | probability | 40 % | 80 % | — |
-| 11 | `spring_snow_chance` | Spring snow | 0.7 | probability | 40 % | 80 % | — |
-| 12 | `hard_snow_chance` | Hard snow | 0.7 | probability (levels) | 25 % (Possible) | 60 % (Oui) | — |
-| 13 | `wind_chill_chance` | Wind chill | 0.7 | °C felt (median), lower is stronger | −15 °C | −30 °C | ≤ −28 °C |
-| 14 | `heavy_snow_chance` | Heavy snow | 0.6 | probability | 40 % | 80 % | — |
-| 15 | `easy_conditions_chance` | Easy conditions | 0.55 | probability | 50 % | 90 % | — |
-| 16 | `mild_day_chance` | Mild day | 0.55 | probability | 50 % | 90 % | — |
-| 17 | `sunset_chance` | Sunset | 0.5 | probability | 50 % | 90 % | — |
-| 18 | `snowmaking_chance` | Snow cannons | 0.45 | cold hours (median) | 3 h | 8 h | — |
-| 19 | `starry_night_chance` | Starry night | 0.4 | probability | 50 % | 90 % | — |
+| 6 | `avalanche_risk` | Avalanche danger | 0.9 | danger level 1–5 of the bulletin (scale) | 3 (considerable) | 4 (high) | ≥ 4 (high) |
+| 7 | `lift_wind_chance` | Lifts in the wind | 0.85 | km/h, max wind (median) | 45 km/h | 70 km/h | ≥ 60 km/h |
+| 8 | `chains_chance` | Chains needed | 0.85 | probability (levels) | 25 % (Possible) | 60 % (Oui) | ≥ 60 % (Oui) |
+| 9 | `wind_slab_chance` | Wind-blown snow | 0.85 | probability (levels) | 25 % (Possible) | 60 % (Oui) | ≥ 60 % (Oui) |
+| 10 | `sunny_slot_chance` | Full sun | 0.75 | probability | 50 % | 90 % | — |
+| 11 | `whiteout_chance` | White day | 0.75 | probability | 40 % | 80 % | — |
+| 12 | `spring_snow_chance` | Spring snow | 0.7 | probability | 40 % | 80 % | — |
+| 13 | `hard_snow_chance` | Hard snow | 0.7 | probability (levels) | 25 % (Possible) | 60 % (Oui) | — |
+| 14 | `wind_chill_chance` | Wind chill | 0.7 | °C felt (median), lower is stronger | −15 °C | −30 °C | ≤ −28 °C |
+| 15 | `heavy_snow_chance` | Heavy snow | 0.6 | probability | 40 % | 80 % | — |
+| 16 | `easy_conditions_chance` | Easy conditions | 0.55 | probability | 50 % | 90 % | — |
+| 17 | `mild_day_chance` | Mild day | 0.55 | probability | 50 % | 90 % | — |
+| 18 | `sunset_chance` | Sunset | 0.5 | probability | 50 % | 90 % | — |
+| 19 | `snowmaking_chance` | Snow cannons | 0.45 | cold hours (median) | 3 h | 8 h | — |
+| 20 | `starry_night_chance` | Starry night | 0.4 | probability | 50 % | 90 % | — |
 
 In `kpis.yaml` probabilities are written between 0 and 1 (`floor: 0.25`).
 These are starting values, to be tuned with experience of the field.
@@ -1520,6 +1535,12 @@ requests, triggers the first site build, configures Pages to serve
 `--no-runs`. Rulesets and Pages are free on public repositories; private
 repositories need GitHub Pro or higher.
 
+The avalanche bulletins need one more secret, added by hand (Settings →
+Secrets and variables → Actions): `METEOFRANCE_BRA_API_KEY`, a key of type
+API Key generated on the Météo-France API portal (page
+DonneesPubliquesBRA), valid one year (31,536,000 s). Without it only the
+avalanche source and its tile are down.
+
 ### Day-to-day
 
 ```bash
@@ -1556,6 +1577,7 @@ Merging into `main` deploys the site.
 | Open-Meteo Historical Forecast API (Météo-France AROME HD 1.5 km, archived since late 2022) | Rewind historical KPIs (season snowfall, longest snowfall; sunshine, cloud cover and weather code kept for future KPIs) | CC BY 4.0; free API for non-commercial use |
 | Open-Meteo Historical Forecast API (Météo-France AROME: humidity, low cloud, radiation) | Rewind white days (`open_meteo_historical_light`, station and domain points) | CC BY 4.0; free API for non-commercial use |
 | Open-Meteo Historical Forecast API (DWD ICON, `icon_seamless`, ~7 km over the Pyrenees) | Rewind snow depth on the ground (AROME has none in the archive): ideal snow cover days | CC BY 4.0; free API for non-commercial use |
+| Météo-France API DonneesPubliquesBRA (avalanche bulletins, BRA XML) | Avalanche danger (`avalanche_risk`): one request per avalanche massif of the stations (9 in the Pyrenees) | Licence Ouverte Etalab 2.0, source "Météo-France"; free API key from the Météo-France portal |
 
 - **Quota.** Open-Meteo weighs ensemble requests by member count and counts
   every location of a grouped request. The free tier allows roughly 600
@@ -1573,6 +1595,17 @@ Merging into `main` deploys the site.
 - **Forecasts, not measurements.** Rewind values come from archived
   *forecasts* of a model (AROME HD, 1.5 km): compare resorts with them, do not
   read them as official snow reports.
+- **Avalanche bulletins.** Météo-France publishes one bulletin per massif
+  every day around 16:00 local, from early November to late May, for the
+  next day, with a trend for the day after. Dates in the XML are in UTC.
+  The extractor reads the key from `METEOFRANCE_BRA_API_KEY` (GitHub
+  secret, passed to the bronze job of this source only) and sends it in the
+  `apikey` header; it is never stored. No bulletin (HTTP 404 or an empty
+  body, out of season) is a normal state: the KPI is reported `ok` with no
+  tile (`empty_ok` in `gold/base.py`). The field reference is Météo-France's
+  "Descriptif technique des informations du bulletin avalanche"
+  (data.gouv.fr); a real answer is kept in
+  `pipeline/tests/silver/fixtures/meteofrance_bra_66.xml`.
 - **Commercial use** requires an Open-Meteo API subscription.
 - **Attribution** from `sources.yaml` is shown on each tile back (sources of
   the day) and on the "About" page (every enabled source).
@@ -1595,6 +1628,8 @@ Merging into `main` deploys the site.
 | `Configuration error: … Extra inputs are not permitted` | Typo or unknown key in YAML. A comma inside an unquoted flow-mapping value (`{ fr: a, b }`) also splits it: quote the value. |
 | `Configuration error: … Field required` on `es` | A label lacks one of the three languages: every `{fr, en, es}` object needs all of them. |
 | `rate limited (HTTP 429), waiting 65s` | Normal with Open-Meteo bursts; the run continues. Many in a row: lower the request weight (bands, days, models). |
+| `Météo-France refused the API key (HTTP 401)` | The avalanche bulletin key expired or is wrong: generate a new one (type API Key) on the Météo-France API portal, page DonneesPubliquesBRA, and update the GitHub secret `METEOFRANCE_BRA_API_KEY`. Only the avalanche tile is affected. |
+| `METEOFRANCE_BRA_API_KEY is not set` | Locally: `export METEOFRANCE_BRA_API_KEY=…` before `bluebird run --source meteofrance_bra`. In CI: the secret is missing. |
 | `Stale schemas` in CI | Run `uv run bluebird schemas` and `npm run gen:types`, commit both. |
 | `svelte-check` complains about TypeScript 7 | The project pins TypeScript 6 until svelte-check supports TypeScript 7 alone. |
 | Site shows "No forecast yet" | No `latest.json` on `gh-pages` yet: run the `Data refresh` workflow. |
@@ -1632,7 +1667,7 @@ AGENTS.md §4; scraping must respect the site's terms).
 | Slope aspect and steepness | Refine powder KPIs (north faces keep powder) | IGN RGE ALTI or Copernicus DEM | 🟡 |
 | Rewind calendar | Season timeline: storms, white days, bluebird days | Committed season hourly file | 🟢 |
 | All Time data | Season ranks since 1950, trends, records, "when to go" | Open-Meteo ERA5-Land (1950, 9 km) or CERRA (1985–2021, 5.5 km), as a new `schedule: season`-like archive; Météo-France snow observations (open data) to validate | 🟢/🟡 |
-| Avalanche bulletin (BRA) | Danger level per massif, archive for Rewind/All Time | Météo-France API (key) or public XML/PDF archive | 🔴 |
+| Avalanche bulletin archive (BRA) | High-danger days for Rewind/All Time (the live level is built: `avalanche_risk`) | Public XML archive of the bulletins on data.gouv.fr since March 2016, no key; same parser as the live source | 🟡 |
 | School holidays | Crowd index, "holiday luck" Rewind | Open data school calendar (education.gouv) | 🟡 |
 | Probability calibration | "Our success rate" (Brier score, reliability diagram) | The day-to-day history per station per KPI (see "Yesterday's verdict") vs observed snow | 🟢/🟡 |
 | Human KPI texts | Warmer, more human texts for every KPI without losing their information: the description becomes the skier's question ("Demain, neige fraîche et grand ciel bleu ?"), a practical tip ("Partez après 11 h, quand le soleil a ramolli la piste"), a verdict in words next to the number by value band ("Foncez" / "Ça se tente" / "Pas cette fois"; "Quelques flocons" … "Grosse chute"), the method told in three plain steps ("91 versions possibles de la météo", "la valeur du milieu") with the technical text folded under "Détails techniques", reliability as a human confidence ("Les prévisions sont d'accord / hésitent / se contredisent"), friendlier tile-back labels ("En bref", "Quand ?", "Comment on le sait", "Peut-on s'y fier ?"), the skier's vocabulary ("au milieu du domaine", "en haut des pistes", "chances"), a tone that follows the stakes (light humour for pleasure KPIs, sober for safety ones), talking empty states, Rewind figures with telling comparisons; written natively in each language, not translated | New `{fr, en, es}` fields per KPI in `config/kpis.yaml` (`tagline`, `advice` and `verdicts` per value band, a plain `summary` of the method beside the technical `method`), validated like `method` placeholders so figures always match the params; new labels in `lib/i18n/*.json`; `KpiBack` with a folded technical section; a short voice guide (tu or vous, humour level, words to avoid) next to TILES.md §9. Open choices: tu or vous (the site says vous today), humour level, order (back labels, descriptions and verdicts first) | 🟢 |

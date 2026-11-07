@@ -247,7 +247,7 @@ simple question, whatever your level or activity:
 | ☀️ **Sky** | What will you see: sun, cloud, a white day, a sunset? | Sun (bluebird day, full sun) · Visibility (white day) · Sky show (sunset, starry night) |
 | 🧣 **Comfort** | How will it feel: cold, wind, strong sun, a mild day? | Cold (wind chill) · Mild weather (mild day) |
 | 🚗 **Getting there** | Can you drive up, will the lifts run, will it be crowded? | Road (chains) · Lifts (lifts in the wind) |
-| ⚠️ **Safety** | Which mountain hazards to watch? (Always read the official avalanche bulletin too.) | Off-piste (wind-blown snow) |
+| ⚠️ **Safety** | Which mountain hazards to watch? (Always read the official avalanche bulletin too.) | Off-piste (avalanche danger, wind-blown snow) |
 
 They are the filters of the site (in French **Neige**, **Glisse**,
 **Ciel**, **Confort**, **Accès**, **Sécurité**). They replaced the first topics (Snow,
@@ -296,6 +296,7 @@ of resorts ("See all").
 | 🧣 Comfort | **Wind chill** | felt °C (median), with the wind chill risk | whole day (09:00–17:00), morning, lunchtime, afternoon | How cold will it feel near the summit at the coldest of the slot (wind chill: temperature and wind together)? With Environment Canada's risk: moderate from −10 °C, high from −28 °C (frostbite in 10 to 30 minutes)… | Cover every bit of skin: frostbite comes fast in the wind. |
 | 🚗 Getting there | **Chains needed** | Yes / Possible / No | today, tomorrow (whole day) | Will at least 2 cm of snow fall on the access road, at the bottom of the resort, from 20:00 the evening before to 10:00? | Fit chains or snow socks; leave earlier. Winter equipment is compulsory in the mountains anyway. |
 | 🚗 Getting there | **Lifts in the wind** | km/h of wind (median), with light / strong / closures likely | whole day (09:00–17:00), morning, lunchtime, afternoon | How strong will the mean wind be near the summit at the windiest of the slot? Gusts are often 1.5 to 2 times stronger: closures likely from 45 km/h. | Top lifts may slow down or close: plan for the lower slopes. |
+| ⚠️ Safety | **Avalanche danger** | level 1 to 5 of the official bulletin, in its European colour | today, tomorrow (whole day) | What danger level does Météo-France's avalanche bulletin give for the resort's massif, at the elevation of its summit? Relayed as is, never computed by Bluebird: a blue rosette next to the title says so. Before 4 pm, tomorrow shows the trend given the day before, then the new bulletin. | The back of the tile gives the name of each level and what to do, and a link to the full official bulletin (opens in a new tab). Always read it before going off-piste, and carry a transceiver, shovel and probe. |
 | ⚠️ Safety | **Wind-blown snow** | Yes / Possible / No | today, tomorrow (whole day) | Has at least 10 cm of snow fallen near the summit in the 48 hours before 09:00, with wind reaching 30 km/h since? | Wind slabs likely off-piste. Always read the avalanche bulletin first. |
 
 A **white day** ("jour blanc") is a day without visible relief. Hour by hour
@@ -424,7 +425,6 @@ Never a replacement for the official avalanche bulletin (BERA).
 
 | Indicator | When | For | Question |
 |---|---|---|---|
-| **Avalanche risk** | 6 h | Off-piste, touring, snowshoeing | Danger level (1 to 5) of the Météo-France avalanche bulletin, and whether it rises tomorrow. |
 | **Ski touring and snowshoe start time** | 6 h | Touring, snowshoeing | Best start and return times for an outing (night freeze, warming, avalanche risk). |
 | **High avalanche risk days** | Season | Off-piste, touring, snowshoeing | Days with an avalanche danger level of 4 or 5. |
 
@@ -465,6 +465,17 @@ indicators can be added later without fetching it again. The snow depth on
 the ground comes from the German weather service's ICON model (Météo-France's
 archive does not include it), on a coarser grid of about 7 km.
 
+The **avalanche danger** is not a forecast of Bluebird: it is the level of
+Météo-France's avalanche risk bulletin (BRA), written by its forecasters with
+the observers of the snow and weather network. Météo-France publishes one
+bulletin per avalanche massif every day around 4 pm, from early November to
+late May, for the next day. Each resort gets the bulletin of the massif it
+lies in (checked against Météo-France's official massif outlines), at the
+elevation of its summit when the level differs above and below a given
+altitude. When the level changes during the day, or differs between the two
+sides of the massif, Bluebird keeps the higher one. Out of season there is no
+bulletin and no avalanche tile. Source: Météo-France, Licence Ouverte.
+
 ### How the home page is chosen
 
 With no filter chosen, Bluebird picks the tiles itself. You never see a
@@ -472,9 +483,9 @@ score: the tiles simply come in the right order.
 
 1. **The bluebird day always comes first**, whatever its chance: it is what
    the site is about.
-2. **Alerts** come next: lifts in strong wind (60 km/h or more), chains
-   needed ("Oui"), wind-blown snow ("Oui"), a felt temperature of −28 °C or
-   colder.
+2. **Alerts** come next: an avalanche danger of 4 (high) or 5, lifts in
+   strong wind (60 km/h or more), chains needed ("Oui"), wind-blown snow
+   ("Oui"), a felt temperature of −28 °C or colder.
 3. **Then every other indicator** of today and tomorrow, best first. Each
    one gets a mark from four things:
    - **how much it matters** to a skier: fresh snow and powder before a
@@ -504,6 +515,7 @@ while you are looking at it.
 | Snow | 5 cm in the day (2 cm in a time slot) | 30 cm (15 cm in a slot) | — |
 | On-piste powder | 5 cm since grooming | 20 cm | — |
 | Off-piste powder | 30 % | 70 % | — |
+| Avalanche danger | level 3 (considerable) | level 4 (high) | level 4 |
 | Lifts in the wind | 45 km/h | 70 km/h | 60 km/h |
 | Chains needed | Possible | Oui | Oui |
 | Wind-blown snow | Possible | Oui | Oui |
@@ -533,13 +545,14 @@ the mean of the three best resorts of your place.
 ### Available now
 
 - Pyrenees: 18 French resorts, from La Pierre Saint-Martin to Formiguères.
-- 19 indicators in six categories, for each time slot or day of today and
+- 20 indicators in six categories, for each time slot or day of today and
   tomorrow (see [Available indicators](#available-indicators)), each shown
-  as an amount (cm, hours, °C, km/h), a Yes / Possible / No or a
-  percentage: snow, snow alert, snow cannons; powder on piste and
-  off-piste, spring snow, hard snow, heavy snow, easy conditions; white day,
-  bluebird day, sunset, starry night, full sun; mild day, wind chill; chains
-  needed, lifts in the wind; wind-blown snow.
+  as an amount (cm, hours, °C, km/h), a Yes / Possible / No, a level of an
+  official scale or a percentage: snow, snow alert, snow cannons; powder on
+  piste and off-piste, spring snow, hard snow, heavy snow, easy conditions;
+  white day, bluebird day, sunset, starry night, full sun; mild day, wind
+  chill; chains needed, lifts in the wind; avalanche danger (the official
+  Météo-France level), wind-blown snow.
 - Updated every 6 hours; tiles of slots that are over disappear on their own.
 - A service status page (linked from the footer), and the last valid values kept (and flagged)
   when an update fails.
@@ -666,7 +679,8 @@ the mean of the three best resorts of your place.
   you chose (massif, département or ski area), one screen per highlight
   (snow tonight, bluebird day tomorrow, the windiest lifts…) with the leading
   resort, its value and the next two; tap or swipe to go to the next story.
-- Avalanche risk level from the Météo-France bulletin (BERA), next to each resort.
+- Days of high avalanche danger (level 4 or 5) in the season reviews, from
+  Météo-France's public archive of the bulletins.
 - Resort opening status (open lifts and pistes).
 - Slope orientation and steepness to refine the powder estimate
   (north-facing slopes keep powder longer).
@@ -709,8 +723,11 @@ the mean of the three best resorts of your place.
 
 - **Bluebird is a planning aid, not an avalanche bulletin.** Before any
   off-piste outing, read the official Météo-France avalanche bulletin (BERA),
-  carry avalanche safety equipment and know how to use it. The **Wind-blown
-  snow** tile is a warning sign, never a danger level.
+  carry avalanche safety equipment and know how to use it. The **Avalanche
+  danger** tile relays the bulletin's level only: the bulletin also says
+  which slopes and aspects are concerned and how the danger changes during
+  the day. The **Wind-blown snow** tile is a warning sign, never a danger
+  level.
 - **Chains needed** estimates the road from the resort's own forecast; it
   does not know snow clearing nor the road's real elevation. Mountain winter
   equipment rules apply whatever it says.

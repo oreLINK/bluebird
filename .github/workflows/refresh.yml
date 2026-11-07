@@ -113,6 +113,8 @@ jobs:
         env:
           RUN_ID: ${{ needs.plan.outputs.run_id }}
           SOURCE: ${{ matrix.source }}
+          # Only the avalanche bulletin job gets the Météo-France key.
+          METEOFRANCE_BRA_API_KEY: ${{ matrix.source == 'meteofrance_bra' && secrets.METEOFRANCE_BRA_API_KEY || '' }}
         run: |
           uv run bluebird run --layer bronze --source "$SOURCE" --run-id "$RUN_ID" --strict \
             --report "$RUNNER_TEMP/report/bronze-$SOURCE.json" --export "$RUNNER_TEMP/export"

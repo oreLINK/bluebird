@@ -18,7 +18,7 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
   tomorrow (morning, lunchtime, afternoon, evening, night, whole day).
 - A **Python data pipeline** that fetches weather forecasts, computes the
   probabilities, and writes small JSON files the website reads.
-- First massif: Pyrenees, 18 stations. 19 **live** KPIs (probabilities per
+- First massif: Pyrenees, 18 stations. 20 **live** KPIs (probabilities per
   period), one category filter each (the indicator categories of
   PROJECT.md): `snow` (Neige: `snowfall_chance`, `powder_alert_chance`,
   `snowmaking_chance`), `snow-quality` (Glisse: `onpiste_powder_chance`,
@@ -27,11 +27,14 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
   `whiteout_chance`, `bluebird_day_chance`, `sunset_chance`,
   `starry_night_chance`, `sunny_slot_chance`), `comfort` (Confort:
   `mild_day_chance`, `wind_chill_chance`), `access` (Accès: `chains_chance`,
-  `lift_wind_chance`), `safety` (Sécurité: `wind_slab_chance`). All use only
-  the data already fetched (ensemble mid/summit). Each is shown after its
+  `lift_wind_chance`), `safety` (Sécurité: `avalanche_risk`,
+  `wind_slab_chance`). All but one use only the ensemble (mid/summit);
+  `avalanche_risk` relays the Météo-France avalanche bulletin (BRA, API key
+  in the secret `METEOFRANCE_BRA_API_KEY`), `certified` (blue rosette after the title, "Donnée officielle" box on the back with its `official_link` to the bulletin). Each is shown after its
   `display` (`kpis.yaml`): `value` (median of a driver: snow, snow alert,
   snowmaking, on-piste powder, full sun, wind chill, lift wind), `levels`
-  (Oui / Possible / Non: chains, hard snow, wind slab) or `percent` (the
+  (Oui / Possible / Non: chains, hard snow, wind slab), `scale` (a level of
+  an official scale in its colour: avalanche danger 1–5) or `percent` (the
   others; sunset with its time as `note`).
 - **Rewinds** review a closed season with **historical** KPIs (values, not
   probabilities), built once by `bluebird rewind`. First instance: *Rewind
@@ -111,6 +114,7 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 |---|---|
 | `AGENTS.md` | Mandatory rules for AI agents, applied on every prompt. |
 | `TILES.md`, `docs/tiles/render.mjs`, `docs/tiles/*.svg` | The tile axes (scope, format, visual, kind), corner badges, fields and the inventory of every tile, with one mockup per value. Kept up to date with every tile change (AGENTS.md §1); the inventory and totals are checked by `web/src/lib/tilesDoc.test.ts`. The SVGs are **generated** by `node docs/tiles/render.mjs` (same mockup and example data for all; edit the script, never the SVGs). |
+| `docs/kpi/<kpi_id>/<kpi_id>.md`, `docs/kpi/<kpi_id>/screenshots/` | One folder per KPI: its page, the data from source to screen (config, request, parsing, maths, display, back, home page, failures, code map), and its screenshots. Only `avalanche_risk` so far; kept up to date with the KPI (AGENTS.md §1). |
 | `CLAUDE.md` | Imports `AGENTS.md` and `CONTEXT.md` for Claude Code. |
 | `config/filters.yaml` | Level-1 chips of the filter bar, their `levels` (`group`, `day`, `slot`) and sub-categories `groups` (every KPI of a filter in exactly one); KPIs opt in with `filters: [id]` in `kpis.yaml`. The Mood filter instead has `levels: [mood_group, mood]` and a `moods` tree (sub-moods with `tomorrow_only`, moods with `kpis`; a KPI in several moods, no tag needed). Chip labels of the levels: `days` and period `chip` in `periods.yaml`. |
 | `config/periods.yaml` | `day_start` (06:00), `horizon_days`, `days` (day chips), `badge_days` / `badge_tonight` (day cell of the time badge: short label + day tone), periods (time slots covering the ski day + `day` with `native_window`) with their labels per day (the period written out), `chip`, `badge` (short moment cell of the time badge; none for the whole day) and `tone` (its colour). Day-grain periods (`native_window`): `day`, `sunset` (06:00–22:00), `overnight` (06:00 → 06:00). |
@@ -136,6 +140,7 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 | `pipeline/src/bluebird_pipeline/bronze/_season_points.py`, `extractor_open_meteo_historical.py` | Deterministic Rewind sampling points (station, domain along pistes, off-piste ring) and the season archive extractor (2 requests per station). |
 | `pipeline/src/bluebird_pipeline/gold/_whiteout.py`, `aggregator_whiteout_chance.py`, `aggregator_season_white_days.py` | White days: `SkiHours` (ski hours params; also the day-grain window of the KPIs with time slots, `day_or_slot`), `WhiteoutRule` (params shared by both KPIs), clear-sky radiation (`clear_sky_expr`), white hour rule; live probability (period `day`: today and tomorrow) and season count. |
 | `pipeline/src/bluebird_pipeline/gold/_conditions.py`, `aggregator_{powder_alert,snowmaking,spring_snow,hard_snow,heavy_snow,easy_conditions,sunset,starry_night,sunny_slot,wind_chill,mild_day,chains,lift_wind,wind_slab}_chance.py` | Condition KPIs from the fetched ensemble: `member_table` + `share` (`_ensemble.py`); helpers wet bulb (snowmaking), wind chill, lapse-rate temperature (chains: road at the base elevation), `sunset_utc` (period `sunset`, native window 06:00–22:00). Tested in `tests/gold/test_live_conditions.py`. |
+| `pipeline/src/bluebird_pipeline/bronze/extractor_meteofrance_bra.py`, `silver/transformer_meteofrance_bra.py`, `silver/_avalanche.py`, `gold/aggregator_avalanche_risk.py` | Avalanche danger: one `GET /massif/BRA?id-massif=N&format=xml` per `avalanche_massif` of the stations, key in the `apikey` header (env `METEOFRANCE_BRA_API_KEY`, never stored; 404 = no bulletin, 401/403 fails the source); `parse_bulletin` (dates in UTC, `RISQUE1` lower band, `EVOLURISQUE` and geographic split keep the higher level, `RISQUEMAXIJ2` → a `trend` row for the day after); the aggregator takes the level at the summit, a bulletin beats a trend (`medium`), `empty_ok` (no bulletin out of season = `ok`, also in `diamond/_status.py`). Real answer in `tests/silver/fixtures/meteofrance_bra_66.xml`. |
 | `pipeline/src/bluebird_pipeline/gold/aggregator_bluebird_day_chance.py` | Bluebird day: fresh snow over `lookback_hours` before `ski_start`, then ≥ `min_sunny_hours` sunny ski hours (`sunny_hour_expr`: total cloud and radiation vs clear sky). Period `day` only. |
 | `pipeline/src/bluebird_pipeline/gold/aggregator_season_snow_depth_days.py` | Share of days whose daily mean snow depth over `points` exceeds `threshold_cm` (needs `snow_depth_m` from the ICON season source). |
 | `pipeline/src/bluebird_pipeline/gold/_season.py`, `aggregator_season_*.py` | `SeasonAggregator`s (base in `gold/base.py`): season window, point totals, `longest_episode`. |
@@ -158,6 +163,7 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 | `web/src/lib/kpiView.ts` | **One view of a KPI for every tile**: `liveView` (after the KPI `display`: percent, median value with band note, or levels; confidence, details) / `historicalView` (Rewind values, bars vs best), `viewFor()` (App), `itemLabel`, `rewindOfKpi`. Tiles never read payloads directly. |
 | `web/src/tiles/tileModel.ts`, `OddsRow.svelte`, `RankingMore.svelte`, `StationRow.svelte`, `summary.ts` | Shared by every tile format and both kinds: top/rest, photo (`visual: photo`), odds/details (live only), empty message, badge, theme (`TILE_THEMES`, from the Rewind's filter). Odds buttons show reliability dots for live KPIs; the open list has a "see less" button at its top and bottom. |
 | `web/src/tiles/TileBadge.svelte`, `web/src/components/ValuePill.svelte` | Corner badge ("REWIND 25/26") and the value pill of ranking rows ("82 %", "4,43 m"). |
+| `web/src/components/CertifiedBadge.svelte` | Blue rosette after the title of a tile whose KPI is `certified` (value relayed as is from an official source); `--verified-*` tokens; in the `.title-row` of `TileFull`/`TileBanner`/`TileCompact`; `KpiBack` adds the "Certifié" box (with the KPI `official_link`, new tab), the scale `steps` with advice, and the official reliability text (no scenarios line when `members` is 0). Scale levels colour odds buttons and pills through `data-scale` (`--danger-*` tokens, `base.css`). |
 | `web/src/components/ConfidenceDots.svelte` | Three reliability dots for a `confidence` level; colours via `--dot-on` / `--dot-off`. Used by odds buttons, station rows, station details, tile back. |
 | `web/src/tiles/FlipCard.svelte`, `KpiBack.svelte` | Two-sided card of every tile; front = banner, title, odds (no description); back = one section each for description, time window, method, reliability, update, sources, photo credit (never on the front). |
 | `web/src/lib/transitions.ts` | `arrive` / `leave` tile transitions, `rise` for sheets, and `motion()` (reduced-motion aware). |
@@ -408,8 +414,8 @@ npm run dev
 | Add a foreign resort | its zone in `config/massifs.yaml` (`country`: ES, AD…; Spain by comunidad autónoma), the station with checked coordinates | `bluebird reference --massif <massif>`, `bluebird validate`; check the ensemble quota (+2 locations per resort) |
 | Add a massif | `config/massifs.yaml` (with its `zones`), new `config/stations/<id>.yaml`, optional `layout.yaml` override | `bluebird reference --massif <id>`, `bluebird validate`, `bluebird demo` |
 | Add reference data | `bronze/extractor_<x>.py`, `silver/transformer_<x>.py` with `reference_suffix`, `reference_file`, `read_reference`; source with `schedule: reference` | `bluebird reference`, `pytest`, commit `config/reference/` |
-| Add a source | `bronze/extractor_<x>.py` (one grouped request if the API allows), `silver/transformer_<x>.py`, `config/sources.yaml` (+ attribution), tests | `bluebird validate`, `pytest` |
-| Add a KPI | `gold/aggregator_<x>.py` (live: `compute(ctx, ref, period)`), PROJECT.md "Available indicators", README.md "Tiles on the site", `config/kpis.yaml` (name, description, `method` with `{param}` placeholders, params, drivers, filters, `periods` for live KPIs, including a day-grain one (`day`, with `day_or_slot` for KPIs that also have slots), `display`: percent / value / levels, `visibility`: priority, floor, strong, optional alert and slots, also in README.md "Home page visibility score" and PROJECT.md "How the home page is chosen"), `config/tiles.yaml` (title without the period), its group in `config/filters.yaml`, `config/layout.yaml`, tests, TILES.md §7 | `bluebird validate`, `pytest`, `bluebird demo` |
+| Add a source | `bronze/extractor_<x>.py` (one grouped request if the API allows), `silver/transformer_<x>.py`, `config/sources.yaml` (+ attribution), tests; with an API key (owner's approval first): a GitHub secret read from the environment, passed to that source's bronze job only (`refresh.yml`, see `METEOFRANCE_BRA_API_KEY`), never stored in a record, and listed in README.md "First-time GitHub setup" | `bluebird validate`, `pytest` |
+| Add a KPI | `gold/aggregator_<x>.py` (live: `compute(ctx, ref, period)`), PROJECT.md "Available indicators", README.md "Tiles on the site", `config/kpis.yaml` (name, description, `method` with `{param}` placeholders, params, drivers, filters, `periods` for live KPIs, including a day-grain one (`day`, with `day_or_slot` for KPIs that also have slots), `display`: percent / value / levels / scale, `visibility`: priority, floor, strong, optional alert and slots, also in README.md "Home page visibility score" and PROJECT.md "How the home page is chosen"), `config/tiles.yaml` (title without the period), its group in `config/filters.yaml`, `config/layout.yaml`, tests, TILES.md §7, its page `docs/kpi/<kpi_id>/<kpi_id>.md` with `screenshots/` (model: `docs/kpi/avalanche_risk/`) | `bluebird validate`, `pytest`, `bluebird demo` |
 | Add a period | `config/periods.yaml` (slot + labels per day + short `badge` and `tone`, none for a whole-day period; keep slots tiling the day), `periods` of the KPIs | `bluebird validate`, `pytest`, `bluebird demo` |
 | Add a tile format | TILES.md (§2, a picture in `docs/tiles/render.mjs`, §7), README.md "Tiles on the site" when used, `web/src/tiles/Tile<Xyz>.svelte`, `web/src/tiles/registry.ts` (id `xyz` + `skeletonVariant` + `tileRows`), `TileFormat` in `config.py`, `config/tiles.yaml` (`format: xyz`) | `bluebird schemas`, `npm run gen:types`, `npm run check`, `npm test`, 390 px screenshots |
 | Link a station webcam | TILES.md §5/§7, `webcams` of the station in `config/stations/<massif>.yaml` (`position`, `provider`, official `url`), tile `webcam: { positions, min_probability }` (live `full`/`banner` only) | `bluebird validate`, `npm test`, 390 px screenshot with a frozen clock (the badge only shows while the period is in progress) |
@@ -660,6 +666,24 @@ npm run dev
   and the newline (`"    levels: [mood_group, mood]\n"`) in such snippets.
 - **Tile option `photo` is gone.** It is rejected by `bluebird validate`
   (use `visual: photo`); `compact` tiles reject `visual` and `webcam`.
+- **BRA dates are UTC without a zone.** `DATEBULLETIN="2026-11-07T15:00:00"`
+  is 16:00 in Paris (the bulletin is written "J vers 16h"); reading it as
+  local time shifts the issue time by one or two hours. `DATEVALIDITE` is the
+  day after at 18:00 UTC; `DATE_RISQUE_J2` is a date (00:00).
+- **BRA split levels.** `RISQUE1` is always the lower band (`LOC1="<2100"`),
+  `RISQUE2` the upper one (`LOC2=">2100"`, `ALTITUDE` the limit), but `LOC1/2`
+  can also be `E`/`O` or `S`/`N` (geographic split, empty `ALTITUDE`): the
+  side of a resort is unknown, so the higher level is kept. `EVOLURISQUE1/2`
+  is the level later in the day (kept when higher).
+- **Avalanche massif of a station.** The numbers were first guessed and five
+  were wrong (Font-Romeu, Ascou, Le Mourtis, Piau-Engaly, La Pierre
+  Saint-Martin). Check a new station against the official outlines
+  (`metadata_massifs.geojson`, Météo-France on data.gouv.fr) with a
+  point-in-polygon test, not by the département or the valley name.
+- **An empty source is not always a failure.** Out of season the BRA API
+  answers no bulletin; the gold and status steps used to report such a KPI
+  `down`. An aggregator with `empty_ok` reports no result as `ok` (a missing
+  silver table still fails it).
 
 ## 9. Definition of done
 
@@ -686,8 +710,10 @@ Indicators are grouped into six categories (Snow, Snow quality, Sky,
 Comfort, Getting there, Safety; PROJECT.md "Categories" and "Future
 indicators"), the level-1 filters today. Every live KPI feasible with the
 fetched data is built; the remaining future ones need new data (UV index,
-live snow depth, a base band in the ensemble, gusts, avalanche bulletin,
-school holidays, nordic sites). The Mood filter (wish of the day) is built;
+live snow depth, a base band in the ensemble, gusts, school holidays, nordic
+sites); the avalanche danger relays the Météo-France bulletin (BRA), whose
+XML also carries observed snow depth per elevation and aspect, fresh snow and
+wind, unused so far. The Mood filter (wish of the day) is built;
 planned moods: Côté village, Je monte ce week-end, mood-specific
 thresholds. Planned filter levels (PROJECT.md "Coming next", README.md
 "Future features"): activity (a feature apart from the moods) (level 1, next to the Rewind) → category →
@@ -747,8 +773,9 @@ Place stories (full-screen highlights of the day for the chosen place,
 README.md "Future features") reuse `viewFor(…, only)` and the visibility
 score of `lib/homeFeed.ts`; the current tile design stays (a 2026-11 redesign study kept it).
 For the sunniest resort, use the stored `shortwave_wm2`, not `sunshine_s`
-(see §8). Planned next (see PROJECT.md): Météo-France avalanche bulletin (BRA, needs an
-API key), resort opening status (scraper), slope/aspect from an IGN or
+(see §8). Planned next (see PROJECT.md): high avalanche danger days for the
+Rewinds from the public BRA archive (data.gouv.fr, no key, same parser),
+resort opening status (scraper), slope/aspect from an IGN or
 Copernicus elevation model, 7-day trend tile, map tile using
 `domain_features`, more massifs (Alps), probability calibration against
 observed snow using the gold history.

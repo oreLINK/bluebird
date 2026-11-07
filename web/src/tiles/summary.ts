@@ -1,6 +1,6 @@
 /** Accessible one-line summary of a ranked station, shared by the tile rows. */
-import { type KpiView, type RankItem, itemLabel, itemNote } from '../lib/kpiView';
-import type { Locale } from '../lib/i18n/core';
+import { type KpiView, type RankItem, displayOf, itemLabel, itemNote, scaleMax } from '../lib/kpiView';
+import { type Locale, pickLocalized } from '../lib/i18n/core';
 
 interface Translator {
   locale: Locale;
@@ -9,8 +9,8 @@ interface Translator {
 }
 
 /**
- * "1. Cauterets, 82 %, high confidence", "1. Porté, −24 °C (risque modéré), …"
- * (live) or "1. La Pierre Saint-Martin, 4,43 m".
+ * "1. Cauterets, 82 %, high confidence", "1. Porté, −24 °C (risque modéré), …",
+ * "1. Gourette, niveau 4 sur 5, fort, …" (live) or "1. La Pierre Saint-Martin, 4,43 m".
  */
 export function itemSummary(
   view: KpiView,
@@ -20,7 +20,13 @@ export function itemSummary(
   i18n: Translator,
 ): string {
   const note = itemNote(item, i18n.locale);
-  const label = itemLabel(view, item, i18n.locale);
+  const label = item.step
+    ? i18n.t('a11y.scale', {
+        value: item.value,
+        max: scaleMax(displayOf(view.kpi)),
+        label: pickLocalized(item.step.label, i18n.locale).toLocaleLowerCase(i18n.locale),
+      })
+    : itemLabel(view, item, i18n.locale);
   const text = i18n.t('a11y.rowSummary', {
     rank,
     station,

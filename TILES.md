@@ -19,7 +19,9 @@ the "data from" badge. Every tile follows the same [design rules](#9-design-nuit
 
 Every picture below is the same mockup with the same example data (the
 bluebird day of a January morning in the Pyrenees: Cauterets 82 %, Gourette
-64 %, Peyragudes 41 %), so two pictures differ only by the value they show.
+64 %, Peyragudes 41 %), so two pictures differ only by the value they show;
+only the scale pictures of §4 use the avalanche danger, whose values are
+levels (5, 4, 3).
 The texts are the French UI, as on the site. The pictures are generated:
 edit [`docs/tiles/render.mjs`](docs/tiles/render.mjs), then run
 `node docs/tiles/render.mjs`; never edit the SVG files by hand.
@@ -156,7 +158,9 @@ both kinds; only the data and the theme change.
 **`live`** — forecasts, refreshed every 6 hours. The tile is a template
 expanded once per period; the title stays the same ("Journée bluebird") and
 the [time badge](#5-corner-badges) names the period ("Auj.", "Dem. |
-Matin"); the back of the tile repeats it with its exact date. Values are probabilities, amounts or Oui/Possible/Non, with
+Matin"); the back of the tile repeats it with its exact date. Values are
+probabilities, amounts, Oui/Possible/Non or a level of an official scale
+(see [below](#values-on-an-official-scale-and-certified-kpis)), with
 reliability dots.
 
 </td>
@@ -165,6 +169,46 @@ reliability dots.
 **`historical`** — a closed season (Rewind), shown once, only under its
 filter. Red theme of the Rewind's filter, "REWIND 25/26" badge, values in
 the KPI unit (4,43 m), no reliability dots, odds or details.
+
+</td>
+</tr>
+</table>
+
+### Values on an official scale and certified KPIs
+
+Also set by the KPI, not by the tile (`display` and `certified` in
+`config/kpis.yaml`), and drawn by every format: today the **avalanche
+danger** (`avalanche_risk`, a `full` tile; its page:
+[docs/kpi/avalanche_risk/](docs/kpi/avalanche_risk/avalanche_risk.md)).
+
+<table>
+<tr>
+<td width="50%"><img src="docs/tiles/display-scale.svg" width="300" alt="Full tile Risque d'avalanche with the blue rosette after the title; odds buttons 5 on a red and black checkerboard, 4 in red, 3 in orange"></td>
+<td width="50%"><img src="docs/tiles/display-scale-compact.svg" width="300" alt="Compact tile Risque d'avalanche with the rosette and the same three coloured levels"></td>
+</tr>
+<tr>
+<td valign="top">
+
+**Scale values** (`display: scale`) — the level as a number on an odds button
+filled with the colour of its step (`data-scale` on the button and the
+ranking pill; tokens `--danger-*`): 1 green, 2 yellow, 3 orange, 4 red,
+5 red and black checkerboard with the number outlined and the station name
+and dots on a dark plate. The bar shows level / 5 in the same colour. The
+back lists every step with its number on the same colour, its name and its
+advice ("Que faire selon le niveau ?", `steps` of `config/kpis.yaml`).
+
+</td>
+<td valign="top">
+
+**Certified rosette** (`certified: true`) — not a corner badge: a blue
+scalloped rosette with a white check mark right after the title
+(`CertifiedBadge.svelte`, 22px, 20px on `compact`), for a value relayed as is
+from an official source (the Météo-France avalanche bulletin). A tap flips
+the card like anywhere else on it. The back explains it in a "Certifié" box
+("Donnée officielle"), with a link to the source itself when the KPI has an
+`official_link` ("Lire le bulletin officiel", new tab, brand colours); the
+reliability text then speaks of the bulletin's freshness and the scenarios
+line is hidden.
 
 </td>
 </tr>
@@ -294,6 +338,7 @@ without pin and without hiding any. Nothing about it is drawn on a tile.
 | `mild_day` | `mild_day_chance` | ranking | compact | — | live | — |
 | `chains` | `chains_chance` | ranking | compact | — | live | — |
 | `lift_wind` | `lift_wind_chance` | ranking | compact | — | live | — |
+| `avalanche_risk` | `avalanche_risk` | ranking | full | scene | live | — |
 | `wind_slab` | `wind_slab_chance` | ranking | compact | — | live | — |
 | `rewind_2025_26_total_snowfall` | `season_total_snowfall` | ranking | full | photo | historical | — |
 | `rewind_2025_26_longest_snowfall` | `season_longest_snowfall` | ranking | banner | photo | historical | — |
@@ -302,7 +347,7 @@ without pin and without hiding any. Nothing about it is drawn on a tile.
 | `rewind_2025_26_deep_snow_days` | `season_deep_snow_days` | ranking | banner | photo | historical | — |
 | `rewind_2025_26_white_days` | `season_white_days` | ranking | banner | photo | historical | — |
 
-Totals: 25 tiles — 2 `full`, 8 `banner`, 15 `compact`; 19 live, 6 historical;
+Totals: 26 tiles — 3 `full`, 8 `banner`, 15 `compact`; 20 live, 6 historical;
 1 with a webcam rule.
 
 ## 8. Changing tiles
@@ -314,6 +359,7 @@ Totals: 25 tiles — 2 `full`, 8 `banner`, 15 `compact`; 19 live, 6 historical;
 | Add a visual or a scope | the `Tile*` literal in `config.py`, the components, this file (§1/§3 + a picture) |
 | Link a station webcam | `webcams` in `config/stations/<massif>.yaml`, tile `webcam` rule, this file (§5, §7) |
 | Change what a tile shows (a badge, the odds, a back section) | the components, then the page "Lire une tuile" for users: `TileGuide.svelte` (example front and back with numbered marks) and the numbered paragraphs of the page `guide` in `config/pages.yaml` (`front-marks`, `back-marks`, same count as the marks) |
+| Show a KPI on an official scale, or as certified | `display: scale` with its `steps`, `certified`, `official_link` in `config/kpis.yaml`; colours `--danger-*` / `--verified-*` in `tokens.css`, `[data-scale]` in `base.css`; this file (§4) and `render.mjs` (`display: 'scale'`) |
 | Change the time badge | labels and `tone` of the periods in `config/periods.yaml`, colours `--when-*` / `--tone-*` / `--ticket-*` in `tokens.css`, `TimeBadge.svelte`, `TONE_ICONS` in `web/src/lib/periods.ts`, this file (§5, §9) |
 | Change the look | `tokens.css` / `base.css` first, then the components, §9 of this file, and `render.mjs` so the pictures stay true |
 
@@ -321,7 +367,7 @@ After a change to `config.py`: `uv run bluebird schemas`, `npm run gen:types`.
 
 ## 9. Design: Nuit étoilée
 
-The tile design since November 2026 (design n°12 of the exploration). Goal:
+The tile design since November 2026. Goal:
 readable and sober, with Liquid Glass on surfaces and images only. A new axis,
 value or format reuses these rules; it never brings its own colours, fonts or
 sizes. Values below are the tokens of `web/src/styles/tokens.css` (palette,
@@ -360,6 +406,8 @@ fonts, radii) and `web/src/styles/base.css` (tile sizes, glass recipes).
 | Mood chip (text, border) | `--mood-1` … `--mood-5` | `#c2185b` · `#b45309` · `#047857` · `#0369a1` · `#6d28d9` | `#ff8fc0` · `#ffb86b` · `#6ee7b7` · `#7cc8ff` · `#c4a8ff` |
 | Mood chip chosen (fill) | `--mood-fill-1` … `--mood-fill-5` / `--on-mood` | `#be185d` · `#b45309` · `#047857` · `#1d4ed8` · `#6d28d9` / white | same |
 | LIVE badge | `--live-bg` / `--on-live` | `#d0021b` / white | same |
+| Certified rosette | `--verified-bg` / `--verified-ink` | `#1d6ff2` / white | `#3b82f6` / white |
+| Scale levels (avalanche danger, European colours) | `--danger-1-bg` … `--danger-5-bg` / `-ink` | `#3fa34d` · `#ffe11a` · `#ff9317` · `#dc0712` · `#dc0712` with `#120a0a` checkerboard / dark ink on 1–3, white on 4–5 | same (official colours) |
 
 **Day colours** (`--when-<tone>`, the day cell of the time badge): dark, with
 white text (`--when-ink`), at 88 % over the card, or at 80 % with a blur on

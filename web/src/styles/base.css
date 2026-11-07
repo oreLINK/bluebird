@@ -121,6 +121,43 @@ a {
   --odds-overlay-ink: var(--on-rewind);
 }
 
+/*
+ * Levels of a `scale` display (lib/kpiView.ts `RankItem.step`): `data-scale`
+ * on an odds button, a pill or a chip sets its fill and ink. A patterned level
+ * (avalanche danger 5) also sets the outline of its number and a dark plate
+ * under the station name and the dots, so they stay readable on the pattern.
+ */
+[data-scale='danger-1'] {
+  --scale-bg: var(--danger-1-bg);
+  --scale-ink: var(--danger-1-ink);
+}
+[data-scale='danger-2'] {
+  --scale-bg: var(--danger-2-bg);
+  --scale-ink: var(--danger-2-ink);
+}
+[data-scale='danger-3'] {
+  --scale-bg: var(--danger-3-bg);
+  --scale-ink: var(--danger-3-ink);
+}
+[data-scale='danger-4'] {
+  --scale-bg: var(--danger-4-bg);
+  --scale-ink: var(--danger-4-ink);
+}
+[data-scale='danger-5'] {
+  --scale-bg: var(--danger-5-bg);
+  --scale-ink: var(--danger-5-ink);
+  --scale-fill: repeating-conic-gradient(var(--danger-5-bg) 0 25%, var(--danger-5-alt) 0 50%) 0 0 /
+    16px 16px;
+  --scale-edge: var(--danger-5-alt);
+  --scale-plate: var(--danger-5-plate);
+  --scale-plate-pad: 1px 6px;
+  --scale-dots-pad: 3px 5px;
+  --scale-number-shadow:
+    -2px -2px 0 var(--danger-5-alt), 2px -2px 0 var(--danger-5-alt), -2px 2px 0 var(--danger-5-alt),
+    2px 2px 0 var(--danger-5-alt), 0 -2.5px 0 var(--danger-5-alt), 0 2.5px 0 var(--danger-5-alt),
+    -2.5px 0 0 var(--danger-5-alt), 2.5px 0 0 var(--danger-5-alt), 0 0 10px rgba(0, 0, 0, 0.9);
+}
+
 .card {
   position: relative;
   min-width: 0;

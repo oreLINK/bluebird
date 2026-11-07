@@ -48,10 +48,11 @@
       <span class="name">{shortName(view, item.stationId)}</span>
       {#if item.confidence}<ConfidenceDots level={item.confidence} size={5} />{/if}
     </span>
-    <span class="bar"><span style="--p: {item.share}"></span></span>
+    <span class="bar" data-scale={item.step?.tone}><span style="--p: {item.share}"></span></span>
   </span>
   <span aria-hidden="true">
     <ValuePill
+      scale={item.step?.tone}
       label={itemLabel(view, item, i18n.locale)}
       odds={itemNote(item, i18n.locale) ||
         (showOdds ? i18n.t('tile.odds', { odds: formatOdds(item.value, i18n.locale) }) : '')}
@@ -171,6 +172,11 @@
     width: calc(var(--p) * 100%);
     border-radius: inherit;
     background: color-mix(in oklch, var(--prob-high) calc(var(--p) * 100%), var(--prob-low));
+  }
+
+  /* `scale` display: the bar in the colour of the level. */
+  .bar[data-scale] > span {
+    background: var(--scale-bg);
   }
 
   .row :global(.chevron) {
