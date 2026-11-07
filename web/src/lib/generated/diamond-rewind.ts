@@ -35,6 +35,10 @@ export type Value = number;
  * Best first: by value, descending unless the KPI `order` is asc.
  */
 export type Ranking = DiamondRewindEntry[];
+/**
+ * Ids of the payload `sources` that feed this KPI (cited on the back of its tiles); empty in older payloads, which then cite every source.
+ */
+export type SourceIds = string[];
 export type Id1 = string;
 export type Name1 = string;
 export type Url = string;
@@ -85,6 +89,7 @@ export interface DiamondRewindKpi {
   aggregator_version: AggregatorVersion;
   unit: Unit;
   ranking: Ranking;
+  source_ids?: SourceIds;
 }
 export interface DiamondRewindEntry {
   station_id: StationId;

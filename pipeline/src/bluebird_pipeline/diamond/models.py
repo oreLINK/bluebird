@@ -77,6 +77,11 @@ class DiamondKpi(DiamondModel):
     kpi_id: str
     aggregator_version: str
     periods: list[DiamondKpiPeriod] = Field(description="Periods not over yet, by start time.")
+    source_ids: list[str] = Field(
+        default_factory=list,
+        description="Ids of the payload `sources` that feed this KPI (cited on the back of its "
+        "tiles); empty in older payloads, which then cite every source.",
+    )
 
 
 class DiamondSource(DiamondModel):
@@ -177,6 +182,11 @@ class DiamondRewindKpi(DiamondModel):
     unit: str
     ranking: list[DiamondRewindEntry] = Field(
         description="Best first: by value, descending unless the KPI `order` is asc."
+    )
+    source_ids: list[str] = Field(
+        default_factory=list,
+        description="Ids of the payload `sources` that feed this KPI (cited on the back of its "
+        "tiles); empty in older payloads, which then cite every source.",
     )
 
 

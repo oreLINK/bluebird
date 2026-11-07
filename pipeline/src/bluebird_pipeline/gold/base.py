@@ -108,6 +108,9 @@ class Aggregator(ABC):
     version: ClassVar[str] = "1"
     Params: ClassVar[type[AggregatorParams]] = AggregatorParams
     required_datasets: ClassVar[tuple[str, ...]] = ()
+    #: Silver datasets read with ``ctx.silver_optional`` (e.g. the deterministic
+    #: AROME forecast next to the ensemble): not required, but cited as sources.
+    optional_datasets: ClassVar[tuple[str, ...]] = ()
     #: True when the source may rightly have nothing to compute (e.g. no
     #: avalanche bulletin out of season): no result is then reported ``ok``,
     #: not ``down``. A missing silver table still fails the KPI.
@@ -116,6 +119,16 @@ class Aggregator(ABC):
     def __init__(self, kpi: Kpi) -> None:
         self.kpi = kpi
         self.params = self.Params.model_validate(kpi.params)
+
+    def uses_source(self, schedule: str, dataset: str, columns: list[str]) -> bool:
+        """Whether a source feeds this KPI: a daily source of one of its datasets
+        (required or optional).
+
+        Used to cite only the KPI's own sources on the back of its tiles
+        (``source_ids`` of the diamond payload).
+        """
+        datasets = (*self.required_datasets, *self.optional_datasets)
+        return schedule == "daily" and dataset in datasets
 
     def aggregate(self, ctx: RunContext) -> list[KpiResult]:
         """One result per station with enough data, for each period not over yet."""
@@ -313,10 +326,24 @@ class SeasonAggregator(ABC):
     version: ClassVar[str] = "1"
     Params: ClassVar[type[AggregatorParams]] = AggregatorParams
     required_datasets: ClassVar[tuple[str, ...]] = (SEASON_DATASET,)
+    #: Columns of the season table the KPI reads: they tell which season
+    #: sources feed it, since every season source fills the same table.
+    required_columns: ClassVar[tuple[str, ...]] = ()
 
     def __init__(self, kpi: Kpi) -> None:
         self.kpi = kpi
         self.params = self.Params.model_validate(kpi.params)
+
+    def uses_source(self, schedule: str, dataset: str, columns: list[str]) -> bool:
+        """Whether a source feeds this KPI: a season source filling one of its
+        ``required_columns``, or the pistes (reference ``domain_features``) when
+        it reads the domain or off-piste points placed along them."""
+        if schedule == "season":
+            return bool(set(columns) & set(self.required_columns))
+        if schedule == "reference":
+            points = getattr(self.params, "points", "station")
+            return dataset == "domain_features" and points != "station"
+        return False
 
     @abstractmethod
     def aggregate(

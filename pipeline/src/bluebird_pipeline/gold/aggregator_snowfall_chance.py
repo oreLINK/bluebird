@@ -39,6 +39,7 @@ class AggregatorSnowfallChance(Aggregator):
     version: ClassVar[str] = "3"
     Params: ClassVar[type[AggregatorParams]] = SnowfallChanceParams
     required_datasets: ClassVar[tuple[str, ...]] = ("ensemble_hourly",)
+    optional_datasets: ClassVar[tuple[str, ...]] = ("forecast_hourly",)
     params: SnowfallChanceParams
 
     def compute(self, ctx: RunContext, ref: StationRef, period: PeriodInstance) -> KpiResult | None:

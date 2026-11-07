@@ -338,7 +338,7 @@ without pin and without hiding any. Nothing about it is drawn on a tile.
 | `mild_day` | `mild_day_chance` | ranking | compact | — | live | — |
 | `chains` | `chains_chance` | ranking | compact | — | live | — |
 | `lift_wind` | `lift_wind_chance` | ranking | compact | — | live | — |
-| `avalanche_risk` | `avalanche_risk` | ranking | full | scene | live | — |
+| `avalanche_risk` | `avalanche_risk` | ranking | full | photo | live | — |
 | `wind_slab` | `wind_slab_chance` | ranking | compact | — | live | — |
 | `rewind_2025_26_total_snowfall` | `season_total_snowfall` | ranking | full | photo | historical | — |
 | `rewind_2025_26_longest_snowfall` | `season_longest_snowfall` | ranking | banner | photo | historical | — |

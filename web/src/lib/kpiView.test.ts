@@ -5,6 +5,7 @@ import {
   historicalView,
   itemLabel,
   itemNote,
+  kpiSources,
   liveView,
   rewindOfKpi,
   shortName,
@@ -140,6 +141,28 @@ describe('kpi views', () => {
     expect(viewFor(liveKpi, 'm', null, [rewind], () => payload)).toBeNull();
     expect(viewFor(historical, 'm', null, [rewind], () => payload)?.kind).toBe('historical');
     expect(viewFor(undefined, 'm', null, [rewind], () => payload)).toBeNull();
+  });
+});
+
+describe('sources on the back', () => {
+  const all = [
+    { id: 'ensemble', name: 'Open-Meteo', url: 'https://open-meteo.com' },
+    { id: 'bra', name: 'Météo-France', url: 'https://meteofrance.com' },
+  ];
+
+  it('cites only the sources of the KPI', () => {
+    expect(kpiSources(all, ['bra']).map((s) => s.id)).toEqual(['bra']);
+  });
+
+  it('cites every source for an older payload without source ids', () => {
+    expect(kpiSources(all, undefined)).toEqual(all);
+    expect(kpiSources(all, [])).toEqual(all);
+  });
+
+  it('reads the source ids of a Rewind KPI', () => {
+    const withSources = { ...(payload as object), sources: all, kpis: { snow: { ...(payload as { kpis: { snow: object } }).kpis.snow, source_ids: ['ensemble'] } } } as never;
+    const view = historicalView(historical, rewind, 'm', withSources);
+    expect(view.sources.map((s) => s.id)).toEqual(['ensemble']);
   });
 });
 

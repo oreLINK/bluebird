@@ -652,7 +652,12 @@ the workflow).
    the whole-day period, `self.on_ski_day(...)` for station times); return
    `None` without enough data. Return probabilities in [0, 1], put
    explanatory values in `drivers`, and bump `version` whenever the
-   computation changes.
+   computation changes. Declare every silver dataset it reads:
+   `required_datasets`, plus `optional_datasets` for those read with
+   `ctx.silver_optional` (a historical KPI declares its `required_columns`
+   of the season table instead). They decide which sources the back of its
+   tiles cites (`kpi_source_ids` in `diamond/_payload.py`); a test fails on
+   a dataset read but not declared.
 2. **Config**: add the KPI to `config/kpis.yaml` with its `name`,
    `description`, `method` (how it is computed, with `{param}` placeholders),
    `params`, the `periods` it makes sense for (including a day-grain one) and
@@ -1108,7 +1113,8 @@ the data is unavailable.
   words and its exact date, `slotDates` in `lib/periods.ts`: "Samedi 16
   janvier, de 06:00 à 12:00"), the time window, how it is computed (`method` with
   its params filled in), the reliability for its period, the last update, the
-  data sources and the photo credit. The "×" button, or a tap on the back,
+  sources of its KPI only (`source_ids` of the payload, `kpiSources` in
+  `lib/kpiView.ts`) and the photo credit. The "×" button, or a tap on the back,
   turns it back; the hidden side is inert. Each face has its own glass card,
   so it turns with the card. The faces swap at mid-turn (a delayed
   `visibility` switch with a symmetric easing), so neither side is ever
@@ -1237,7 +1243,7 @@ of live KPIs shows it on its time badge ("Auj.", "Dem. | Matin", "Cette nuit", s
 | `mild_day` | `compact` | `mild_day_chance` (live: day) | Comfort | Journée douce / Mild day / Día templado | `top: 3` |
 | `chains` | `compact` | `chains_chance` (live: day) | Getting there | Chaînes nécessaires / Chains needed / Cadenas necesarias | `top: 3` |
 | `lift_wind` | `compact` | `lift_wind_chance` (live: day, morning, midday, afternoon) | Getting there | Remontées au vent / Lifts in the wind / Remontes y viento | `top: 3` |
-| `avalanche_risk` | `full` | `avalanche_risk` (live: day) | Safety | Risque d'avalanche / Avalanche danger / Peligro de aludes | `scene: mountain`, icon `alert`, `top: 3`; certified rosette |
+| `avalanche_risk` | `full` | `avalanche_risk` (live: day) | Safety | Risque d'avalanche / Avalanche danger / Peligro de aludes | `visual: photo`, `scene: mountain`, icon `alert`, `top: 3`; certified rosette |
 | `wind_slab` | `compact` | `wind_slab_chance` (live: day) | Safety | Neige ventée / Wind-blown snow / Nieve venteada | `top: 3` |
 | `rewind_2025_26_total_snowfall` | `full` | `season_total_snowfall` (historical, m) | Rewind 25/26 | Le plus de neige / Most snow / Más nieve | `visual: photo`, `scene: snowfall` |
 | `rewind_2025_26_longest_snowfall` | `banner` | `season_longest_snowfall` (historical, h) | Rewind 25/26 | La plus longue chute de neige / Longest snowfall / Nevada más larga | `visual: photo`, `scene: snowfall` |
@@ -1607,8 +1613,10 @@ Merging into `main` deploys the site.
   (data.gouv.fr); a real answer is kept in
   `pipeline/tests/silver/fixtures/meteofrance_bra_66.xml`.
 - **Commercial use** requires an Open-Meteo API subscription.
-- **Attribution** from `sources.yaml` is shown on each tile back (sources of
-  the day) and on the "About" page (every enabled source).
+- **Attribution** from `sources.yaml` is shown on each tile back (only the
+  sources that feed its KPI: the avalanche tile cites Météo-France alone, the
+  weather tiles the Open-Meteo ensemble, Snow also the AROME forecast) and on
+  the "About" page (every enabled source).
 - **Overpass** is slow and often returns 429/504; the extractor retries. It is
   a reference source: refreshed once a season, never daily.
 - **Piste totals are approximate.** Pistes and lifts are selected within

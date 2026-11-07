@@ -36,6 +36,16 @@ export interface ViewSource {
   license?: string | null;
 }
 
+/**
+ * The sources a tile cites on its back: only those of its KPI (`source_ids`
+ * of the payload KPI, derived from its aggregator by the pipeline). A payload
+ * older than `source_ids`, or a KPI without data, cites every source.
+ */
+export function kpiSources(all: ViewSource[], ids: readonly string[] | undefined): ViewSource[] {
+  if (!ids?.length) return all;
+  return all.filter((source) => ids.includes(source.id));
+}
+
 /** One ranked station. */
 export interface RankItem {
   stationId: string;
@@ -191,7 +201,7 @@ export function liveView(
     items: liveItems(kpi, ranking),
     stations: payload.stations,
     timezone: payload.timezone,
-    sources: payload.sources,
+    sources: kpiSources(payload.sources, payload.kpis[kpi.id]?.source_ids),
     generatedAt: period?.generated_at ?? payload.generated_at,
   };
 }
@@ -218,7 +228,7 @@ export function historicalView(
     })),
     stations: payload?.stations ?? {},
     timezone: payload?.timezone ?? 'UTC',
-    sources: payload?.sources ?? [],
+    sources: kpiSources(payload?.sources ?? [], payload?.kpis[kpi.id]?.source_ids),
     generatedAt: payload?.generated_at ?? '',
   };
 }

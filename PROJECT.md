@@ -230,7 +230,7 @@ their value. Snow totals are in metres (for example 4.43 m), the longest
 snowfall in hours and the ideal snow cover as a share of the season's days
 (its bars go from 0 to 100 %; the other bars are relative to the best resort).
 The back of each tile explains the measure, the season dates, how it is
-computed and the sources. The line above the tiles reads "Season 2025/2026"
+computed and the sources of that indicator only. The line above the tiles reads "Season 2025/2026"
 instead of the update time.
 
 ## Available indicators
@@ -447,8 +447,13 @@ they split half and half, it is low. The back of each tile also gives a
 **reliability index** for the slot: the average reliability of all resorts
 for that indicator (high counts fully, medium half, low not at all).
 
-The high-resolution Météo-France model (AROME) is shown next to it as a
-second opinion.
+The high-resolution Météo-France model (AROME) is also read for snow, as a
+second opinion kept with the data (the resort details that would show it are
+turned off for now).
+
+The back of each tile names only the sources of its own indicator: the
+weather indicators cite the ensemble forecasts (and Snow also AROME), the
+avalanche danger cites Météo-France's bulletin alone.
 
 Fixed facts about each resort (position, elevations, grooming and opening
 times, pistes and lifts) are stored with the project and refreshed at most

@@ -214,6 +214,7 @@ tiles:
 
   - id: avalanche_risk
     format: full
+    visual: photo
     kpis: [avalanche_risk]
     title: { fr: Risque d'avalanche, en: Avalanche danger, es: Peligro de aludes }
     icon: alert

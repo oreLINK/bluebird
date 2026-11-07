@@ -19,7 +19,7 @@ apply to every KPI, see [CONTEXT.md](../../../CONTEXT.md); for the tile axes,
 | Category / filter | Safety (Sécurité) → group Off-piste; Mood → Sur place → Freerider |
 | Periods | `day` only (today, tomorrow), whole day |
 | Display | `scale`: the level as a number on its European colour; `certified: true` |
-| Tile | `avalanche_risk`, format `full`, visual `scene` (`mountain`), icon `alert`, top 3 |
+| Tile | `avalanche_risk`, format `full`, visual `photo` (a photo of the leading resort; the `mountain` scene when it has none), icon `alert`, top 3 |
 | Home page | priority 0.9, shown from level 3, full strength at 4, **alert from 4** |
 | Source | Météo-France API *DonneesPubliquesBRA*, one request per avalanche massif (9 for the Pyrenees) |
 | Secret | `METEOFRANCE_BRA_API_KEY` (GitHub secret, key of type *API Key*, valid one year) |
@@ -153,7 +153,9 @@ and shown with the "data from HH:MM" badge.
 | The tile template is expanded per period (today, tomorrow) | `lib/periods.ts` (`expandTiles`) |
 | `liveView` reads the `scale` display: value = driver `level`, bar = level / 5, `step` = its tone | `lib/kpiView.ts` (`stepOf`, `scaleMax`) |
 | Odds buttons and pills take the colour of the level (`data-scale`), level 5 a red and black checkerboard with an outlined number | `OddsRow.svelte`, `ValuePill.svelte`, `styles/base.css`, tokens `--danger-*` |
+| Background photo of the station ranked first (`visual: photo`), drawn at random among its photos at each page load, credited on the back; the `mountain` scene without photo | `lib/photos.ts`, `web/src/assets/photos/pyrenees/<station>/`, `credits.yaml` |
 | Rosette after the title (`certified`) | `CertifiedBadge.svelte` in `TileFull` / `TileBanner` / `TileCompact` |
+| Back, "Sources": Météo-France alone (`source_ids` of the KPI in the payload, derived from the aggregator's `required_datasets`; `kpiSources` in `lib/kpiView.ts`) | `diamond/_payload.py` (`kpi_source_ids`), `KpiBack.svelte` |
 | Back: "Certifié" box with the link to the official bulletin (new tab), "Que faire selon le niveau ?" (the five steps and their advice), reliability text about the bulletin's freshness (no scenarios line) | `KpiBack.svelte`, strings `back.certified*`, `back.scale`, `back.reliabilityHelpOfficial`, `back.newTab` |
 | Screen readers: "1. Gourette, niveau 4 sur 5, fort" | `tiles/summary.ts` (`a11y.scale`) |
 | Home page: level of the top 3 of the place vs floor 3 / strong 4; level ≥ 4 is an alert, shown right after the bluebird day | `lib/homeFeed.ts`, `visibility` in `kpis.yaml` |
@@ -185,8 +187,8 @@ wide screens)
 
 | ✅ `full` — image fills the card | ☑️ `banner` — image band on top |
 |---|---|
-| <img src="screenshots/format-full.jpg" width="260" alt="Full tile: the mountain scene behind the title with the rosette and three red odds buttons with level 4"> | <img src="screenshots/format-banner.jpg" width="260" alt="Banner tile: mountain scene on top, title with the rosette and three red odds buttons below"> |
-| `visual: scene` (`mountain`) today; `visual: photo` possible (photo of the leading resort) | `scene` or `photo`, same size as `full` |
+| <img src="screenshots/format-full.jpg" width="260" alt="Full tile: a photo of Cauterets behind the title with the rosette and three red odds buttons with level 4"> | <img src="screenshots/format-banner.jpg" width="260" alt="Banner tile: mountain scene on top, title with the rosette and three red odds buttons below"> |
+| `visual: photo` today: a photo of the leading resort drawn at random per page load, credited on the back; the `mountain` scene for a resort without photo (Ascou, Le Mourtis, Porté-Puymorens) | `scene` or `photo`, same size as `full` |
 
 **Half — 199 px high** (`--tile-compact-h`: two compact tiles stack beside
 one large tile)
@@ -246,6 +248,6 @@ uv run bluebird demo                      # synthetic bulletins (demo.py), no ke
 | Gold | `gold/aggregator_avalanche_risk.py`, `gold/base.py` (`empty_ok`, `result(confidence=…)`) |
 | Status | `runner.py` (`run_gold_kpi`), `diamond/_status.py` |
 | Demo | `demo.py` (`demo_bulletins`) |
-| Site | `web/src/lib/kpiView.ts`, `web/src/tiles/KpiBack.svelte`, `TileFull.svelte`, `OddsRow.svelte`, `StationRow.svelte`, `web/src/components/CertifiedBadge.svelte`, `ValuePill.svelte`, `web/src/styles/tokens.css`, `base.css` |
+| Site | `web/src/lib/kpiView.ts`, `web/src/lib/photos.ts`, `web/src/tiles/KpiBack.svelte`, `TileFull.svelte`, `OddsRow.svelte`, `StationRow.svelte`, `web/src/components/CertifiedBadge.svelte`, `ValuePill.svelte`, `web/src/styles/tokens.css`, `base.css` |
 | Tests | `pipeline/tests/bronze/test_extractor_meteofrance_bra.py`, `tests/silver/test_transformer_meteofrance_bra.py` (+ `fixtures/meteofrance_bra_66.xml`), `tests/gold/test_avalanche_risk.py` |
 | CI | `.github/workflows/refresh.yml` (secret on the bronze job of this source) |
