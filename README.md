@@ -162,7 +162,7 @@ flowchart LR
 |---|---|
 | Pipeline | Python 3.12, uv, pydantic, polars, httpx, Parquet (zstd) |
 | Website | Svelte 5 (runes), TypeScript 6, Vite, `@rollup/plugin-yaml`; no UI framework (≈ 32 KB of gzipped JavaScript) |
-| Fonts | Sora (text, titles, values) and Barlow Semi Condensed ExtraBold Italic (logo only), OFL, self-hosted with `@fontsource` |
+| Fonts | Sora (text, titles, values), Barlow Semi Condensed ExtraBold Italic (logo only), Righteous and Oswald (styled titles of the Bluebird and avalanche tiles), OFL, self-hosted with `@fontsource` |
 | Quality | ruff, pytest, svelte-check, Vitest, actionlint |
 | CI/CD | GitHub Actions; site and data published on GitHub Pages (`gh-pages`) |
 
@@ -408,8 +408,8 @@ The probability is always computed, but a tile shows what speaks best:
   `--scale-*` tokens), name and advice, listed on the tile back.
 
 A KPI with `certified: true` relays an official value as is (the
-Météo-France avalanche bulletin): a blue rosette next to the tile title
-(`CertifiedBadge.svelte`), explained on the back; `official_link {url,
+Météo-France avalanche bulletin): a blue rosette in the corner badges, right
+under the time badge (`CertifiedBadge.svelte`), explained on the back; `official_link {url,
 label}` adds a link to the source itself there (new tab), allowed only on a
 certified KPI.
 
@@ -508,7 +508,7 @@ User-facing labels are `{fr, en, es}` objects; every language is required.
 | `kpis.yaml` | KPI registry | `id`, `aggregator`, `kind` (`live` / `historical`), `display` (live: `percent` default, optional `note` driver; `value` with `driver`, `range` [p10, p90], `tolerance`, `bands`; `levels` by probability; `scale` with `driver` and `steps {value, tone, label, advice?}`), `certified` (official value relayed as is: rosette), `official_link {url, label}` (certified only: link on the back, new tab), `order` (`desc` / `asc`: lowest value first, e.g. fewest white days, coldest felt temperature), `value {unit, unit_label, unit_label_one, decimals, scale, max}` (historical; `unit_label` when the unit depends on the language, e.g. jours / days / días, `unit_label_one` its singular, chosen with the language's plural rules; `scale` converts the aggregator's unit, e.g. `0.01` for cm → m; `max` is the value of a full bar, e.g. `100` for a percentage, default the best value), `name`, `description`, `method?` (`{param}` placeholders, shown on the tile back), `params`, `drivers {key: {label, unit, decimals}}`, `filters[]`, `periods[]` (live KPIs; default `[day]`), `visibility` (live, required by the scored home page: `priority`, `measure?`, `floor`, `strong`, `alert?`, `slots? {floor, strong}`; see [Home page visibility score](#home-page-visibility-score)), `enabled` |
 | `periods.yaml` | Time slots of the ski day | `day_start`, `horizon_days`, `days[]` (chips of the `day` filter level: today, tomorrow), `badge_days[]` (day cell of the tile time badge, one per day: `tone` today / tomorrow and a short `label`, "Auj."), `badge_tonight` (replaces today + a night moment: "Cette nuit"), `periods[]` (time slots, and day-grain periods with `native_window`: `day`, `sunset`, `overnight`): `id`, `start`, `end`, `native_window?`, `labels[]` (one per day: today, tomorrow; the period written out on the tile back, for screen readers and on the status page), `chip` (chip of the `slot` filter level, required for time slots), `badge?` (short moment cell of the tile time badge, "Matin" / "AM" / "Mañ."; none for the whole day), `tone?` (`morning`, `midday`, `afternoon`, `evening`, `night`: colour of the moment cell, required with `badge`) |
 | `filters.yaml` | Level-1 chips of the filter bar, in order | `id`, `name`, `icon?`, `theme?` (`default` / `rewind` / `mood`: moving multicolour chip), `levels?[]` (next levels, at most 3: `group`, `day`, `slot`, or exactly `[mood_group, mood]`; live KPIs only), `groups?[]` (sub-categories: `id`, `name`, `kpis[]`), `moods?[]` (sub-moods: `id`, `name`, `icon?`, `tomorrow_only?`, `moods[] {id, name, icon?, kpis[]}`; see [Moods](#moods)) |
-| `tiles.yaml` | KPI containers; a live tile is shown once per period | `id`, `scope` (`ranking`, default), `format` (`full` / `banner` / `compact`), `visual` (`scene` default / `photo`; not on `compact`), `webcam?` (`positions[]`, `min_probability` default 0.6; live `full`/`banner` only), `kpis[]`, `title?` (never the period: `{period}` is refused; live tiles show a time badge), `periods?[]` (live), `icon?`, `options` (`top`, `show_odds`, `scene`, `theme`; `details` turns station details on, off by default) |
+| `tiles.yaml` | KPI containers; a live tile is shown once per period | `id`, `scope` (`ranking`, default), `format` (`full` / `banner` / `compact`), `visual` (`scene` default / `photo`; not on `compact`), `webcam?` (`positions[]`, `min_probability` default 0.6; live `full`/`banner` only), `kpis[]`, `title?` (never the period: `{period}` is refused; live tiles show a time badge), `title_style?` (`full` only: `sunrise` or `danger_sign`, a styled title with the standard title as fallback), `periods?[]` (live), `icon?`, `options` (`top`, `show_odds`, `scene`, `theme`; `details` turns station details on, off by default) |
 | `layout.yaml` | Home page and tile order | `home` (`mode` `scored` / `fixed`, `limit` (50), `top` (3), `pinned[] {tile, period}`, `fallback[] {tile, period}`, `relevance {slots, today, tomorrow, early_alerts}`, `reliability`, `diversity`; see [Home page visibility score](#home-page-visibility-score)), `default[]`, `overrides {massif: [tiles]}` |
 | `sources.yaml` | Data sources | `id`, `extractor`, `transformer`, `schedule` (`daily` / `on_demand` / `reference` / `season`), `params`, `attribution` |
 | `rewinds.yaml` | Rewinds (closed seasons) | `id` (e.g. `2025-26`), `name`, `start`, `end` (local days, included), `massifs[]`, `kpis[]` (historical), `filter` (level-1 filter without levels) |
@@ -1194,7 +1194,19 @@ the data is unavailable.
   (`@fontsource/barlow-semi-condensed`), both OFL and self-hosted: no font
   CDN. Imported in `src/main.ts`; tokens `--font-sans`, `--font-display`,
   `--font-logo`, `--display-weight`, `--display-tracking`. A static
-  `@fontsource` package needs one CSS import per weight.
+  `@fontsource` package needs one CSS import per weight. Righteous
+  (`@fontsource/righteous`, latin subset, ~13 KB) is only for the styled
+  title `sunrise` of the Bluebird tile (`--font-title-sunrise`); the
+  browser fetches it when that tile first shows, and the tile keeps its
+  Sora title until it has loaded (or for good if it fails, after 3 s).
+- **Styled titles** (`title_style` on `full` tiles, TILES.md §3):
+  `StyledTitle.svelte` draws a title proper to one KPI. `sunrise` (Bluebird):
+  Righteous with warm stacked shadows and a sun rising behind the word in an
+  8 s loop, paused off screen and while the card is turned, still with
+  reduced motion; `danger_sign` (avalanche danger): the title on a tilted
+  yellow danger sign in Oswald (`@fontsource/oswald`, latin 700, ~13 KB),
+  two lines (`splitSignTitle`), a glint sliding over it every 4 s. The text
+  stays a real `<h2>` text node; the Sora title shows until the font loads.
 - **Motion**: changing filter makes tiles arrive "from the back" (scale, fade
   and rise, staggered), leaving tiles fade out and the others glide into place
   (`lib/transitions.ts`, `animate:flip`). Durations drop to 0 with "reduce
@@ -1228,7 +1240,7 @@ of live KPIs shows it on its time badge ("Auj.", "Dem. | Matin", "Cette nuit", s
 | `snowfall_today` | `full` | `snowfall_chance` (live: day, morning, midday, afternoon, evening, night) | Snow | Neige / Snow / Nieve | `visual: photo`, `scene: snowfall` |
 | `onpiste_powder` | `banner` | `onpiste_powder_chance` (live: day, morning, midday, afternoon) | Snow quality | Poudreuse sur piste / On-piste powder / Nieve polvo en pista | `visual: photo`, `scene: piste` |
 | `offpiste_powder` | `compact` | `offpiste_powder_chance` (live: day, morning, midday, afternoon) | Snow quality | Poudreuse hors-piste / Off-piste powder / Nieve polvo fuera de pista | — |
-| `bluebird_day` | `banner` | `bluebird_day_chance` (live: day) | Sky | Journée bluebird / Bluebird day / Día bluebird | `visual: photo`, `scene: mountain`, icon `sun`, `webcam` (summit, ≥ 60 %) |
+| `bluebird_day` | `full` | `bluebird_day_chance` (live: day) | Sky | Bluebird / Bluebird / Bluebird | `visual: photo`, `title_style: sunrise`, `scene: mountain`, icon `sun`, `webcam` (summit, ≥ 60 %) |
 | `whiteout` | `compact` | `whiteout_chance` (live: day) | Sky | Jour blanc / White day / Día blanco | `top: 3` |
 | `powder_alert` | `compact` | `powder_alert_chance` (live: day) | Snow | Alerte neige / Snow alert / Alerta de nieve | `top: 3` |
 | `snowmaking` | `compact` | `snowmaking_chance` (live: overnight, night) | Snow | Canons à neige / Snow cannons / Cañones de nieve | `top: 3` |
@@ -1243,7 +1255,7 @@ of live KPIs shows it on its time badge ("Auj.", "Dem. | Matin", "Cette nuit", s
 | `mild_day` | `compact` | `mild_day_chance` (live: day) | Comfort | Journée douce / Mild day / Día templado | `top: 3` |
 | `chains` | `compact` | `chains_chance` (live: day) | Getting there | Chaînes nécessaires / Chains needed / Cadenas necesarias | `top: 3` |
 | `lift_wind` | `compact` | `lift_wind_chance` (live: day, morning, midday, afternoon) | Getting there | Remontées au vent / Lifts in the wind / Remontes y viento | `top: 3` |
-| `avalanche_risk` | `full` | `avalanche_risk` (live: day) | Safety | Risque d'avalanche / Avalanche danger / Peligro de aludes | `visual: photo`, `scene: mountain`, icon `alert`, `top: 3`; certified rosette |
+| `avalanche_risk` | `full` | `avalanche_risk` (live: day) | Safety | Risque d'avalanche / Avalanche danger / Peligro de aludes | `visual: photo`, `title_style: danger_sign`, `scene: mountain`, icon `alert`, `top: 3`; certified rosette |
 | `wind_slab` | `compact` | `wind_slab_chance` (live: day) | Safety | Neige ventée / Wind-blown snow / Nieve venteada | `top: 3` |
 | `rewind_2025_26_total_snowfall` | `full` | `season_total_snowfall` (historical, m) | Rewind 25/26 | Le plus de neige / Most snow / Más nieve | `visual: photo`, `scene: snowfall` |
 | `rewind_2025_26_longest_snowfall` | `banner` | `season_longest_snowfall` (historical, h) | Rewind 25/26 | La plus longue chute de neige / Longest snowfall / Nevada más larga | `visual: photo`, `scene: snowfall` |
@@ -1327,7 +1339,7 @@ significant (but stays pinned first, see below).
 
 | Rank | KPI | Tile | Priority | Measure | Floor | Strong | Alert |
 |---|---|---|---|---|---|---|---|
-| 1 | `bluebird_day_chance` | Bluebird day | 1.0 (pinned) | probability | 25 % | 70 % | — |
+| 1 | `bluebird_day_chance` | Bluebird | 1.0 (pinned) | probability | 25 % | 70 % | — |
 | 2 | `powder_alert_chance` | Snow alert | 1.0 | cm over 36 h (median) | 20 cm | 50 cm | — |
 | 3 | `snowfall_chance` | Snow | 1.0 | cm (median) | 5 cm (slots: 2 cm) | 30 cm (slots: 15 cm) | — |
 | 4 | `onpiste_powder_chance` | On-piste powder | 0.95 | cm after grooming (median) | 5 cm | 20 cm | — |

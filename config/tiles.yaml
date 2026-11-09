@@ -93,12 +93,14 @@ tiles:
     options:
       top: 3
 
-  # Bluebird day: fresh snow then a sunny ski day, today and tomorrow.
+  # Bluebird day: fresh snow then a sunny ski day, today and tomorrow. Its own
+  # styled title (a sun rising behind the word), the standard title as fallback.
   - id: bluebird_day
-    format: banner
+    format: full
     visual: photo
     kpis: [bluebird_day_chance]
-    title: { fr: Journée bluebird, en: Bluebird day, es: Día bluebird }
+    title: { fr: Bluebird, en: Bluebird, es: Bluebird }
+    title_style: sunrise
     icon: sun
     webcam: { positions: [summit], min_probability: 0.6 }
     options:
@@ -212,9 +214,12 @@ tiles:
     options:
       top: 3
 
+  # Avalanche danger: its own styled title, a tilted yellow danger sign with a
+  # glint sliding over it (the standard title as fallback).
   - id: avalanche_risk
     format: full
     visual: photo
+    title_style: danger_sign
     kpis: [avalanche_risk]
     title: { fr: Risque d'avalanche, en: Avalanche danger, es: Peligro de aludes }
     icon: alert

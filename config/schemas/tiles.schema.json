@@ -127,6 +127,23 @@
           "description": "Periods to show a tile of live KPIs for; defaults to every period of its KPIs.",
           "title": "Periods"
         },
+        "title_style": {
+          "anyOf": [
+            {
+              "enum": [
+                "sunrise",
+                "danger_sign"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Tiles of format `full` only: a styled title proper to the KPI (`sunrise`: a sun rising behind the word, font Righteous; `danger_sign`: a tilted yellow danger sign with a glint, font Oswald). Until its font has loaded, or if it never does, the tile shows its standard title.",
+          "title": "Title Style"
+        },
         "options": {
           "additionalProperties": true,
           "title": "Options",

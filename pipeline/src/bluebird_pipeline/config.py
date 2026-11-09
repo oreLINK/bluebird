@@ -69,6 +69,9 @@ TileFormat = Literal["full", "banner", "compact"]
 """Size and layout of a tile (web/src/tiles/registry.ts)."""
 
 TileVisual = Literal["scene", "photo"]
+# Styled titles of `full` tiles (TILES.md §3): a WordArt-like title proper to one
+# KPI, in a free self-hosted font, with the standard title as fallback.
+TitleStyle = Literal["sunrise", "danger_sign"]
 """Background of the image of `full` and `banner` tiles (`webcam` is planned)."""
 
 TimeTone = Literal["morning", "midday", "afternoon", "evening", "night"]
@@ -791,10 +794,21 @@ class Tile(StrictModel):
             "Periods to show a tile of live KPIs for; defaults to every period of its KPIs."
         ),
     )
+    title_style: TitleStyle | None = Field(
+        default=None,
+        description=(
+            "Tiles of format `full` only: a styled title proper to the KPI (`sunrise`: a sun "
+            "rising behind the word, font Righteous; `danger_sign`: a tilted yellow danger sign "
+            "with a glint, font Oswald). Until its font has loaded, or if it never does, the "
+            "tile shows its standard title."
+        ),
+    )
     options: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def _check_axes(self) -> Tile:
+        if self.title_style is not None and self.format != "full":
+            raise ValueError("`title_style` is for tiles of format `full` only")
         if self.format == "compact":
             if "visual" in self.model_fields_set:
                 raise ValueError("a compact tile has no image: remove `visual`")

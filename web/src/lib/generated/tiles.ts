@@ -35,6 +35,10 @@ export type Icon = string | null;
  * Periods to show a tile of live KPIs for; defaults to every period of its KPIs.
  */
 export type Periods = string[] | null;
+/**
+ * Tiles of format `full` only: a styled title proper to the KPI (`sunrise`: a sun rising behind the word, font Righteous; `danger_sign`: a tilted yellow danger sign with a glint, font Oswald). Until its font has loaded, or if it never does, the tile shows its standard title.
+ */
+export type TitleStyle = ('sunrise' | 'danger_sign') | null;
 export type Tiles = Tile[];
 
 /**
@@ -66,6 +70,7 @@ export interface Tile {
   title?: Localized | null;
   icon?: Icon;
   periods?: Periods;
+  title_style?: TitleStyle;
   options?: Options;
 }
 /**

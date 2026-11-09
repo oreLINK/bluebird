@@ -30,7 +30,7 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
   `lift_wind_chance`), `safety` (Sécurité: `avalanche_risk`,
   `wind_slab_chance`). All but one use only the ensemble (mid/summit);
   `avalanche_risk` relays the Météo-France avalanche bulletin (BRA, API key
-  in the secret `METEOFRANCE_BRA_API_KEY`), `certified` (blue rosette after the title, "Donnée officielle" box on the back with its `official_link` to the bulletin). Each is shown after its
+  in the secret `METEOFRANCE_BRA_API_KEY`), `certified` (blue rosette in the corner badges, "Donnée officielle" box on the back with its `official_link` to the bulletin), styled title `danger_sign` (a tilted yellow danger sign with a glint). Each is shown after its
   `display` (`kpis.yaml`): `value` (median of a driver: snow, snow alert,
   snowmaking, on-piste powder, full sun, wind chill, lift wind), `levels`
   (Oui / Possible / Non: chains, hard snow, wind slab), `scale` (a level of
@@ -65,7 +65,10 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
   fallback), radius 24px, no stripes, sober plain background, no background
   animation; font Sora (`@fontsource-variable/sora`: titles and values 700,
   text 400–600) and Barlow Semi Condensed ExtraBold Italic for the logo
-  wordmark only (`--font-logo`), self-hosted and imported in `main.ts`.
+  wordmark only (`--font-logo`), self-hosted and imported in `main.ts`;
+  Righteous and Oswald (latin) for the styled titles of the Bluebird and
+  avalanche tiles only (`title_style: sunrise`, `danger_sign`; standard Sora
+  title as fallback).
   `full` tiles show their image down to the bottom of the card, under the
   "see all" bar.
   Header: logo left (ski goggle mark, lens gradient by phase of the day,
@@ -158,12 +161,13 @@ loads both files through `CLAUDE.md`; Codex reads `AGENTS.md` natively.
 | `web/src/tiles/TimeBadge.svelte` | Time badge of live tiles (1.375rem): day cell (`--when-<tone>`, white) + soft moment cell (`--tone-<tone>-*`, icon `TONE_ICONS`; tinted glass on an image), or the day alone (whole day, "Cette nuit"); `aria-hidden` (the title carries the period in a visually hidden span). First in the corner stack of `full`/`banner`, on the badge row of `compact`, and in the "Quand ?" section of `KpiBack` (with the exact date from `slotDates`). |
 | `web/src/tiles/TileBanner.svelte` | Type `banner`: banner (photo or illustration), top stations as odds buttons, "see all". |
 | `web/src/tiles/TileFull.svelte` | Format `full`: photo or illustration fills the card behind title and odds. |
+| `web/src/tiles/StyledTitle.svelte`, `web/src/lib/titleStyles.ts` | Styled title of a `full` tile (`title_style`, TILES.md §3): `sunrise` = Righteous, stacked warm shadows, a sun rising behind the word (8 s loop); `danger_sign` = a yellow danger sign tilted −4°, Oswald capitals on two lines (`splitSignTitle`), bolts, a glint every 4 s. Paused off screen and when turned, still with reduced motion. `titleFontReady` (pure, tested) waits for the style's face (3 s at most): until then, or if it fails, the tile keeps its standard Sora title. Tokens `--font-title-sunrise`, `--title-sunrise-*`, `--title-sun-*`, `--font-title-sign`, `--title-sign-*`. |
 | `web/src/tiles/TileCompact.svelte` | Format `compact`: banner tile without image (badge row level with "?": time badge or Rewind / stale; title without icon, compact odds, "see all"), half a banner tile (`--tile-compact-h`, 151px), so two stack beside a banner tile on wide screens. |
 | `web/src/lib/webcams.ts`, `web/src/components/WebcamBadge.svelte` | Pure, tested: `liveWebcam(tile, view, now, stationWebcams)` (tile `webcam` rule: period in progress, leading station's webcam at one of `positions`, probability ≥ `min_probability`); the LIVE badge, a real `<a>` (new tab) in the top left corner of `full`/`banner` tiles, `--live-bg`/`--on-live` tokens. `stationWebcams` comes from `lib/config.ts` (`webcams` of the stations files). |
 | `web/src/lib/kpiView.ts` | **One view of a KPI for every tile**: `liveView` (after the KPI `display`: percent, median value with band note, or levels; confidence, details) / `historicalView` (Rewind values, bars vs best), `viewFor()` (App), `itemLabel`, `rewindOfKpi`. Tiles never read payloads directly. |
 | `web/src/tiles/tileModel.ts`, `OddsRow.svelte`, `RankingMore.svelte`, `StationRow.svelte`, `summary.ts` | Shared by every tile format and both kinds: top/rest, photo (`visual: photo`), odds/details (live only), empty message, badge, theme (`TILE_THEMES`, from the Rewind's filter). Odds buttons show reliability dots for live KPIs; the open list has a "see less" button at its top and bottom. |
 | `web/src/tiles/TileBadge.svelte`, `web/src/components/ValuePill.svelte` | Corner badge ("REWIND 25/26") and the value pill of ranking rows ("82 %", "4,43 m"). |
-| `web/src/components/CertifiedBadge.svelte` | Blue rosette after the title of a tile whose KPI is `certified` (value relayed as is from an official source); `--verified-*` tokens; in the `.title-row` of `TileFull`/`TileBanner`/`TileCompact`; `KpiBack` adds the "Certifié" box (with the KPI `official_link`, new tab), the scale `steps` with advice, and the official reliability text (no scenarios line when `members` is 0). Scale levels colour odds buttons and pills through `data-scale` (`--danger-*` tokens, `base.css`). |
+| `web/src/components/CertifiedBadge.svelte` | Blue rosette of a tile whose KPI is `certified` (value relayed as is from an official source); `--verified-*` tokens; in the corner badge stack of `TileFull`/`TileBanner`, right under the time badge, and in the badge row of `TileCompact`; `KpiBack` adds the "Certifié" box (with the KPI `official_link`, new tab), the scale `steps` with advice, and the official reliability text (no scenarios line when `members` is 0). Scale levels colour odds buttons and pills through `data-scale` (`--danger-*` tokens, `base.css`). |
 | `web/src/components/ConfidenceDots.svelte` | Three reliability dots for a `confidence` level; colours via `--dot-on` / `--dot-off`. Used by odds buttons, station rows, station details, tile back. |
 | `web/src/tiles/FlipCard.svelte`, `KpiBack.svelte` | Two-sided card of every tile; front = banner, title, odds (no description); back = one section each for description, time window, method, reliability, update, sources (only its KPI's: `kpiSources` of `lib/kpiView.ts`), photo credit (never on the front). |
 | `web/src/lib/transitions.ts` | `arrive` / `leave` tile transitions, `rise` for sheets, and `motion()` (reduced-motion aware). |
@@ -691,6 +695,12 @@ npm run dev
   or off-piste points): a dataset read with `ctx.silver_optional` but not
   declared would silently drop its source. `tests/diamond/test_kpi_sources.py`
   scans the aggregators for such reads.
+- **Leading spaces vanish inside an element.** `<span class="visually-hidden"> {period}</span>`
+  rendered without its space, so screen readers read "Risque d'avalanchedemain".
+  Put the space in the expression (`{` ${period}`}`) when it matters.
+- **A styled title draws outside its line box.** The tile `<h2>` clips its
+  text (`overflow: hidden` for the ellipsis); the sun and the shadows of a
+  `title_style` were cut off. `h2.styled` sets `overflow: visible`.
 
 ## 9. Definition of done
 

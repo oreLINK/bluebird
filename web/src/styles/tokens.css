@@ -126,6 +126,26 @@
      from an official source (KPI `certified`); white check mark. */
   --verified-bg: #1d6ff2;
   --verified-ink: #ffffff;
+  /* Styled titles of full tiles (tile `title_style`, TILES.md §3), drawn on the
+     image: the same in both modes. sunrise (Bluebird): Righteous, warm stacked
+     shadows and a sun rising behind the word. */
+  --font-title-sunrise: 'Righteous', var(--font-display);
+  --title-sunrise-1: #ffb703;
+  --title-sunrise-2: #fb8500;
+  --title-sunrise-3: #e85d04;
+  --title-sunrise-shade: rgba(0, 0, 0, 0.4);
+  --title-sun-core: #fffbe6;
+  --title-sun-glow: #ffd166;
+  --title-sun-halo: rgba(255, 183, 3, 0.3);
+  /* danger_sign (avalanche danger): Oswald, black on the yellow of mountain
+     danger signs (>= 12:1), steel bolts, a white glint sliding over the sheet. */
+  --font-title-sign: 'Oswald', var(--font-display);
+  --title-sign-bg: #ffd400;
+  --title-sign-ink: #111111;
+  --title-sign-shade: rgba(0, 0, 0, 0.45);
+  --title-sign-bolt: #3a3f47;
+  --title-sign-bolt-hi: #9aa4b2;
+  --title-sign-glint: rgba(255, 255, 255, 0.75);
 
   /* Time badge of the tiles ("Dem. | Matin", TILES.md §9). Day cell: a dark
      colour per day (`badge_days` / `badge_tonight` tones in

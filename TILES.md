@@ -141,6 +141,42 @@ today only. Needs the written agreement of the webcam's owner (README.md
 </tr>
 </table>
 
+### Styled title (`full` only)
+
+<table>
+<tr>
+<td width="50%"><img src="docs/tiles/title-sunrise.svg" width="300" alt="Full tile Bluebird: the title in Righteous with warm stacked shadows and a sun behind it"></td>
+<td valign="top">
+
+**`title_style`** — a title proper to one KPI, WordArt-like but legible,
+in a free self-hosted font, on `full` tiles only (refused elsewhere by
+`bluebird validate`), drawn by `StyledTitle.svelte`. Two styles today:
+
+- **`sunrise`** (the Bluebird tile): Righteous (`@fontsource/righteous`,
+  latin, ~13 KB) with three warm stacked shadows, and a sun rising behind
+  the word in an 8 s loop.
+- **`danger_sign`** (the avalanche danger tile): the title on a yellow
+  mountain danger sign tilted by −4°, black Oswald capitals
+  (`@fontsource/oswald`, latin 700, ~13 KB) on two lines (small "RISQUE D'",
+  large "AVALANCHE": `splitSignTitle` breaks after the apostrophe, else
+  before the last word), two steel bolts, and a white glint sliding over the
+  sheet every 4 s.
+
+- **Fallback**: the tile shows its standard Sora title until the style's
+  font has loaded, and keeps it if the font fails or takes more than 3 s
+  (`titleFontReady` in `web/src/lib/titleStyles.ts`).
+- **Motion**: only the sun or the glint moves (transform, opacity); paused
+  off screen and while the card is turned; the sun stands still and the
+  glint is gone with reduced motion.
+- The title stays a real text node of the `<h2>` (screen readers,
+  translation); the sun, bolts and glint are decoration (`aria-hidden`).
+
+<img src="docs/tiles/title-danger-sign.svg" width="300" alt="Full tile Risque d'avalanche: the rosette under the time badge, the title on a tilted yellow danger sign, odds 5, 4, 3 in the colours of the scale">
+
+</td>
+</tr>
+</table>
+
 ## 4. Kind
 
 Not set on the tile: it comes from the `kind` of its KPI in
@@ -156,7 +192,7 @@ both kinds; only the data and the theme change.
 <td valign="top">
 
 **`live`** — forecasts, refreshed every 6 hours. The tile is a template
-expanded once per period; the title stays the same ("Journée bluebird") and
+expanded once per period; the title stays the same ("Bluebird") and
 the [time badge](#5-corner-badges) names the period ("Auj.", "Dem. |
 Matin"); the back of the tile repeats it with its exact date. Values are
 probabilities, amounts, Oui/Possible/Non or a level of an official scale
@@ -183,8 +219,8 @@ danger** (`avalanche_risk`, a `full` tile; its page:
 
 <table>
 <tr>
-<td width="50%"><img src="docs/tiles/display-scale.svg" width="300" alt="Full tile Risque d'avalanche with the blue rosette after the title; odds buttons 5 on a red and black checkerboard, 4 in red, 3 in orange"></td>
-<td width="50%"><img src="docs/tiles/display-scale-compact.svg" width="300" alt="Compact tile Risque d'avalanche with the rosette and the same three coloured levels"></td>
+<td width="50%"><img src="docs/tiles/display-scale.svg" width="300" alt="Full tile Risque d'avalanche with the blue rosette under the time badge; odds buttons 5 on a red and black checkerboard, 4 in red, 3 in orange"></td>
+<td width="50%"><img src="docs/tiles/display-scale-compact.svg" width="300" alt="Compact tile Risque d'avalanche with the rosette beside the time badge and the same three coloured levels"></td>
 </tr>
 <tr>
 <td valign="top">
@@ -200,9 +236,12 @@ advice ("Que faire selon le niveau ?", `steps` of `config/kpis.yaml`).
 </td>
 <td valign="top">
 
-**Certified rosette** (`certified: true`) — not a corner badge: a blue
-scalloped rosette with a white check mark right after the title
-(`CertifiedBadge.svelte`, 22px, 20px on `compact`), for a value relayed as is
+**Certified rosette** (`certified: true`) — a corner badge: a blue
+scalloped rosette with a white check mark, right under the time badge in the
+corner stack of `full` and `banner` tiles, beside it in the badge row of
+`compact` tiles (`CertifiedBadge.svelte`, 22px, 20px on `compact`), so the
+title (and a styled title's motion) has the middle of the tile to itself.
+For a value relayed as is
 from an official source (the Météo-France avalanche bulletin). A tap flips
 the card like anywhere else on it. The back explains it in a "Certifié" box
 ("Donnée officielle"), with a link to the source itself when the KPI has an
@@ -244,7 +283,7 @@ title (the time badge, or the Rewind / "data from" badge; never LIVE).
 
 Tile titles never contain the period (`{period}` is refused by
 `bluebird validate`); screen readers get it in words from a hidden part of
-the title ("Journée bluebird aujourd'hui"), the badge itself is hidden from
+the title ("Bluebird aujourd'hui"), the badge itself is hidden from
 them. The back of every live tile has a "Quand ?" section: the badge, the
 period in words and its exact date ("Samedi 16 janvier, de 06:00 à 12:00").
 
@@ -281,11 +320,12 @@ because the KPI could not be recomputed (`StaleBadge.svelte`).
 ```yaml
 - id: bluebird_day                 # unique; DOM id <id>--<period>-<ski_day>
   scope: ranking                   # optional, default ranking
-  format: banner                   # full | banner | compact
+  format: full                     # full | banner | compact
   visual: photo                    # optional, scene (default) | photo; not on compact
   webcam: { positions: [summit], min_probability: 0.6 }   # optional, live full/banner only
   kpis: [bluebird_day_chance]      # the tile shows the first KPI
-  title: { fr: Journée bluebird, en: Bluebird day, es: Día bluebird }   # never the period
+  title: { fr: Bluebird, en: Bluebird, es: Bluebird }   # never the period
+  title_style: sunrise             # optional, full only: sunrise | danger_sign (§3), standard title as fallback
   icon: sun                        # optional, web/src/components/Icon.svelte
   periods: [day]                   # optional, live only; default: every period of the KPI
   options:                         # free-form, read by the components
@@ -323,7 +363,7 @@ without pin and without hiding any. Nothing about it is drawn on a tile.
 | `snowfall_today` | `snowfall_chance` | ranking | full | photo | live | — |
 | `onpiste_powder` | `onpiste_powder_chance` | ranking | banner | photo | live | — |
 | `offpiste_powder` | `offpiste_powder_chance` | ranking | compact | — | live | — |
-| `bluebird_day` | `bluebird_day_chance` | ranking | banner | photo | live | summit ≥ 60 % |
+| `bluebird_day` | `bluebird_day_chance` | ranking | full | photo | live | summit ≥ 60 % |
 | `whiteout` | `whiteout_chance` | ranking | compact | — | live | — |
 | `powder_alert` | `powder_alert_chance` | ranking | compact | — | live | — |
 | `snowmaking` | `snowmaking_chance` | ranking | compact | — | live | — |
@@ -347,7 +387,7 @@ without pin and without hiding any. Nothing about it is drawn on a tile.
 | `rewind_2025_26_deep_snow_days` | `season_deep_snow_days` | ranking | banner | photo | historical | — |
 | `rewind_2025_26_white_days` | `season_white_days` | ranking | banner | photo | historical | — |
 
-Totals: 26 tiles — 3 `full`, 8 `banner`, 15 `compact`; 20 live, 6 historical;
+Totals: 26 tiles — 4 `full`, 7 `banner`, 15 `compact`; 20 live, 6 historical;
 1 with a webcam rule.
 
 ## 8. Changing tiles
@@ -360,6 +400,7 @@ Totals: 26 tiles — 3 `full`, 8 `banner`, 15 `compact`; 20 live, 6 historical;
 | Link a station webcam | `webcams` in `config/stations/<massif>.yaml`, tile `webcam` rule, this file (§5, §7) |
 | Change what a tile shows (a badge, the odds, a back section) | the components, then the page "Lire une tuile" for users: `TileGuide.svelte` (example front and back with numbered marks) and the numbered paragraphs of the page `guide` in `config/pages.yaml` (`front-marks`, `back-marks`, same count as the marks) |
 | Show a KPI on an official scale, or as certified | `display: scale` with its `steps`, `certified`, `official_link` in `config/kpis.yaml`; colours `--danger-*` / `--verified-*` in `tokens.css`, `[data-scale]` in `base.css`; this file (§4) and `render.mjs` (`display: 'scale'`) |
+| Add a styled title | `TitleStyle` in `config.py`, its font face in `TITLE_STYLES` (`web/src/lib/titleStyles.ts`) and `@fontsource` import in `main.ts`, its look in `StyledTitle.svelte` with `--title-*` tokens, tile `title_style`; this file (§3, §9) and `render.mjs` |
 | Change the time badge | labels and `tone` of the periods in `config/periods.yaml`, colours `--when-*` / `--tone-*` / `--ticket-*` in `tokens.css`, `TimeBadge.svelte`, `TONE_ICONS` in `web/src/lib/periods.ts`, this file (§5, §9) |
 | Change the look | `tokens.css` / `base.css` first, then the components, §9 of this file, and `render.mjs` so the pictures stay true |
 
@@ -385,7 +426,9 @@ fonts, radii) and `web/src/styles/base.css` (tile sizes, glass recipes).
    gradient or an animation (CONTEXT.md invariant 14).
 4. **Same face, two weights.** Sora for everything: 700 with tight tracking
    for titles and values, 400–600 for text. The sport italic (Barlow Semi
-   Condensed 800) is kept for the logo only.
+   Condensed 800) is kept for the logo only. A styled title (`title_style`,
+   §3) is the one exception, one free face per style, and always falls back
+   to the Sora title.
 5. **Equal sizes.** Every tile of a format has the same collapsed size, so the
    grid stays calm whatever the data.
 
@@ -407,6 +450,8 @@ fonts, radii) and `web/src/styles/base.css` (tile sizes, glass recipes).
 | Mood chip chosen (fill) | `--mood-fill-1` … `--mood-fill-5` / `--on-mood` | `#be185d` · `#b45309` · `#047857` · `#1d4ed8` · `#6d28d9` / white | same |
 | LIVE badge | `--live-bg` / `--on-live` | `#d0021b` / white | same |
 | Certified rosette | `--verified-bg` / `--verified-ink` | `#1d6ff2` / white | `#3b82f6` / white |
+| Styled title `danger_sign` (on the image) | `--title-sign-bg` / `--title-sign-ink`, `--title-sign-bolt` / `-bolt-hi`, `--title-sign-glint`, `--title-sign-shade` | `#ffd400` / `#111111` (≥ 12:1); bolts `#3a3f47` · `#9aa4b2`; glint white 75 % | same |
+| Styled title `sunrise` (on the image) | `--title-sunrise-1…3`, `--title-sun-core` / `-glow` / `-halo` | `#ffb703` · `#fb8500` · `#e85d04`; sun `#fffbe6` · `#ffd166` · amber 30 % | same |
 | Scale levels (avalanche danger, European colours) | `--danger-1-bg` … `--danger-5-bg` / `-ink` | `#3fa34d` · `#ffe11a` · `#ff9317` · `#dc0712` · `#dc0712` with `#120a0a` checkerboard / dark ink on 1–3, white on 4–5 | same (official colours) |
 
 **Day colours** (`--when-<tone>`, the day cell of the time badge): dark, with
@@ -449,6 +494,8 @@ Sora Variable, self-hosted (`@fontsource-variable/sora`, `--font-sans`,
 | Element | Size | Weight | Notes |
 |---|---|---|---|
 | Tile title, `full` and `banner` | 1.5rem | 700 | long titles (> 24 chars) 1.25rem, two lines max; never the period |
+| Styled title `danger_sign` (`full`) | 1rem / 2.3rem | 700 (Oswald) | capitals, two lines on a sign tilted −4°, border 3px, radius 7px |
+| Styled title `sunrise` (`full`) | 2.6rem | 400 (Righteous) | shadows 2 / 4 / 6px in `--title-sunrise-1…3`, sun 6.5rem; one line |
 | Tile title, `compact` | 1.375rem | 700 | long titles (> 20 chars) 1.125rem, one line, ellipsis |
 | Odds value | 1.5rem | 700 | `compact`: 1.1875rem; unit at the same size |
 | Station name in an odds button | 0.75rem | 600 | two lines max (`compact`: 0.6875rem, one line) |

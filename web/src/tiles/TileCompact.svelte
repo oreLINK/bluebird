@@ -46,9 +46,10 @@
   {#snippet front()}
     <div class="content">
       <header class="headline">
-        {#if time || model.badge || model.staleSince}
+        {#if time || model.badge || model.staleSince || view.kpi.certified}
           <div class="badges">
             {#if time}<TimeBadge {time} />{/if}
+            {#if view.kpi.certified}<CertifiedBadge size={20} />{/if}
             {#if model.badge}
               <TileBadge label={i18n.pick(model.badge)} icon="rewind" />
             {:else if model.staleSince}
@@ -58,9 +59,8 @@
         {/if}
         <div class="title-row">
           <h2 id="{tile.id}-title" class:long={title.length > LONG_TITLE}>
-            {title}{#if period}<span class="visually-hidden"> {period}</span>{/if}
+            {title}{#if period}<span class="visually-hidden">{` ${period}`}</span>{/if}
           </h2>
-          {#if view.kpi.certified}<CertifiedBadge size={20} onImage={false} />{/if}
         </div>
       </header>
       {#if model.items.length === 0}
@@ -164,7 +164,7 @@
     margin-bottom: 12px;
   }
 
-  /* Title and, for an official value, the "certified" rosette right after it. */
+  /* Title row (the "certified" rosette sits in the corner badges). */
   .title-row {
     display: flex;
     align-items: center;
