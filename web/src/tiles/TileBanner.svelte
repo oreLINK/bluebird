@@ -56,9 +56,10 @@
   {#snippet front()}
     <header class="banner">
       <BannerMedia scene={model.scene} skyline={model.skyline} photo={model.photo} />
-      {#if time || webcam || model.badge || model.staleSince}
+      {#if time || webcam || model.badge || model.staleSince || view.kpi.certified}
         <span class="badge-slot">
           {#if time}<TimeBadge {time} onImage />{/if}
+          {#if view.kpi.certified}<CertifiedBadge size={22} onImage />{/if}
           {#if webcam}<WebcamBadge live={webcam} station={shortName(view, webcam.stationId)} />{/if}
           {#if model.badge}
             <TileBadge label={i18n.pick(model.badge)} icon="rewind" />
@@ -73,9 +74,8 @@
       <div class="headline">
         <div class="title-row">
           <h2 id="{tile.id}-title" class:long={title.length > LONG_TITLE}>
-            {title}{#if period}<span class="visually-hidden"> {period}</span>{/if}
+            {title}{#if period}<span class="visually-hidden">{` ${period}`}</span>{/if}
           </h2>
-          {#if view.kpi.certified}<CertifiedBadge size={22} onImage={false} />{/if}
         </div>
       </div>
       {#if model.items.length === 0}
@@ -185,7 +185,7 @@
     margin-bottom: 12px;
   }
 
-  /* Title and, for an official value, the "certified" rosette right after it. */
+  /* Title row (the "certified" rosette sits in the corner badges). */
   .title-row {
     display: flex;
     align-items: center;

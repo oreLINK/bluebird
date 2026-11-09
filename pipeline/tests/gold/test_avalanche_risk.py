@@ -191,3 +191,8 @@ def test_an_official_link_needs_a_certified_kpi(repo_config: Config) -> None:
     assert data["official_link"]["url"].startswith("https://meteofrance.com/")
     with pytest.raises(ValueError, match="`official_link` needs `certified: true`"):
         Kpi.model_validate({**data, "certified": False})
+
+
+def test_the_avalanche_tile_has_the_danger_sign_title(repo_config: Config) -> None:
+    tile = next(t for t in repo_config.tiles if t.id == "avalanche_risk")
+    assert (tile.format, tile.visual, tile.title_style) == ("full", "photo", "danger_sign")

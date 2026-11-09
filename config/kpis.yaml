@@ -227,7 +227,7 @@ kpis:
     filters: [sky]
     periods: [day]   # a bluebird *day*: today and tomorrow
     visibility: { priority: 1.0, floor: 0.25, strong: 0.7 }
-    name: { fr: Journée bluebird, en: Bluebird day, es: Día bluebird }
+    name: { fr: Bluebird, en: Bluebird, es: Bluebird }
     description:
       fr: Probabilité d'une journée de grand beau juste après une chute de neige, à mi-altitude.
       en: Probability of a clear, sunny ski day right after a snowfall, at mid-mountain.

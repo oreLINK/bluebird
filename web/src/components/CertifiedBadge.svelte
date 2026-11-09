@@ -1,5 +1,5 @@
 <!--
-  "Certified" rosette next to the title of a tile whose value comes as is from
+  "Certified" rosette in the corner badges of a tile (after the time badge), whose value comes as is from
   an official source (KPI `certified` in config/kpis.yaml, e.g. the
   Météo-France avalanche bulletin), like the verified badge of social
   networks. A blue scalloped rosette with a white check mark (--verified-*

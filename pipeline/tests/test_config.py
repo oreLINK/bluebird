@@ -701,3 +701,21 @@ def test_mood_levels_need_moods() -> None:
     name = {"fr": "x", "en": "x", "es": "x"}
     with pytest.raises(ValueError, match="need `moods`"):
         Filter.model_validate({"id": "x", "name": name, "levels": ["mood_group", "mood"]})
+
+
+def test_the_bluebird_day_tile_is_full_with_a_photo_and_a_webcam(repo_config: Config) -> None:
+    """The flagship tile, pinned first on the home page: large, with a photo and the LIVE link."""
+    tile = next(t for t in repo_config.tiles if t.id == "bluebird_day")
+    assert (tile.format, tile.visual) == ("full", "photo")
+    assert tile.webcam is not None and "summit" in tile.webcam.positions
+    assert tile.title_style == "sunrise"
+
+
+def test_a_styled_title_is_for_full_tiles_only() -> None:
+    from bluebird_pipeline.config import Tile
+
+    title = {"fr": "x", "en": "x", "es": "x"}
+    base = {"id": "t", "kpis": ["k"], "title": title, "title_style": "sunrise"}
+    assert Tile.model_validate({**base, "format": "full"}).title_style == "sunrise"
+    with pytest.raises(ValueError, match="`title_style` is for tiles of format `full` only"):
+        Tile.model_validate({**base, "format": "banner"})

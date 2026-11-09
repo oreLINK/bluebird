@@ -58,7 +58,7 @@ a light one, from dawn to night, so you recognise them at a glance:
 | | | | Night | deep indigo |
 
 An icon (sun rising, sun high, sun setting, moon) repeats the colour of the
-moment. The title of the tile stays short ("Snow", "Bluebird day") since the
+moment. The title of the tile stays short ("Snow", "Bluebird") since the
 badge already says when, and the back of the tile repeats the badge with the
 exact date and hours ("Saturday 16 January, 06:00 to 12:00"). Later, the
 week-end and next week will get their own colours too.
@@ -288,7 +288,7 @@ of resorts ("See all").
 | 🎿 Snow quality | **Heavy snow** | % | whole day (11:00–17:00), lunchtime, afternoon | Will the slot be warm (+4 °C or more) or bring wet snow (1 cm or more at +0.5 °C or more)? | Heavy, sticky snow: tiring legs, ski earlier in the day. |
 | 🎿 Snow quality | **Easy conditions** | % | whole day (09:00–17:00), morning, lunchtime, afternoon | Will the slot stay calm (wind under 25 km/h), not too cold (above −10 °C), visible (at most a quarter of white hours) and without a snowstorm (under 2 cm)? | A good time for beginners and children. |
 | ☀️ Sky | **White day** | % | today, tomorrow (whole day) | Will the ski day (09:00–17:00) be a white day at mid-mountain? | Expect no relief and poor contrast: stay near trees and markers, take tinted goggles. |
-| ☀️ Sky | **Bluebird day** | % | today, tomorrow (whole day) | Will at least 15 cm of fresh snow have fallen at mid-mountain in the 36 hours before 09:00, followed by a sunny ski day (09:00–17:00)? | The dream day: fresh snow under a deep blue sky. Sunscreen and dark goggles; powder goes fast. |
+| ☀️ Sky | **Bluebird** | % | today, tomorrow (whole day) | Will at least 15 cm of fresh snow have fallen at mid-mountain in the 36 hours before 09:00, followed by a sunny ski day (09:00–17:00)? | The dream day: fresh snow under a deep blue sky. Sunscreen and dark goggles; powder goes fast. |
 | ☀️ Sky | **Sunset** | % and the sunset time | tonight, tomorrow evening | Will the sky be mostly clear (40 % of cloud or less) near the summit around sunset, from the hour before to the hour after? The tile gives the sunset time. | A sunset to watch from the top (the time assumes a flat horizon: ridges to the west hide it earlier). |
 | ☀️ Sky | **Starry night** | % | this evening, tomorrow evening (18:00–00:00; also as the evening slot) | Will the evening (18:00–00:00) have at least 4 clear hours (20 % of cloud or less) near the summit? | A starry sky for a night walk or stargazing. |
 | ☀️ Sky | **Full sun** | hours of sun (median) | whole day (09:00–17:00), morning, lunchtime, afternoon | How many hours of the slot will be sunny at mid-mountain (little cloud, strong sunlight; daylight hours only)? | Sunglasses and sunscreen: the light is at its best. |
@@ -296,7 +296,7 @@ of resorts ("See all").
 | 🧣 Comfort | **Wind chill** | felt °C (median), with the wind chill risk | whole day (09:00–17:00), morning, lunchtime, afternoon | How cold will it feel near the summit at the coldest of the slot (wind chill: temperature and wind together)? With Environment Canada's risk: moderate from −10 °C, high from −28 °C (frostbite in 10 to 30 minutes)… | Cover every bit of skin: frostbite comes fast in the wind. |
 | 🚗 Getting there | **Chains needed** | Yes / Possible / No | today, tomorrow (whole day) | Will at least 2 cm of snow fall on the access road, at the bottom of the resort, from 20:00 the evening before to 10:00? | Fit chains or snow socks; leave earlier. Winter equipment is compulsory in the mountains anyway. |
 | 🚗 Getting there | **Lifts in the wind** | km/h of wind (median), with light / strong / closures likely | whole day (09:00–17:00), morning, lunchtime, afternoon | How strong will the mean wind be near the summit at the windiest of the slot? Gusts are often 1.5 to 2 times stronger: closures likely from 45 km/h. | Top lifts may slow down or close: plan for the lower slopes. |
-| ⚠️ Safety | **Avalanche danger** | level 1 to 5 of the official bulletin, in its European colour | today, tomorrow (whole day) | What danger level does Météo-France's avalanche bulletin give for the resort's massif, at the elevation of its summit? Relayed as is, never computed by Bluebird: a blue rosette next to the title says so. Before 4 pm, tomorrow shows the trend given the day before, then the new bulletin. | The back of the tile gives the name of each level and what to do, and a link to the full official bulletin (opens in a new tab). Always read it before going off-piste, and carry a transceiver, shovel and probe. |
+| ⚠️ Safety | **Avalanche danger** | level 1 to 5 of the official bulletin, in its European colour | today, tomorrow (whole day) | What danger level does Météo-France's avalanche bulletin give for the resort's massif, at the elevation of its summit? Relayed as is, never computed by Bluebird: a blue rosette in the top corner of the tile says so. Before 4 pm, tomorrow shows the trend given the day before, then the new bulletin. | The back of the tile gives the name of each level and what to do, and a link to the full official bulletin (opens in a new tab). Always read it before going off-piste, and carry a transceiver, shovel and probe. |
 | ⚠️ Safety | **Wind-blown snow** | Yes / Possible / No | today, tomorrow (whole day) | Has at least 10 cm of snow fallen near the summit in the 48 hours before 09:00, with wind reaching 30 km/h since? | Wind slabs likely off-piste. Always read the avalanche bulletin first. |
 
 A **white day** ("jour blanc") is a day without visible relief. Hour by hour
@@ -515,7 +515,7 @@ while you are looking at it.
 
 | Indicator | Shown on the home page from | Full strength at | Alert from |
 |---|---|---|---|
-| Bluebird day | always (first) | 70 % | — |
+| Bluebird | always (first) | 70 % | — |
 | Snow alert | 20 cm in 36 h | 50 cm | — |
 | Snow | 5 cm in the day (2 cm in a time slot) | 30 cm (15 cm in a slot) | — |
 | On-piste powder | 5 cm since grooming | 20 cm | — |
@@ -568,7 +568,18 @@ the mean of the three best resorts of your place.
   picture band on top, and compact tiles without a picture for the
   indicators lower on the page. The picture is a photo of the leading resort
   when we have one we may publish, otherwise a drawing.
-- **Live webcam link**: on the **Bluebird day** tile of today, a red LIVE
+- **The avalanche tile has its own title**: "Risque d'avalanche" written on
+  a yellow mountain danger sign, slightly crooked, with a glint of light
+  sliding over it now and then. The glint stops if your phone asks to reduce
+  motion, and on a slow connection the tile shows its usual title until the
+  sign's lettering arrives. Its blue "official data" rosette sits in the top
+  corner, under the day.
+- **The Bluebird tile has its own title**: the word "Bluebird" in a
+  retro poster face with warm shadows, and a sun slowly rising behind it.
+  The sun stands still if your phone asks to reduce motion, and on a slow
+  connection the tile simply shows its usual title until the face arrives.
+  The tile is large, with a photo of the leading resort.
+- **Live webcam link**: on the **Bluebird** tile of today, a red LIVE
   badge appears in the top left corner, under the time badge, when the leading resort has a webcam
   at the top of its ski area and a chance of at least 60 %, while the day is
   in progress. It opens the resort's webcam on its provider's website

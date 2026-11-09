@@ -19,6 +19,7 @@
   import OddsRow from './OddsRow.svelte';
   import RankingMore from './RankingMore.svelte';
   import type { TileProps } from './registry';
+  import StyledTitle from './StyledTitle.svelte';
   import TileBadge from './TileBadge.svelte';
   import TimeBadge from './TimeBadge.svelte';
   import { tileModel } from './tileModel';
@@ -49,9 +50,10 @@
         photo={model.photo}
       />
       <div class="shade" aria-hidden="true"></div>
-      {#if time || webcam || model.badge || model.staleSince}
+      {#if time || webcam || model.badge || model.staleSince || view.kpi.certified}
         <span class="badge-slot">
           {#if time}<TimeBadge {time} onImage />{/if}
+          {#if view.kpi.certified}<CertifiedBadge size={22} onImage />{/if}
           {#if webcam}<WebcamBadge live={webcam} station={shortName(view, webcam.stationId)} />{/if}
           {#if model.badge}
             <TileBadge label={i18n.pick(model.badge)} icon="rewind" />
@@ -63,10 +65,15 @@
 
       <div class="hero-content">
         <div class="title-row">
-          <h2 id="{tile.id}-title" class:long={title.length > LONG_TITLE}>
-            {title}{#if period}<span class="visually-hidden"> {period}</span>{/if}
+          <h2
+            id="{tile.id}-title"
+            class:long={!tile.title_style && title.length > LONG_TITLE}
+            class:styled={!!tile.title_style}
+          >
+            {#if tile.title_style}<StyledTitle style={tile.title_style} text={title} />{:else}{title}{/if}{#if period}<span
+                class="visually-hidden">{` ${period}`}</span
+              >{/if}
           </h2>
-          {#if view.kpi.certified}<CertifiedBadge size={22} onImage={true} />{/if}
         </div>
         {#if model.items.length === 0}
           <p class="sub">{i18n.t(model.emptyMessage)}</p>
@@ -172,6 +179,12 @@
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
   }
 
+  /* A styled title (`title_style`) draws beyond its line box (sun, shadows). */
+  h2.styled {
+    overflow: visible;
+    text-overflow: clip;
+  }
+
   h2.long {
     display: -webkit-box;
     font-size: 1.25rem;
@@ -206,7 +219,7 @@
     margin: 12px 0;
   }
 
-  /* Title and, for an official value, the "certified" rosette right after it. */
+  /* Title row (the "certified" rosette sits in the corner badges). */
   .title-row {
     display: flex;
     align-items: center;

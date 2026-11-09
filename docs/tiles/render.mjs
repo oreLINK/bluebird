@@ -54,7 +54,7 @@ const C = {
 };
 
 // ------------------------------------------------------------- example data
-const TITLE = 'Journée bluebird'; // the period is on the time badge, never in the title
+const TITLE = 'Bluebird'; // the period is on the time badge, never in the title
 // A whole day: the time badge shows the day alone, in the colour of the day.
 const TODAY = { day: 'AUJ.', color: C.whenToday };
 const TOMORROW = { day: 'DEM.', color: C.whenTomorrow };
@@ -270,11 +270,20 @@ function rosette(cx, cy, size = 18) {
   return `<path d="M${points.join('L')}Z" fill="${C.verified}"/><path d="M${p(7.7, 12.3)} L${p(10.6, 15.1)} L${p(16.3, 9.3)}" fill="none" stroke="#fff" stroke-width="${(2.3 * k).toFixed(2)}" stroke-linecap="round" stroke-linejoin="round"/>`;
 }
 
-/** Title centred with the rosette right after it (`.title-row`). */
-function certifiedTitle(y, title, size, fill) {
-  const width = title.length * size * 0.5; // Sora 700, approximate
-  const start = X + CW / 2 - (width + 6 + size) / 2;
-  return `${text(start, y, title, { size, fill, anchor: 'start', display: true })}${rosette(start + width + 6 + size / 2, y - size * 0.35, size)}`;
+/**
+ * Styled title `danger_sign` (StyledTitle.svelte): a yellow danger sign tilted
+ * by -4deg, black Oswald capitals on two lines, two bolts. Drawn in a fallback
+ * face where the viewer lacks Oswald.
+ */
+function dangerSignTitle(y, small, large) {
+  const cx = X + CW / 2;
+  const face = "Oswald, 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif";
+  return `<g transform="rotate(-4 ${cx} ${y})">
+    <rect x="${cx - 74}" y="${y - 34}" width="148" height="56" rx="5" fill="#ffd400" stroke="#111" stroke-width="2.5"/>
+    <circle cx="${cx - 66}" cy="${y - 27}" r="2.2" fill="#3a3f47"/><circle cx="${cx + 66}" cy="${y - 27}" r="2.2" fill="#3a3f47"/>
+    <text x="${cx}" y="${y - 16}" font-family="${face}" font-weight="700" font-size="10" letter-spacing="1" fill="#111" text-anchor="middle">${esc(small)}</text>
+    <text x="${cx}" y="${y + 13}" font-family="${face}" font-weight="700" font-size="25" fill="#111" text-anchor="middle">${esc(large)}</text>
+  </g>`;
 }
 
 function seeAll(y, onImage = false) {
@@ -306,7 +315,21 @@ ${body}
  * `visual`: scene | photo | webcam; `kind`: live | historical; `badge`:
  * webcam | stale | undefined; `planned`: grey caption tag.
  */
-function tile({ format = 'banner', scope = 'ranking', visual = 'scene', kind = 'live', badge: corner, time = TODAY, planned = false, display = 'percent' }) {
+/**
+ * Styled title `sunrise` (StyledTitle.svelte): Righteous with three warm
+ * stacked shadows, a sun behind the word. Drawn in a fallback face where the
+ * viewer lacks Righteous.
+ */
+function sunriseTitle(y, title) {
+  const id = `sun${++uid}`;
+  const face = "Righteous, Sora, 'Segoe UI', Helvetica, Arial, sans-serif";
+  const layer = (dx, fill) => `<text x="${X + CW / 2 + dx}" y="${y + dx}" font-family="${face}" font-size="27" fill="${fill}" text-anchor="middle">${esc(title)}</text>`;
+  return `<defs><radialGradient id="${id}"><stop offset=".26" stop-color="#fffbe6"/><stop offset=".42" stop-color="#ffd166"/><stop offset=".6" stop-color="#ffb703" stop-opacity=".3"/><stop offset=".7" stop-color="#ffb703" stop-opacity="0"/></radialGradient></defs>
+  <circle cx="${X + CW / 2}" cy="${y - 16}" r="40" fill="url(#${id})"/>
+  ${layer(3, '#e85d04')}${layer(2, '#fb8500')}${layer(1, '#ffb703')}${layer(0, '#ffffff')}`;
+}
+
+function tile({ format = 'banner', scope = 'ranking', visual = 'scene', kind = 'live', badge: corner, time = TODAY, planned = false, display = 'percent', titleStyle = null }) {
   const rewind = kind === 'historical';
   const scale = display === 'scale'; // avalanche danger: certified, levels in colour
   const items = rewind ? REWIND : scale ? AVALANCHE : LIVE;
@@ -330,6 +353,11 @@ function tile({ format = 'banner', scope = 'ranking', visual = 'scene', kind = '
       out.push(ticket(x, y, time, onImage));
       y += 23;
     }
+    // A certified KPI (the avalanche danger): the rosette under the time badge.
+    if (scale) {
+      out.push(rosette(x + 9, y + 9, 17));
+      y += 23;
+    }
     if (rewind) out.push(badge(x, y, 'REWIND 25/26', { bg: C.rewind, icon: 'rewind' }));
     if (corner === 'webcam') out.push(badge(x, y, 'LIVE', { bg: C.live, dot: true, icon: 'webcam' }));
     if (corner === 'stale') out.push(badge(x, y, 'Données de 06:00', { bg: C.staleBg, ink: C.staleInk, icon: 'clock' }));
@@ -341,7 +369,8 @@ function tile({ format = 'banner', scope = 'ranking', visual = 'scene', kind = '
     body += rewind ? badge(X + 12, Y + 13, 'REWIND 25/26', { bg: C.rewind, icon: 'rewind' }) : ticket(X + 12, Y + 15, time, false);
     body += helpButton(X + CW - 22, Y + 23, false);
     body += text(X + 14, Y + 54, title, { size: 15, fill: titleInk, anchor: 'start', display: true });
-    if (scale) body += rosette(X + 14 + title.length * 15 * 0.5 + 12, Y + 49, 15);
+    // The rosette after the time badge, on the same row (ticket width: 12 + 6 per letter).
+    if (scale) body += rosette(X + 12 + (12 + time.day.length * 6) + 6 + 7.5, Y + 23.5, 15);
     body += odds(Y + 62, items, { compact: true, rewind });
     body += seeAll(Y + 114);
   } else if (format === 'full') {
@@ -350,13 +379,17 @@ function tile({ format = 'banner', scope = 'ranking', visual = 'scene', kind = '
     body += `<defs><linearGradient id="${clip}g" x1="0" y1="0" x2="0" y2="1"><stop offset=".28" stop-color="#050b1e" stop-opacity="0"/><stop offset=".68" stop-color="#050b1e" stop-opacity=".62"/><stop offset="1" stop-color="#050b1e" stop-opacity=".88"/></linearGradient></defs>`;
     body += `<path d="${rounded(X, Y, CW, cardH, R)}" fill="url(#${clip}g)"/>`;
     body += helpButton(X + CW - 24, Y + 24, true) + corners(true);
-    body += scale ? certifiedTitle(Y + 162, title, 17, '#fff') : text(X + CW / 2, Y + 162, title, { size: 17, fill: '#fff', display: true });
+    body += titleStyle === 'sunrise'
+      ? sunriseTitle(Y + 164, title)
+      : titleStyle === 'danger_sign'
+        ? dangerSignTitle(Y + 150, "RISQUE D'", 'AVALANCHE')
+        : text(X + CW / 2, Y + 162, title, { size: 17, fill: '#fff', display: true });
     body += odds(Y + 176, items, { rewind, overlay: true });
     body += seeAll(Y + 258, true);
   } else {
     body += IMAGES[visual](Y, imageH, clip);
     body += helpButton(X + CW - 24, Y + 24, true) + corners(true);
-    body += scale ? certifiedTitle(Y + 178, title, 16, titleInk) : text(X + CW / 2, Y + 178, title, { size: 16, fill: titleInk, display: true });
+    body += text(X + CW / 2, Y + 178, title, { size: 16, fill: titleInk, display: true });
     if (scope === 'station') {
       body += text(X + CW / 2, Y + 200, 'Cauterets', { size: 12, weight: 600, fill: C.ink });
       body += text(X + CW / 2, Y + 234, '82 %', { size: 32, fill: C.brand, display: true });
@@ -384,6 +417,8 @@ const FILES = {
   'badge-webcam': [{ visual: 'photo', badge: 'webcam' }, 'webcam rule: LIVE badge'],
   'badge-stale': [{ badge: 'stale' }, 'stale values: "data from" badge'],
   'display-scale': [{ format: 'full', display: 'scale' }, 'display: scale · certified (full)'],
+  'title-sunrise': [{ format: 'full', visual: 'photo', titleStyle: 'sunrise' }, 'title_style: sunrise (full)'],
+  'title-danger-sign': [{ format: 'full', visual: 'photo', display: 'scale', titleStyle: 'danger_sign' }, 'title_style: danger_sign (full)'],
   'display-scale-compact': [{ format: 'compact', display: 'scale' }, 'display: scale · certified (compact)'],
 };
 

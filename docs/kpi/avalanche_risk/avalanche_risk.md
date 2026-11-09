@@ -19,7 +19,7 @@ apply to every KPI, see [CONTEXT.md](../../../CONTEXT.md); for the tile axes,
 | Category / filter | Safety (Sécurité) → group Off-piste; Mood → Sur place → Freerider |
 | Periods | `day` only (today, tomorrow), whole day |
 | Display | `scale`: the level as a number on its European colour; `certified: true` |
-| Tile | `avalanche_risk`, format `full`, visual `photo` (a photo of the leading resort; the `mountain` scene when it has none), icon `alert`, top 3 |
+| Tile | `avalanche_risk`, format `full`, visual `photo` (a photo of the leading resort; the `mountain` scene when it has none), styled title `danger_sign` (a tilted yellow danger sign with a glint), icon `alert`, top 3 |
 | Home page | priority 0.9, shown from level 3, full strength at 4, **alert from 4** |
 | Source | Météo-France API *DonneesPubliquesBRA*, one request per avalanche massif (9 for the Pyrenees) |
 | Secret | `METEOFRANCE_BRA_API_KEY` (GitHub secret, key of type *API Key*, valid one year) |
@@ -154,7 +154,8 @@ and shown with the "data from HH:MM" badge.
 | `liveView` reads the `scale` display: value = driver `level`, bar = level / 5, `step` = its tone | `lib/kpiView.ts` (`stepOf`, `scaleMax`) |
 | Odds buttons and pills take the colour of the level (`data-scale`), level 5 a red and black checkerboard with an outlined number | `OddsRow.svelte`, `ValuePill.svelte`, `styles/base.css`, tokens `--danger-*` |
 | Background photo of the station ranked first (`visual: photo`), drawn at random among its photos at each page load, credited on the back; the `mountain` scene without photo | `lib/photos.ts`, `web/src/assets/photos/pyrenees/<station>/`, `credits.yaml` |
-| Rosette after the title (`certified`) | `CertifiedBadge.svelte` in `TileFull` / `TileBanner` / `TileCompact` |
+| Rosette in the corner badges, right under the time badge (`certified`) | `CertifiedBadge.svelte` in the badge stack of `TileFull` / `TileBanner` and the badge row of `TileCompact` |
+| Styled title `danger_sign` (full only): the title on a yellow mountain danger sign tilted by −4°, Oswald capitals on two lines ("RISQUE D'" / "AVALANCHE", `splitSignTitle`), two bolts, a white glint sliding over the sheet every 4 s; paused off screen and while turned, no glint with reduced motion; the standard Sora title until Oswald has loaded (3 s at most) | `StyledTitle.svelte`, `lib/titleStyles.ts`, `@fontsource/oswald` (latin 700, ~13 KB), `--title-sign-*` tokens |
 | Back, "Sources": Météo-France alone (`source_ids` of the KPI in the payload, derived from the aggregator's `required_datasets`; `kpiSources` in `lib/kpiView.ts`) | `diamond/_payload.py` (`kpi_source_ids`), `KpiBack.svelte` |
 | Back: "Certifié" box with the link to the official bulletin (new tab), "Que faire selon le niveau ?" (the five steps and their advice), reliability text about the bulletin's freshness (no scenarios line) | `KpiBack.svelte`, strings `back.certified*`, `back.scale`, `back.reliabilityHelpOfficial`, `back.newTab` |
 | Screen readers: "1. Gourette, niveau 4 sur 5, fort" | `tiles/summary.ts` (`a11y.scale`) |
@@ -187,22 +188,22 @@ wide screens)
 
 | ✅ `full` — image fills the card | ☑️ `banner` — image band on top |
 |---|---|
-| <img src="screenshots/format-full.jpg" width="260" alt="Full tile: a photo of Cauterets behind the title with the rosette and three red odds buttons with level 4"> | <img src="screenshots/format-banner.jpg" width="260" alt="Banner tile: mountain scene on top, title with the rosette and three red odds buttons below"> |
-| `visual: photo` today: a photo of the leading resort drawn at random per page load, credited on the back; the `mountain` scene for a resort without photo (Ascou, Le Mourtis, Porté-Puymorens) | `scene` or `photo`, same size as `full` |
+| <img src="screenshots/format-full.jpg" width="260" alt="Full tile: the rosette under the time badge, the title on a tilted yellow danger sign over a photo of Cauterets, three red odds buttons with level 4"> | <img src="screenshots/format-banner.jpg" width="260" alt="Banner tile: rosette under the time badge on the mountain scene, standard title and three red odds buttons below"> |
+| `visual: photo` today: a photo of the leading resort drawn at random per page load, credited on the back; the `mountain` scene for a resort without photo (Ascou, Le Mourtis, Porté-Puymorens). Styled title `danger_sign` (full only) | `scene` or `photo`, same size as `full`; standard title (no styled title on `banner`) |
 
 **Half — 199 px high** (`--tile-compact-h`: two compact tiles stack beside
 one large tile)
 
 | ☑️ `compact` — no image |
 |---|
-| <img src="screenshots/format-compact.jpg" width="260" alt="Compact tile: time badge, title with the rosette, three smaller red odds buttons"> |
-| No `visual` and no `webcam` rule (refused by `bluebird validate`); rosette 20 px |
+| <img src="screenshots/format-compact.jpg" width="260" alt="Compact tile: time badge and rosette on one row, title, three smaller red odds buttons"> |
+| No `visual`, no `webcam` rule and no styled title (refused by `bluebird validate`); rosette 20 px beside the time badge |
 
 ### Front and back
 
 | Front (fr, light) | Front (en, dark) | Back, top (fr, light) |
 |---|---|---|
-| <img src="screenshots/format-full.jpg" width="240" alt="Front: title with the blue rosette, three odds buttons in red with level 4"> | <img src="screenshots/front-dark-en.jpg" width="240" alt="Front in English, dark mode"> | <img src="screenshots/back-light-fr.jpg" width="240" alt="Back: description and the Certifié box"> |
+| <img src="screenshots/format-full.jpg" width="240" alt="Front: the danger sign title, the rosette under the time badge, three odds buttons in red with level 4"> | <img src="screenshots/front-dark-en.jpg" width="240" alt="Front in English, dark mode"> | <img src="screenshots/back-light-fr.jpg" width="240" alt="Back: description and the Certifié box"> |
 
 | Official data box and link (fr, dark) | What to do at each level (fr, dark) | Reliability (es, light) |
 |---|---|---|
